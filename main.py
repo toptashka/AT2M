@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 import models
 from database import engine, get_db
@@ -37,6 +37,19 @@ class PartnershipDetail(BaseModel):
 class StageUpdate(BaseModel):
     stage_id: int
 
+def log_audit(db: Session, request: Request, action: str, entity_name: str, entity_id: int):
+    user_id = "admin_test"
+    ip_address = request.client.host if request.client else "unknown"
+    audit_entry = models.AuditLog(
+        user_id=user_id,
+        action=action,
+        entity_name=entity_name,
+        entity_id=entity_id,
+        ip_address=ip_address
+    )
+    db.add(audit_entry)
+    db.commit()
+
 @app.get("/api/v1/partnerships", response_model=list[PartnershipCard])
 def get_partnerships_grid(stage_id: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(models.Partnership)
@@ -61,11 +74,13 @@ def get_partnerships_grid(stage_id: Optional[int] = None, db: Session = Depends(
     return result
 
 @app.get("/api/v1/partnerships/{partnership_id}", response_model=PartnershipDetail)
-def get_partnership_detail(partnership_id: int, db: Session = Depends(get_db)):
+def get_partnership_detail(partnership_id: int, request: Request, db: Session = Depends(get_db)):
     partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
     
     if not partnership:
         raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
+        
+    log_audit(db, request, action="VIEW_PDN", entity_name="partnerships", entity_id=partnership.id)
         
     return PartnershipDetail(
         id=partnership.id,
@@ -82,7 +97,7 @@ def get_partnership_detail(partnership_id: int, db: Session = Depends(get_db)):
     )
 
 @app.patch("/api/v1/partnerships/{partnership_id}/stage", response_model=PartnershipDetail)
-def update_partnership_stage(partnership_id: int, stage_data: StageUpdate, db: Session = Depends(get_db)):
+def update_partnership_stage(partnership_id: int, stage_data: StageUpdate, request: Request, db: Session = Depends(get_db)):
     partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
     if not partnership:
         raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
@@ -94,6 +109,8 @@ def update_partnership_stage(partnership_id: int, stage_data: StageUpdate, db: S
     partnership.stage_id = stage.id
     db.commit()
     db.refresh(partnership)
+    
+    log_audit(db, request, action=f"UPDATE_STAGE_TO_{stage.step_number}", entity_name="partnerships", entity_id=partnership.id)
     
     return PartnershipDetail(
         id=partnership.id,
