@@ -32,7 +32,7 @@ services:
     depends_on:
       - db
 
-  # 3. Ваш Backend на FastAPI
+  # 3. Backend на FastAPI
   backend:
     build: .
     container_name: lct_fastapi
@@ -44,7 +44,7 @@ services:
     depends_on:
       - db
     volumes:
-      - .:/app # Монтируем текущую папку для горячей перезагрузки кода
+      - .:/app
 
 volumes:
   pg_data:
