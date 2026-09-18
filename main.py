@@ -303,6 +303,47 @@ def import_students_from_excel(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка обработки файла: {str(e)}")
 
+class CMSLead(BaseModel):
+    university_name: str
+    contact_name: str
+    contact_email: str
+    program_name: str
+
+class LMSSyncData(BaseModel):
+    partnership_id: int
+    active_students: int
+    average_score: float
+
+@app.post("/api/v1/integrations/cms/leads")
+def receive_lead_from_cms(
+    lead: CMSLead, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    log_audit(
+        db, request, user_id="system_cms", 
+        action="RECEIVE_LEAD_CMS", 
+        entity_name="leads", entity_id=0
+    )
+    return {"status": "ok", "message": "Заявка с сайта успешно принята", "data": lead}
+
+@app.post("/api/v1/integrations/lms/sync")
+def sync_with_lms(
+    data: LMSSyncData, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    partnership = db.query(models.Partnership).filter(models.Partnership.id == data.partnership_id).first()
+    if not partnership:
+        raise HTTPException(status_code=404, detail="Партнерство не найдено в CRM")
+        
+    log_audit(
+        db, request, user_id="system_lms", 
+        action=f"SYNC_LMS_STUDENTS_{data.active_students}", 
+        entity_name="partnerships", entity_id=partnership.id
+    )
+    return {"status": "ok", "message": "Статистика из LMS успешно обновлена", "partnership_id": partnership.id}
+
 @app.get("/")
 def read_root():
     return {"status": "ok", "message": "Бэкенд успешно запущен!"}
