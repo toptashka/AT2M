@@ -1,7 +1,9 @@
 from typing import Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from jose import jwt
 import boto3
 from botocore.exceptions import ClientError
 import uuid
@@ -15,6 +17,31 @@ app = FastAPI(
     description="API для системы управления партнерствами вузов",
     version="1.0.0"
 )
+
+security = HTTPBearer()
+
+def require_role(required_role: str):
+    def role_checker(credentials: HTTPAuthorizationCredentials = Security(security)):
+        token = credentials.credentials
+        try:
+            payload = jwt.get_unverified_claims(token)
+            roles = payload.get("realm_access", {}).get("roles", [])
+        except Exception:
+            raise HTTPException(status_code=401, detail="Невалидный токен авторизации")
+            
+        role_hierarchy = {
+            "Пользователь": ["Пользователь", "Руководитель", "Администратор"],
+            "Руководитель": ["Руководитель", "Администратор"],
+            "Администратор": ["Администратор"]
+        }
+        
+        allowed_roles = role_hierarchy.get(required_role, [required_role])
+        
+        if not any(role in allowed_roles for role in roles):
+            raise HTTPException(status_code=403, detail=f"Недостаточно прав. Требуется роль: {required_role}")
+            
+        return payload.get("preferred_username", "unknown_user")
+    return role_checker
 
 S3_BUCKET_NAME = "rtk-crm-documents"
 s3_client = boto3.client(
@@ -53,8 +80,7 @@ class PartnershipDetail(BaseModel):
 class StageUpdate(BaseModel):
     stage_id: int
 
-def log_audit(db: Session, request: Request, action: str, entity_name: str, entity_id: int):
-    user_id = "admin_test"
+def log_audit(db: Session, request: Request, user_id: str, action: str, entity_name: str, entity_id: int):
     ip_address = request.client.host if request.client else "unknown"
     audit_entry = models.AuditLog(
         user_id=user_id,
@@ -67,7 +93,11 @@ def log_audit(db: Session, request: Request, action: str, entity_name: str, enti
     db.commit()
 
 @app.get("/api/v1/partnerships", response_model=list[PartnershipCard])
-def get_partnerships_grid(stage_id: Optional[int] = None, db: Session = Depends(get_db)):
+def get_partnerships_grid(
+    stage_id: Optional[int] = None, 
+    db: Session = Depends(get_db),
+    current_user: str = Depends(require_role("Пользователь"))
+):
     query = db.query(models.Partnership)
     
     if stage_id:
@@ -90,13 +120,18 @@ def get_partnerships_grid(stage_id: Optional[int] = None, db: Session = Depends(
     return result
 
 @app.get("/api/v1/partnerships/{partnership_id}", response_model=PartnershipDetail)
-def get_partnership_detail(partnership_id: int, request: Request, db: Session = Depends(get_db)):
+def get_partnership_detail(
+    partnership_id: int, 
+    request: Request, 
+    db: Session = Depends(get_db), 
+    current_user: str = Depends(require_role("Пользователь"))
+):
     partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
     
     if not partnership:
         raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
         
-    log_audit(db, request, action="VIEW_PDN", entity_name="partnerships", entity_id=partnership.id)
+    log_audit(db, request, user_id=current_user, action="VIEW_PDN", entity_name="partnerships", entity_id=partnership.id)
         
     return PartnershipDetail(
         id=partnership.id,
@@ -113,7 +148,13 @@ def get_partnership_detail(partnership_id: int, request: Request, db: Session = 
     )
 
 @app.patch("/api/v1/partnerships/{partnership_id}/stage", response_model=PartnershipDetail)
-def update_partnership_stage(partnership_id: int, stage_data: StageUpdate, request: Request, db: Session = Depends(get_db)):
+def update_partnership_stage(
+    partnership_id: int, 
+    stage_data: StageUpdate, 
+    request: Request, 
+    db: Session = Depends(get_db), 
+    current_user: str = Depends(require_role("Руководитель"))
+):
     partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
     if not partnership:
         raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
@@ -126,7 +167,7 @@ def update_partnership_stage(partnership_id: int, stage_data: StageUpdate, reque
     db.commit()
     db.refresh(partnership)
     
-    log_audit(db, request, action=f"UPDATE_STAGE_TO_{stage.step_number}", entity_name="partnerships", entity_id=partnership.id)
+    log_audit(db, request, user_id=current_user, action=f"UPDATE_STAGE_TO_{stage.step_number}", entity_name="partnerships", entity_id=partnership.id)
     
     return PartnershipDetail(
         id=partnership.id,
@@ -143,7 +184,13 @@ def update_partnership_stage(partnership_id: int, stage_data: StageUpdate, reque
     )
 
 @app.post("/api/v1/partnerships/{partnership_id}/files")
-def upload_partnership_file(partnership_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+def upload_partnership_file(
+    partnership_id: int, 
+    request: Request, 
+    file: UploadFile = File(...), 
+    db: Session = Depends(get_db), 
+    current_user: str = Depends(require_role("Руководитель"))
+):
     partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
     if not partnership:
         raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
@@ -169,6 +216,8 @@ def upload_partnership_file(partnership_id: int, file: UploadFile = File(...), d
     db.add(new_attachment)
     db.commit()
     db.refresh(new_attachment)
+    
+    log_audit(db, request, user_id=current_user, action="UPLOAD_FILE", entity_name="partnerships", entity_id=partnership.id)
     
     return {"status": "ok", "message": "Файл успешно прикреплен", "file_id": new_attachment.id}
 
