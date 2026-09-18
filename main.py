@@ -1,7 +1,10 @@
 from typing import Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File
 from sqlalchemy.orm import Session
+import boto3
+from botocore.exceptions import ClientError
+import uuid
 import models
 from database import engine, get_db
 
@@ -12,6 +15,19 @@ app = FastAPI(
     description="API для системы управления партнерствами вузов",
     version="1.0.0"
 )
+
+S3_BUCKET_NAME = "rtk-crm-documents"
+s3_client = boto3.client(
+    's3',
+    endpoint_url='http://minio:9000',
+    aws_access_key_id='admin',
+    aws_secret_access_key='admin_password'
+)
+
+try:
+    s3_client.head_bucket(Bucket=S3_BUCKET_NAME)
+except ClientError:
+    s3_client.create_bucket(Bucket=S3_BUCKET_NAME)
 
 class PartnershipCard(BaseModel):
     id: int
@@ -125,6 +141,36 @@ def update_partnership_stage(partnership_id: int, stage_data: StageUpdate, reque
         is_license_signed=partnership.is_license_signed,
         comment=partnership.comment
     )
+
+@app.post("/api/v1/partnerships/{partnership_id}/files")
+def upload_partnership_file(partnership_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
+    if not partnership:
+        raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
+    
+    file_extension = file.filename.split(".")[-1]
+    unique_filename = f"partnership_{partnership_id}/{uuid.uuid4()}.{file_extension}"
+    
+    try:
+        s3_client.upload_fileobj(
+            file.file,
+            S3_BUCKET_NAME,
+            unique_filename,
+            ExtraArgs={"ContentType": file.content_type}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка загрузки файла в S3: {str(e)}")
+        
+    new_attachment = models.Attachment(
+        partnership_id=partnership_id,
+        file_name=file.filename,
+        file_url=unique_filename
+    )
+    db.add(new_attachment)
+    db.commit()
+    db.refresh(new_attachment)
+    
+    return {"status": "ok", "message": "Файл успешно прикреплен", "file_id": new_attachment.id}
 
 @app.get("/")
 def read_root():

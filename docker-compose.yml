@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # 1. База данных PostgreSQL для CRM и Keycloak
   db:
     image: postgres:15-alpine
     container_name: lct_postgres
@@ -15,7 +14,6 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
 
-  # 2. Keycloak для авторизации и ролевой модели
   keycloak:
     image: quay.io/keycloak/keycloak:22.0.4
     container_name: lct_keycloak
@@ -32,7 +30,6 @@ services:
     depends_on:
       - db
 
-  # 3. Backend на FastAPI
   backend:
     build: .
     container_name: lct_fastapi
@@ -46,5 +43,20 @@ services:
     volumes:
       - .:/app
 
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: lct_minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin_password
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
 volumes:
   pg_data:
+  minio_data:
