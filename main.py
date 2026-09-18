@@ -7,6 +7,8 @@ from jose import jwt
 import boto3
 from botocore.exceptions import ClientError
 import uuid
+import openpyxl
+from io import BytesIO
 import models
 from database import engine, get_db
 
@@ -220,6 +222,86 @@ def upload_partnership_file(
     log_audit(db, request, user_id=current_user, action="UPLOAD_FILE", entity_name="partnerships", entity_id=partnership.id)
     
     return {"status": "ok", "message": "Файл успешно прикреплен", "file_id": new_attachment.id}
+
+@app.delete("/api/v1/stages/{stage_step}")
+def delete_workflow_stage(
+    stage_step: int, 
+    fallback_step: int, 
+    request: Request, 
+    db: Session = Depends(get_db), 
+    current_user: str = Depends(require_role("Администратор"))
+):
+    stage_to_delete = db.query(models.WorkflowStage).filter(models.WorkflowStage.step_number == stage_step).first()
+    if not stage_to_delete:
+        raise HTTPException(status_code=404, detail="Удаляемый этап не найден")
+        
+    fallback_stage = db.query(models.WorkflowStage).filter(models.WorkflowStage.step_number == fallback_step).first()
+    if not fallback_stage:
+        raise HTTPException(status_code=400, detail="Указанный этап для миграции не существует")
+        
+    partnerships_to_migrate = db.query(models.Partnership).filter(models.Partnership.stage_id == stage_to_delete.id).all()
+    
+    for partnership in partnerships_to_migrate:
+        partnership.stage_id = fallback_stage.id
+        log_audit(
+            db, request, user_id=current_user, 
+            action=f"MIGRATE_FROM_DELETED_STAGE_{stage_step}_TO_{fallback_step}", 
+            entity_name="partnerships", entity_id=partnership.id
+        )
+        
+    db.delete(stage_to_delete)
+    db.commit()
+    
+    return {
+        "status": "ok", 
+        "message": f"Этап {stage_step} удален", 
+        "migrated_count": len(partnerships_to_migrate)
+    }
+
+@app.post("/api/v1/partnerships/{partnership_id}/students/import")
+def import_students_from_excel(
+    partnership_id: int,
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(require_role("Руководитель"))
+):
+    partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
+    if not partnership:
+        raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
+
+    if not file.filename.endswith(('.xls', '.xlsx')):
+        raise HTTPException(status_code=400, detail="Поддерживаются только форматы xls и xlsx")
+
+    try:
+        contents = file.file.read()
+        workbook = openpyxl.load_workbook(filename=BytesIO(contents), data_only=True)
+        sheet = workbook.active
+        
+        students_added = 0
+        
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if row[0] and row[1]:
+                new_student = models.Student(
+                    partnership_id=partnership.id,
+                    full_name=str(row[0]).strip(),
+                    email=str(row[1]).strip()
+                )
+                db.add(new_student)
+                students_added += 1
+                
+        db.commit()
+        
+        log_audit(
+            db, request, user_id=current_user, 
+            action=f"IMPORT_STUDENTS_COUNT_{students_added}", 
+            entity_name="partnerships", entity_id=partnership.id
+        )
+        
+        return {"status": "ok", "message": f"Успешно загружено студентов: {students_added}"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка обработки файла: {str(e)}")
 
 @app.get("/")
 def read_root():
