@@ -11,6 +11,27 @@ import openpyxl
 from io import BytesIO
 import models
 from database import engine, get_db
+from fastapi.responses import StreamingResponse
+from datetime import datetime
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+import os
+
+font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+if not os.path.exists(font_path):
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+
+try:
+    pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
+    PDF_FONT = "DejaVuSans"
+except Exception:
+    PDF_FONT = "Helvetica"
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -343,6 +364,127 @@ def sync_with_lms(
         entity_name="partnerships", entity_id=partnership.id
     )
     return {"status": "ok", "message": "Статистика из LMS успешно обновлена", "partnership_id": partnership.id}
+
+@app.get("/api/v1/reports/partnerships/excel")
+def export_partnerships_excel(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(require_role("Руководитель"))
+):
+    partnerships = db.query(models.Partnership).all()
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Отчет по взаимодействиям"
+    
+    headers = [
+        "ID", "ВУЗ", "ИТ-Программа", "Текущий статус", 
+        "Ответственный РТК", "Номер договора", "Лицензия подписана"
+    ]
+    ws.append(headers)
+    
+    for p in partnerships:
+        ws.append([
+            p.id,
+            p.university.name,
+            p.program.name,
+            p.stage.title,
+            p.manager_name or "Не назначен",
+            p.contract_number or "Нет данных",
+            "Да" if p.is_license_signed else "Нет"
+        ])
+        
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    
+    log_audit(
+        db, request, user_id=current_user, 
+        action="EXPORT_REPORT_EXCEL", 
+        entity_name="partnerships", entity_id=0
+    )
+    
+    filename = f"rtk_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        stream, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@app.get("/api/v1/reports/partnerships/pdf")
+def export_partnerships_pdf(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(require_role("Руководитель"))
+):
+    partnerships = db.query(models.Partnership).all()
+    stream = BytesIO()
+    
+    doc = SimpleDocTemplate(
+        stream, 
+        pagesize=landscape(A4), 
+        rightMargin=20, 
+        leftMargin=20, 
+        topMargin=20, 
+        bottomMargin=20
+    )
+    elements = []
+    
+    title_style = ParagraphStyle(
+        name="TitleStyle",
+        fontName=PDF_FONT,
+        fontSize=14,
+        leading=18,
+        alignment=1
+    )
+    title = Paragraph("RTK CRM - Отчет по взаимодействиям с вузами", title_style)
+    elements.append(title)
+    elements.append(Spacer(1, 15))
+    
+    table_data = [
+        ["ID", "ВУЗ", "Программа", "Этап воронки", "Менеджер", "Договор", "Лицензия"]
+    ]
+    
+    for p in partnerships:
+        table_data.append([
+            str(p.id),
+            str(p.university.name),
+            str(p.program.name),
+            str(p.stage.title),
+            str(p.manager_name or "-"),
+            str(p.contract_number or "-"),
+            "Да" if p.is_license_signed else "Нет"
+        ])
+        
+    t = Table(table_data, colWidths=[30, 160, 150, 140, 100, 100, 60])
+    t.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), PDF_FONT),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#7B2CBF")),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(t)
+    
+    doc.build(elements)
+    stream.seek(0)
+    
+    log_audit(
+        db, request, user_id=current_user, 
+        action="EXPORT_REPORT_PDF", 
+        entity_name="partnerships", entity_id=0
+    )
+    
+    filename = f"rtk_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    return StreamingResponse(
+        stream,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 @app.get("/")
 def read_root():
