@@ -335,6 +335,14 @@ class LMSSyncData(BaseModel):
     active_students: int
     average_score: float
 
+class ProgramResponse(BaseModel):
+    id: int
+    name: str
+    priority: int
+
+class ProgramPriorityUpdate(BaseModel):
+    priority: int
+
 @app.post("/api/v1/integrations/cms/leads")
 def receive_lead_from_cms(
     lead: CMSLead, 
@@ -485,6 +493,42 @@ def export_partnerships_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+@app.get("/api/v1/programs", response_model=list[ProgramResponse])
+def get_programs_catalog(
+    db: Session = Depends(get_db),
+    current_user: str = Depends(require_role("Пользователь"))
+):
+    programs = db.query(models.Program).order_by(models.Program.priority.desc()).all()
+    return [
+        ProgramResponse(id=p.id, name=p.name, priority=p.priority) 
+        for p in programs
+    ]
+
+@app.patch("/api/v1/programs/{program_id}/priority", response_model=ProgramResponse)
+def update_program_priority(
+    program_id: int,
+    priority_data: ProgramPriorityUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(require_role("Руководитель"))
+):
+    program = db.query(models.Program).filter(models.Program.id == program_id).first()
+    if not program:
+        raise HTTPException(status_code=404, detail="ИТ-программа не найдена")
+        
+    old_priority = program.priority
+    program.priority = priority_data.priority
+    db.commit()
+    db.refresh(program)
+    
+    log_audit(
+        db, request, user_id=current_user, 
+        action=f"UPDATE_PROGRAM_{program.id}_PRIORITY_TO_{program.priority}", 
+        entity_name="programs", entity_id=program.id
+    )
+    
+    return ProgramResponse(id=program.id, name=program.name, priority=program.priority)
 
 @app.get("/")
 def read_root():
