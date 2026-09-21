@@ -12,7 +12,7 @@ from io import BytesIO
 import models
 from database import engine, get_db
 from fastapi.responses import StreamingResponse
-from datetime import datetime
+from datetime import datetime, date
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -551,10 +551,17 @@ def sync_with_lms(
 @app.get("/api/v1/reports/partnerships/excel")
 def export_partnerships_excel(
         request: Request,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
         db: Session = Depends(get_db),
         current_user: str = Depends(require_role("Руководитель"))
 ):
-        partnerships = db.query(models.Partnership).all()
+        query = db.query(models.Partnership)
+        if start_date:
+                query = query.filter(models.Partnership.created_at >= start_date)
+        if end_date:
+                query = query.filter(models.Partnership.created_at <= end_date)
+        partnerships = query.all()
         
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -597,10 +604,18 @@ def export_partnerships_excel(
 @app.get("/api/v1/reports/partnerships/pdf")
 def export_partnerships_pdf(
         request: Request,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
         db: Session = Depends(get_db),
         current_user: str = Depends(require_role("Руководитель"))
 ):
-        partnerships = db.query(models.Partnership).all()
+        query = db.query(models.Partnership)
+        if start_date:
+                query = query.filter(models.Partnership.created_at >= start_date)
+        if end_date:
+                query = query.filter(models.Partnership.created_at <= end_date)
+        partnerships = query.all()
+        
         stream = BytesIO()
         
         doc = SimpleDocTemplate(
