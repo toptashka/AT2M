@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from sqlalchemy import (
     Column,
@@ -9,7 +10,32 @@ from sqlalchemy import (
     Boolean
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import TypeDecorator
+from cryptography.fernet import Fernet
 from database import Base
+
+_ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+if not _ENCRYPTION_KEY:
+    _ENCRYPTION_KEY = Fernet.generate_key().decode('utf-8')
+_fernet = Fernet(_ENCRYPTION_KEY.encode('utf-8'))
+
+class EncryptedString(TypeDecorator):
+    """Кастомный тип данных для прозрачного шифрования ПДн в PostgreSQL"""
+    impl = String
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return _fernet.encrypt(value.encode('utf-8')).decode('utf-8')
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            try:
+                return _fernet.decrypt(value.encode('utf-8')).decode('utf-8')
+            except Exception:
+                return value
+        return value
 
 
 class University(Base):
@@ -19,11 +45,12 @@ class University(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False, unique=True)
     region = Column(String(100), nullable=True)
-    contact_name = Column(String(255), nullable=True)
-    contact_email = Column(String(255), nullable=True)
-    contact_phone = Column(String(50), nullable=True)
+    
+    contact_name = Column(EncryptedString(255), nullable=True)
+    contact_email = Column(EncryptedString(255), nullable=True)
+    contact_phone = Column(EncryptedString(255), nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
-
     partnerships = relationship("Partnership", back_populates="university")
 
 
@@ -85,10 +112,11 @@ class Student(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     partnership_id = Column(Integer, ForeignKey("partnerships.id"), nullable=False)
-    full_name = Column(String(255), nullable=False)
-    email = Column(String(255), nullable=False)
+    
+    full_name = Column(EncryptedString(255), nullable=False)
+    email = Column(EncryptedString(255), nullable=False)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
-
     partnership = relationship("Partnership", back_populates="students")
 
 

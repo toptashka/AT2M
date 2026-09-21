@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from jose import jwt
+from jose import jwt, JWTError, ExpiredSignatureError
 import boto3
 from botocore.exceptions import ClientError
 import uuid
@@ -20,7 +20,6 @@ from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-
 import os
 
 font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -43,22 +42,33 @@ app = FastAPI(
 
 security = HTTPBearer()
 
+ROLE_HIERARCHY = {
+    "Пользователь": ["Пользователь", "Руководитель", "Администратор"],
+    "Руководитель": ["Руководитель", "Администратор"],
+    "Администратор": ["Администратор"]
+}
+
+KC_PUBLIC_KEY = os.getenv("KC_PUBLIC_KEY", "")
+PUBLIC_KEY_PEM = f"-----BEGIN PUBLIC KEY-----\n{KC_PUBLIC_KEY}\n-----END PUBLIC KEY-----"
+
 def require_role(required_role: str):
     def role_checker(credentials: HTTPAuthorizationCredentials = Security(security)):
         token = credentials.credentials
         try:
-            payload = jwt.get_unverified_claims(token)
+            payload = jwt.decode(
+                token, 
+                PUBLIC_KEY_PEM, 
+                algorithms=["RS256"],
+                options={"verify_aud": False}
+            )
             roles = payload.get("realm_access", {}).get("roles", [])
-        except Exception:
-            raise HTTPException(status_code=401, detail="Невалидный токен авторизации")
             
-        role_hierarchy = {
-            "Пользователь": ["Пользователь", "Руководитель", "Администратор"],
-            "Руководитель": ["Руководитель", "Администратор"],
-            "Администратор": ["Администратор"]
-        }
-        
-        allowed_roles = role_hierarchy.get(required_role, [required_role])
+        except ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Время действия токена истекло")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Невалидный токен авторизации или ошибка подписи")
+            
+        allowed_roles = ROLE_HIERARCHY.get(required_role, [required_role])
         
         if not any(role in allowed_roles for role in roles):
             raise HTTPException(status_code=403, detail=f"Недостаточно прав. Требуется роль: {required_role}")
