@@ -5,52 +5,19 @@ import illustrationLight from "../../assets/illustrationLight.svg";
 import illustrationDark from "../../assets/illustrationDark.svg";
 import eyeOpen from "../../assets/PasswordShow.svg";
 import eyeClosed from "../../assets/PasswordHide.svg";
+import sun from "../../assets/Sun.svg";
+import moon from "../../assets/Moon.svg";
+import { useAppTheme } from "../../theme";
 
 import "./AuthPage.css";
 
-const themeStorageKey = "school-auth-theme";
-
-function getInitialTheme() {
-  try {
-    return localStorage.getItem(themeStorageKey) === "dark"
-      ? "dark"
-      : "light";
-  } catch {
-    return "light";
-  }
-}
-
 function ThemeIcon({ isDark }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <span
+      className="auth-theme-icon"
+      style={{ "--theme-icon": `url("${isDark ? sun : moon}")` }}
       aria-hidden="true"
-    >
-      {isDark ? (
-        <>
-          <circle cx="12" cy="12" r="4" />
-          <path
-            d="
-              M12 2v2
-              M12 20v2
-              M2 12h2
-              M20 12h2
-              M4.93 4.93l1.42 1.42
-              M17.65 17.65l1.42 1.42
-              M4.93 19.07l1.42-1.42
-              M17.65 6.35l1.42-1.42
-            "
-          />
-        </>
-      ) : (
-        <path d="M20.8 13.1A9 9 0 0 1 10.9 3.2a9 9 0 1 0 9.9 9.9Z" />
-      )}
-    </svg>
+    />
   );
 }
 
@@ -110,7 +77,7 @@ export default function AuthPage({ onLogin }) {
   const passwordRef = useRef(null);
   const submitting = useRef(false);
 
-  const [theme, setTheme] = useState(getInitialTheme);
+  const { theme, toggleTheme } = useAppTheme();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -124,26 +91,14 @@ export default function AuthPage({ onLogin }) {
   const isUnavailable = status === "unavailable";
   const fieldsDisabled = isLoading || isUnavailable;
 
-  const illustration = isDark
-    ? illustrationDark
-    : illustrationLight;
-
   const passwordIcon = passwordVisible
     ? eyeOpen
     : eyeClosed;
 
   const hasPasswordError = invalidField === "password";
-
-  function toggleTheme() {
-    const nextTheme = isDark ? "light" : "dark";
-
-    setTheme(nextTheme);
-
-    try {
-      localStorage.setItem(themeStorageKey, nextTheme);
-    } catch {
-    }
-  }
+  const hasUsernameError = invalidField === "username";
+  const showUsernameLabel = username.length > 0 || hasUsernameError;
+  const showPasswordLabel = password.length > 0 || hasPasswordError;
 
   function clearError() {
     if (status === "error") {
@@ -266,7 +221,8 @@ export default function AuthPage({ onLogin }) {
 
         <div className="auth-presentation">
           <div className="auth-illustration" aria-hidden="true">
-            <img src={illustration} alt="" />
+            <img className="auth-illustration-light" src={illustrationLight} alt="" />
+            <img className="auth-illustration-dark" src={illustrationDark} alt="" />
           </div>
 
           <h1 className="auth-intro-title" id={`${id}-intro`}>
@@ -322,9 +278,13 @@ export default function AuthPage({ onLogin }) {
               </div>
             )}
 
-            <div className="auth-field">
+            <div
+              className="auth-field"
+              data-invalid={hasUsernameError}
+              data-floating={showUsernameLabel}
+            >
               <label
-                className="auth-visually-hidden"
+                className={showUsernameLabel ? "auth-field-label" : "auth-visually-hidden"}
                 htmlFor={`${id}-username`}
               >
                 Логин
@@ -354,10 +314,11 @@ export default function AuthPage({ onLogin }) {
             <div
               className="auth-field"
               data-invalid={hasPasswordError}
+              data-floating={showPasswordLabel}
             >
               <label
                 className={
-                  hasPasswordError
+                  showPasswordLabel
                     ? "auth-field-label"
                     : "auth-visually-hidden"
                 }

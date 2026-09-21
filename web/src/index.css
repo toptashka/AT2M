@@ -1,5 +1,46 @@
+@font-face {
+  font-family: "Rostelecom Basis";
+  src: url("./assets/fonts/RostelecomBasis-Light.woff") format("woff"),
+    url("./assets/fonts/RostelecomBasis-Light.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Rostelecom Basis";
+  src: url("./assets/fonts/RostelecomBasis-Regular.woff2") format("woff2"),
+    url("./assets/fonts/RostelecomBasis-Regular.woff") format("woff"),
+    url("./assets/fonts/RostelecomBasis-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Rostelecom Basis";
+  src: url("./assets/fonts/RostelecomBasis-Medium.woff2") format("woff2"),
+    url("./assets/fonts/RostelecomBasis-Medium.woff") format("woff"),
+    url("./assets/fonts/RostelecomBasis-Medium.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Rostelecom Basis";
+  src: url("./assets/fonts/RostelecomBasis-Bold.woff2") format("woff2"),
+    url("./assets/fonts/RostelecomBasis-Bold.woff") format("woff"),
+    url("./assets/fonts/RostelecomBasis-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
 :root {
-  font-family: "Rostelecom Basis", Arial, sans-serif;
+  --font-sans: "Rostelecom Basis";
+  --theme-transition-duration: 240ms;
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
   font-synthesis: none;
@@ -50,4 +91,11 @@ select {
 img,
 svg {
   vertical-align: middle;
+}
+
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --theme-transition-duration: 0ms; }
 }
