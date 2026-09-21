@@ -24,6 +24,7 @@ import os
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
+from urllib.parse import quote
 
 font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 if not os.path.exists(font_path):
@@ -260,6 +261,36 @@ def upload_partnership_file(
         log_audit(db, request, user_id=current_user, action="UPLOAD_FILE", entity_name="partnerships", entity_id=partnership.id)
         
         return {"status": "ok", "message": "Файл успешно прикреплен", "file_id": new_attachment.id}
+
+@app.get("/api/v1/files/{file_id}")
+def download_partnership_file(
+        file_id: int,
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user: str = Depends(require_role("Пользователь"))
+):
+        attachment = db.query(models.Attachment).filter(models.Attachment.id == file_id).first()
+        if not attachment:
+                raise HTTPException(status_code=404, detail="Файл не найден")
+                
+        try:
+                s3_response = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=attachment.file_url)
+                
+                log_audit(
+                        db, request, user_id=current_user, 
+                        action="DOWNLOAD_FILE", 
+                        entity_name="attachments", entity_id=attachment.id
+                )
+                
+                return StreamingResponse(
+                        s3_response['Body'],
+                        media_type=s3_response.get('ContentType', 'application/octet-stream'),
+                        headers={
+                                "Content-Disposition": f"attachment; filename*=UTF-8''{quote(attachment.file_name)}"
+                        }
+                )
+        except ClientError as e:
+                raise HTTPException(status_code=500, detail=f"Ошибка получения файла из S3: {str(e)}")
 
 @app.delete("/api/v1/stages/{stage_step}")
 def delete_workflow_stage(
