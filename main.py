@@ -120,6 +120,15 @@ class PartnershipDetail(BaseModel):
 class StageUpdate(BaseModel):
         stage_id: int
 
+class CommentCreate(BaseModel):
+        text: str
+
+class CommentResponse(BaseModel):
+        id: int
+        author_id: str
+        text: str
+        created_at: datetime
+
 def log_audit(db: Session, request: Request, user_id: str, action: str, entity_name: str, entity_id: int):
         ip_address = request.client.host if request.client else "unknown"
         audit_entry = models.AuditLog(
@@ -222,6 +231,55 @@ def update_partnership_stage(
                 contact_email=partnership.university.contact_email,
                 is_license_signed=partnership.is_license_signed,
                 comment=partnership.comment
+        )
+
+@app.get("/api/v1/partnerships/{partnership_id}/comments", response_model=list[CommentResponse])
+def get_partnership_comments(
+        partnership_id: int, 
+        db: Session = Depends(get_db), 
+        current_user: str = Depends(require_role("Пользователь"))
+):
+        partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
+        if not partnership:
+                raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
+        
+        return [
+                CommentResponse(
+                        id=c.id,
+                        author_id=c.author_id,
+                        text=c.text,
+                        created_at=c.created_at
+                ) for c in partnership.comments
+        ]
+
+@app.post("/api/v1/partnerships/{partnership_id}/comments", response_model=CommentResponse)
+def add_partnership_comment(
+        partnership_id: int,
+        comment_data: CommentCreate,
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user: str = Depends(require_role("Пользователь"))
+):
+        partnership = db.query(models.Partnership).filter(models.Partnership.id == partnership_id).first()
+        if not partnership:
+                raise HTTPException(status_code=404, detail="Карточка партнерства не найдена")
+                
+        new_comment = models.PartnershipComment(
+                partnership_id=partnership.id,
+                author_id=current_user,
+                text=comment_data.text
+        )
+        db.add(new_comment)
+        db.commit()
+        db.refresh(new_comment)
+        
+        log_audit(db, request, user_id=current_user, action="ADD_COMMENT", entity_name="partnerships", entity_id=partnership.id)
+        
+        return CommentResponse(
+                id=new_comment.id,
+                author_id=new_comment.author_id,
+                text=new_comment.text,
+                created_at=new_comment.created_at
         )
 
 @app.post("/api/v1/partnerships/{partnership_id}/files")
