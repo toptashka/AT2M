@@ -21,6 +21,9 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import os
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
+from fastapi_cache.decorator import cache
 
 font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 if not os.path.exists(font_path):
@@ -39,6 +42,10 @@ app = FastAPI(
     description="API для системы управления партнерствами вузов",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+def startup():
+    FastAPICache.init(InMemoryBackend())
 
 security = HTTPBearer()
 
@@ -126,6 +133,7 @@ def log_audit(db: Session, request: Request, user_id: str, action: str, entity_n
     db.commit()
 
 @app.get("/api/v1/partnerships", response_model=list[PartnershipCard])
+@cache(expire=60)
 def get_partnerships_grid(
     stage_id: Optional[int] = None, 
     db: Session = Depends(get_db),
@@ -505,6 +513,7 @@ def export_partnerships_pdf(
     )
 
 @app.get("/api/v1/programs", response_model=list[ProgramResponse])
+@cache(expire=60)
 def get_programs_catalog(
     db: Session = Depends(get_db),
     current_user: str = Depends(require_role("Пользователь"))
