@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import WorkRegion from './components/WorkRegion/WorkRegion'
 import AuthCard from './components/AuthPage/AuthPage'
 import './components/AuthPage/AuthPage.css'
 
@@ -43,32 +44,19 @@ function App() {
     }
   };
 
-  if (!token) {
-    return (
-      <div className="app">
-        <AuthCard onLogin={handleLogin} />
-      </div>
-    );
-  }
+    //   if (!token) {
+  //   return (
+  //     <div className="app">
+  //       <AuthCard onLogin={handleLogin} />
+  //     </div>
+  //   );
+  // }
+
+  // Выключил (убрал), чтобы посмотреть свой личный компомент :)
 
   return (
-    <div className="app" style={{ padding: '2rem', color: '#fff', width: '100%' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2>ИТ Школа РТК — CRM</h2>
-        <button 
-          onClick={handleLogout}
-          style={{ padding: '8px 16px', background: '#444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          Выйти
-        </button>
-      </header>
-      <main>
-        <h3>Вы успешно авторизованы!</h3>
-        <p>Здесь будет сетка карточек и детальная информация о вузах.</p>
-        <p style={{ wordBreak: 'break-all', fontSize: '12px', color: '#888', marginTop: '20px' }}>
-          Ваш токен: {token.substring(0, 50)}...
-        </p>
-      </main>
+    <div className="app">
+      <WorkRegion />
     </div>
   )
 }
