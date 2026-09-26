@@ -1,265 +1,237 @@
 import { useEffect, useRef } from "react";
+import logo from "../../assets/Logo.svg";
 import "./Header.css";
 
-function LogoMark() {
+function Icon({ name }) {
+  const paths = {
+    bell: (
+      <>
+        <path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 6 1.5 6h-15S6 13 6 9Z" />
+        <path d="M10 19h4" />
+      </>
+    ),
+    user: (
+      <>
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M4.5 21c.8-4.4 3.4-7 7.5-7s6.7 2.6 7.5 7" />
+      </>
+    ),
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2" />
+      </>
+    ),
+    sun: (
+      <>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" />
+      </>
+    ),
+    moon: (
+      <path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14Z" />
+    ),
+    logout: (
+      <>
+        <path d="M9 4H5v16h4M10 12h10m-4-4 4 4-4 4" />
+      </>
+    ),
+  };
+
   return (
     <svg
-      className="wr-logo-mark"
       viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M5 2l14 8-14 8V2z" fill="var(--wr-purple)" />
-      <path d="M5 10h14l-14 8V10z" fill="var(--wr-orange)" />
+      {paths[name]}
     </svg>
   );
 }
 
-function BellIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M6 9a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 13 6 9Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9.5 17a2.5 2.5 0 0 0 5 0"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle
-        cx="12"
-        cy="8"
-        r="3.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M4.5 20c1.3-4 4.2-6 7.5-6s6.2 2 7.5 6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function GearIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle
-        cx="12"
-        cy="12"
-        r="3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2 5.6 5.6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle
-        cx="12"
-        cy="12"
-        r="4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M12 2v2.2M12 19.8V22M22 12h-2.2M4.2 12H2M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2 5.6 5.6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function LogoutIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M9 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H9"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M13 8l4 4-4 4M17 12H9"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-const NAV_LINKS = [
+const navigation = [
   { label: "Главная", href: "#/" },
   { label: "Отчёты", href: "#/reports" },
   { label: "Календарь", href: null },
   { label: "FAQ", href: null },
-  { label: "Администрирование", href: null },
 ];
 
-function ProfileMenu({ dark, setDark }) {
-  return (
-    <div className="wr-profile-menu" role="menu">
-      <div className="wr-profile-menu-head">
-        <span className="wr-avatar">АИ</span>
-
-        <div className="wr-profile-id">
-          <p className="wr-profile-name">Алексей Иванов</p>
-          <p className="wr-profile-email">alex.ivanov@mail.ru</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className="wr-profile-item"
-        role="menuitem"
-      >
-        <UserIcon />
-        Профиль
-      </button>
-
-      <button
-        type="button"
-        className="wr-profile-item"
-        role="menuitem"
-      >
-        <GearIcon />
-        Настройки
-      </button>
-
-      <button
-        type="button"
-        className="wr-profile-item"
-        role="menuitem"
-        onClick={() => setDark((previous) => !previous)}
-      >
-        {dark ? <SunIcon /> : <MoonIcon />}
-        {dark ? "Светлая тема" : "Тёмная тема"}
-      </button>
-
-      <button
-        type="button"
-        className="wr-profile-item wr-profile-item--danger"
-        role="menuitem"
-      >
-        <LogoutIcon />
-        Выйти
-      </button>
-    </div>
-  );
-}
-
 export default function Header({
+  activePage = "Главная",
   profileOpen,
   setProfileOpen,
   dark,
   setDark,
-  activePage = "Главная",
+  userName = "Алексей Иванов",
+  userEmail = "alex.ivanov@mail.ru",
+  initials = "АИ",
+  onProfile,
+  onSettings,
+  onLogout,
+  onNotifications,
 }) {
   const profileRef = useRef(null);
+  const profileButtonRef = useRef(null);
 
   useEffect(() => {
-    function onClickOutside(event) {
-      if (
-        profileRef.current &&
-        !profileRef.current.contains(event.target)
-      ) {
+    if (!profileOpen) return;
+
+    function handleOutside(event) {
+      if (!profileRef.current?.contains(event.target)) {
         setProfileOpen(false);
       }
     }
 
-    document.addEventListener("mousedown", onClickOutside);
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setProfileOpen(false);
+        profileButtonRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", handleOutside);
+    document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("pointerdown", handleOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
-  }, [setProfileOpen]);
+  }, [profileOpen, setProfileOpen]);
+
+  function handleAction(callback) {
+    setProfileOpen(false);
+    callback?.();
+  }
 
   return (
-    <header className="wr-header">
-      <div className="wr-header-inner">
-        <div className="wr-logo">
-          <LogoMark />
+    <header
+      className="at2m-header"
+      data-theme={dark ? "dark" : "light"}
+    >
+      <div className="at2m-header__inner">
+        <a
+          className="at2m-header__logo"
+          href="#/"
+          aria-label="ИТ Школа — главная"
+        >
+          <img src={logo} alt="" width="33" height="33" />
           <span>ИТ Школа</span>
-        </div>
+        </a>
 
-        <nav className="wr-nav" aria-label="Основная навигация">
-          {NAV_LINKS.map((link) => (
+        <nav
+          className="at2m-header__nav"
+          aria-label="Основная навигация"
+        >
+          {navigation.map(({ label, href }) => (
             <a
-              key={link.label}
-              href={link.href ?? undefined}
-              role={link.href ? undefined : "link"}
-              aria-disabled={link.href ? undefined : true}
-              title={link.href ? undefined : "Страница пока не подключена"}
-              className={link.label === activePage ? "is-active" : ""}
-              aria-current={
-                link.label === activePage ? "page" : undefined
+              key={label}
+              href={href ?? undefined}
+              role={href ? undefined : "link"}
+              aria-disabled={href ? undefined : true}
+              aria-current={activePage === label ? "page" : undefined}
+              className={
+                activePage === label
+                  ? "at2m-header__link is-active"
+                  : "at2m-header__link"
               }
             >
-              {link.label}
+              <span>{label}</span>
             </a>
           ))}
         </nav>
 
-        <div className="wr-header-actions">
+        <div className="at2m-header__actions">
           <button
             type="button"
-            className="wr-icon-btn"
+            className="at2m-header__notification"
             aria-label="Уведомления"
+            onClick={onNotifications}
           >
-            <BellIcon />
+            <Icon name="bell" />
           </button>
 
-          <div className="wr-profile" ref={profileRef}>
+          <div
+            className="at2m-header__profile"
+            ref={profileRef}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setProfileOpen(false);
+              }
+            }}
+          >
             <button
+              ref={profileButtonRef}
               type="button"
-              className="wr-avatar-btn"
+              className="at2m-header__profile-button"
               aria-label="Меню пользователя"
-              onClick={() => setProfileOpen((open) => !open)}
               aria-expanded={profileOpen}
-              aria-haspopup="menu"
+              onClick={() => setProfileOpen((open) => !open)}
             >
-              <span className="wr-avatar">АИ</span>
+              <span className="at2m-header__avatar">
+                {initials}
+              </span>
             </button>
 
             {profileOpen && (
-              <ProfileMenu dark={dark} setDark={setDark} />
+              <div
+                className="at2m-header__menu"
+                aria-label="Меню профиля"
+              >
+                <div className="at2m-header__identity">
+                  <span className="at2m-header__avatar">
+                    {initials}
+                  </span>
+
+                  <div>
+                    <p className="at2m-header__name">
+                      {userName}
+                    </p>
+                    <p className="at2m-header__email">
+                      {userEmail}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="at2m-header__menu-item"
+                  onClick={() => handleAction(onProfile)}
+                >
+                  <Icon name="user" />
+                  Профиль
+                </button>
+
+                <button
+                  type="button"
+                  className="at2m-header__menu-item"
+                  onClick={() => handleAction(onSettings)}
+                >
+                  <Icon name="settings" />
+                  Настройки
+                </button>
+
+                <button
+                  type="button"
+                  className="at2m-header__menu-item"
+                  onClick={() => setDark((previous) => !previous)}
+                >
+                  <Icon name={dark ? "sun" : "moon"} />
+                  {dark ? "Светлая тема" : "Тёмная тема"}
+                </button>
+
+                <button
+                  type="button"
+                  className="at2m-header__menu-item at2m-header__menu-item--logout"
+                  onClick={() => handleAction(onLogout)}
+                >
+                  <Icon name="logout" />
+                  Выйти
+                </button>
+              </div>
             )}
           </div>
         </div>
