@@ -5,7 +5,7 @@ import pdfIcon from "../../assets/pdf.svg";
 import downloadIcon from "../../assets/download.svg";
 import "./WorkRegionUser.css";
 
-const programs = [
+const PROGRAMS = [
   ["Информационная безопасность", 124],
   ["DevOps", 96],
   ["Облачные технологии", 82],
@@ -13,7 +13,7 @@ const programs = [
   ["QA", 49],
 ];
 
-const deadlines = [
+const DEADLINES = [
   [
     "18 сентября · 16:00",
     "НИЯУ МИФИ",
@@ -34,7 +34,7 @@ const deadlines = [
   ],
 ];
 
-const interactions = [
+const INTERACTIONS = [
   {
     id: "bmstu",
     badge: "МГТУ",
@@ -73,7 +73,7 @@ const interactions = [
   },
 ];
 
-const steps = [
+const STEPS = [
   "Поиск контактов",
   "Коммуникация с вузом",
   "Встреча с представителями",
@@ -90,7 +90,25 @@ const steps = [
   "Контроль исполнения этапов",
 ];
 
-function Detail({ manager, onAction }) {
+const FILTERS = [
+  "ИТ-программа",
+  "ИТ-продукт",
+  "Статус",
+  "Ответственный КАМ",
+  "Ещё фильтры",
+];
+
+const DEADLINE_STATUSES = {
+  Просрочено: "Просрочено",
+  Горящие: "Горящий срок",
+  Плановые: "Планово",
+};
+
+function Detail({
+  manager,
+  onAction,
+  canCompleteStage = false,
+}) {
   return (
     <div className="wu-detail">
       <aside className="wu-workflow">
@@ -101,7 +119,7 @@ function Detail({ manager, onAction }) {
         </p>
 
         <ol className="wu-steps">
-          {steps.map((step, index) => (
+          {STEPS.map((step, index) => (
             <li
               key={step}
               className={
@@ -174,7 +192,7 @@ function Detail({ manager, onAction }) {
                   })
                 }
               >
-                {interactions.map(({ owner }) => (
+                {INTERACTIONS.map(({ owner }) => (
                   <option key={owner} value={owner}>
                     {owner}
                   </option>
@@ -233,7 +251,9 @@ function Detail({ manager, onAction }) {
           <h3>Условия завершения</h3>
           <p>✓ Получены необходимые материалы</p>
           <p>✓ Прикреплён обязательный документ</p>
-          <p>○ Подтверждено целевое действие</p>
+          <p>
+            {canCompleteStage ? "✓" : "○"} Подтверждено целевое действие
+          </p>
         </section>
 
         <section className="wu-comments">
@@ -271,6 +291,7 @@ function Detail({ manager, onAction }) {
 
             <div>
               <p>Документация_внедрения.pdf</p>
+
               <small className="wu-muted">
                 PDF • 2,4 МБ • сегодня, 11:20
               </small>
@@ -287,7 +308,13 @@ function Detail({ manager, onAction }) {
           </div>
         </section>
 
-        <p className="wu-completion-note wu-muted wu-small">
+        <p
+          className="wu-completion-note wu-muted wu-small"
+          style={{
+            visibility: canCompleteStage ? "hidden" : "visible",
+          }}
+          aria-hidden={canCompleteStage}
+        >
           Выполните все обязательные условия этапа
         </p>
 
@@ -311,7 +338,9 @@ function Detail({ manager, onAction }) {
           <button
             type="button"
             className="wu-button wu-primary"
-            disabled
+            disabled={!canCompleteStage}
+            onClick={() => onAction?.("complete-stage", "bmstu")}
+            style={{ opacity: canCompleteStage ? 1 : 0.4 }}
           >
             Завершить этап
           </button>
@@ -325,6 +354,7 @@ export default function WorkRegionUser({
   manager = false,
   children,
   onAction,
+  canCompleteStage = false,
 }) {
   const { theme } = useAppTheme();
 
@@ -342,7 +372,9 @@ export default function WorkRegionUser({
     setAppTheme(dark ? "dark" : "light");
   }
 
-  const filtered = interactions.filter((item) =>
+  const normalizedSearch = search.trim().toLocaleLowerCase("ru");
+
+  const filteredInteractions = INTERACTIONS.filter((item) =>
     [
       item.name,
       item.program,
@@ -352,18 +384,13 @@ export default function WorkRegionUser({
     ]
       .join(" ")
       .toLocaleLowerCase("ru")
-      .includes(search.trim().toLocaleLowerCase("ru")),
+      .includes(normalizedSearch),
   );
 
-  const visibleDeadlines = deadlines.filter(
+  const visibleDeadlines = DEADLINES.filter(
     (item) =>
       deadlineTab === "Все" ||
-      item[3] ===
-        {
-          Просрочено: "Просрочено",
-          Горящие: "Горящий срок",
-          Плановые: "Планово",
-        }[deadlineTab],
+      item[3] === DEADLINE_STATUSES[deadlineTab],
   );
 
   return (
@@ -415,21 +442,17 @@ export default function WorkRegionUser({
             aria-label="Поиск взаимодействий"
           />
 
-          {[
-            "ИТ-программа",
-            "ИТ-продукт",
-            "Статус",
-            "Ответственный КАМ",
-            "Ещё фильтры",
-          ].map((label) => (
+          {FILTERS.map((label) => (
             <button
               type="button"
               className="wu-button wu-filter"
               key={label}
-              onClick={() => onAction?.("filter", label)}
+              onClick={(event) =>
+                onAction?.("filter", label, event.currentTarget)
+              }
             >
               {label}
-              <span className="wu-chevron" />
+              <span className="wu-chevron" aria-hidden="true" />
             </button>
           ))}
         </div>
@@ -454,12 +477,7 @@ export default function WorkRegionUser({
         <div className="wu-stats">
           {[
             ["В работе", 24, "взаимодействия", ""],
-            [
-              "Требуют внимания",
-              6,
-              "взаимодействий",
-              "attention",
-            ],
+            ["Требуют внимания", 6, "взаимодействий", "attention"],
             ["Просрочено", 2, "взаимодействия", "overdue"],
             ["Завершено за месяц", 8, "взаимодействий", ""],
           ].map(([title, count, label, status]) => (
@@ -506,7 +524,7 @@ export default function WorkRegionUser({
             </div>
 
             <div className="wu-bars">
-              {programs.map(([label, count]) => (
+              {PROGRAMS.map(([label, count]) => (
                 <div className="wu-bar-row" key={label}>
                   <span>{label}</span>
 
@@ -598,7 +616,7 @@ export default function WorkRegionUser({
         </div>
 
         <div className="wu-interactions">
-          {filtered.map((item) => {
+          {filteredInteractions.map((item) => {
             const open = item.id === "bmstu" && expanded;
 
             return (
@@ -683,6 +701,7 @@ export default function WorkRegionUser({
 
                   <span
                     className={`wu-chevron${open ? " is-up" : ""}`}
+                    aria-hidden="true"
                   />
                 </button>
 
@@ -690,6 +709,7 @@ export default function WorkRegionUser({
                   <Detail
                     manager={manager}
                     onAction={onAction}
+                    canCompleteStage={canCompleteStage}
                   />
                 )}
               </article>

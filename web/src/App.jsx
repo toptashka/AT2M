@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import WorkRegion from "./components/WorkRegion/WorkRegionUser"; 
+import WorkRegion from "./components/WorkRegion/WorkRegionManager"; 
 // меняйте название адреса, если хотите посмотреть другой .jsx файл :D
 import ReportsPage from "./components/ReportsPage/ReportsPage";
 import AuthCard from "./components/AuthPage/AuthPage";
