@@ -160,7 +160,77 @@ function MultiSelect({ label, placeholder, searchLabel, options, selected, onCha
   </div>;
 }
 
-function DateCalendar({ from, to, onApply, disabled }) {
+function MonthSelect({ label, value, options, disabled, onChange }) {
+  const id = useId();
+  const root = useRef(null);
+  const trigger = useRef(null);
+  const list = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const selected = list.current?.querySelector('[aria-selected="true"]');
+    selected?.focus({ preventScroll: true });
+    if (selected) list.current.scrollTop = selected.offsetTop - list.current.clientHeight / 2 + selected.clientHeight / 2;
+    function outside(event) {
+      if (!root.current?.contains(event.target)) setOpen(false);
+    }
+    function escape(event) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      trigger.current?.focus({ preventScroll: true });
+    }
+    const element = root.current;
+    element.addEventListener("keydown", escape);
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("focusin", outside);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("focusin", outside);
+      element.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+
+  function choose(next) {
+    onChange(next);
+    setOpen(false);
+    trigger.current?.focus({ preventScroll: true });
+  }
+
+  function handleKey(event) {
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      trigger.current?.focus({ preventScroll: true });
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    if (!open) { setOpen(true); return; }
+    const buttons = [...list.current.querySelectorAll('[role="option"]')];
+    const index = buttons.indexOf(document.activeElement);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1
+      : Math.max(0, Math.min(buttons.length - 1, index + (event.key === "ArrowDown" ? 1 : -1)));
+    buttons[next]?.focus({ preventScroll: true });
+    buttons[next]?.scrollIntoView({ block: "nearest" });
+  }
+
+  return <div className="reports-month-select" ref={root} onKeyDown={handleKey}>
+    <button type="button" className="reports-month-select-trigger" ref={trigger} disabled={disabled}
+      aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? id : undefined}
+      onClick={() => setOpen(previous => !previous)}>{options.find(option => option.value === value)?.label}</button>
+    {open && <div className="reports-month-options" id={id} role="listbox" aria-label={label} ref={list}>
+      {options.map(option => <button type="button" role="option" key={option.value}
+        aria-selected={option.value === value} tabIndex={-1} onClick={() => choose(option.value)}>{option.label}</button>)}
+    </div>}
+  </div>;
+}
+
+
+function DateCalendar({ from, to, onApply, onReset, disabled }) {
   const id = useId();
   const seed = parseDate(from) ?? new Date();
   const [baseMonth, setBaseMonth] = useState(() => new Date(seed.getFullYear(), seed.getMonth(), 1, 12));
@@ -218,8 +288,14 @@ function DateCalendar({ from, to, onApply, disabled }) {
       const cells = Array.from({ length: Math.ceil((blanks + count) / 7) * 7 }, (_, i) => i >= blanks && i < blanks + count ? i - blanks + 1 : null);
       return <section className="reports-calendar-month" key={offset} aria-label={`${monthNames[monthIndex]} ${year}`}>
         <div className="reports-month-heading"><button className="reports-calendar-arrow" type="button" disabled={disabled || (baseMonth.getFullYear() === 1900 && baseMonth.getMonth() === 0)} aria-label={`Предыдущий месяц, календарь ${offset + 1}`} onClick={() => moveMonth(-1)}><PageIcon name="left" /></button>
-          <div className="reports-month-selects"><select aria-label={`Месяц, календарь ${offset + 1}`} value={monthIndex} disabled={disabled} onChange={event => changeMonth(new Date(year, Number(event.target.value) - offset, 1, 12))}>{monthNames.map((name, i) => <option value={i} key={name}>{name}</option>)}</select>
-            <select aria-label={`Год, календарь ${offset + 1}`} value={year} disabled={disabled} onChange={event => changeMonth(new Date(Number(event.target.value), monthIndex - offset, 1, 12))}>{years.map(value => <option key={value}>{value}</option>)}</select></div>
+          <div className="reports-month-selects">
+            <MonthSelect label={`Месяц, календарь ${offset + 1}`} value={monthIndex} disabled={disabled}
+              options={monthNames.map((label, value) => ({ value, label }))}
+              onChange={value => changeMonth(new Date(year, value - offset, 1, 12))} />
+            <MonthSelect label={`Год, календарь ${offset + 1}`} value={year} disabled={disabled}
+              options={years.map(value => ({ value, label: String(value) }))}
+              onChange={value => changeMonth(new Date(value, monthIndex - offset, 1, 12))} />
+          </div>
           <button className="reports-calendar-arrow" type="button" disabled={disabled || (baseMonth.getFullYear() === 2100 && baseMonth.getMonth() >= 10)} aria-label={`Следующий месяц, календарь ${offset + 1}`} onClick={() => moveMonth(1)}><PageIcon name="right" /></button>
         </div>
         <div role="grid" aria-label={`${monthNames[monthIndex]} ${year}`} className="reports-calendar-grid"><div role="row" className="reports-calendar-week">{["пн", "вт", "ср", "чт", "пт", "сб", "вс"].map(day => <span role="columnheader" key={day}>{day}</span>)}</div>
@@ -233,14 +309,14 @@ function DateCalendar({ from, to, onApply, disabled }) {
         </div>
       </section>;
     })}
-    <div className="reports-calendar-footer"><span role="status">{choosingEnd ? "Выберите дату окончания" : "Выберите начало и конец периода"}</span><button type="button" className="reports-text-button" disabled={disabled} onClick={() => onApply({ from: "", to: "" })}>Сбросить период</button></div>
+    <div className="reports-calendar-footer"><span role="status">{choosingEnd ? "Выберите дату окончания" : "Выберите начало и конец периода"}</span><button type="button" className="reports-text-button" disabled={disabled} onClick={() => { setDraft({ from: "", to: "" }); setChoosingEnd(false); setHovered(""); setFocused(""); onReset(); }}>Сбросить период</button></div>
   </div></div>;
 }
 
 function DateRange({ from, to, onChange, disabled }) {
   return <div className="reports-field reports-period"><span className="reports-label">Период</span>
     <Popover className="reports-date-picker" label="Выбрать период" disabled={disabled} trigger={<><span className="reports-date-prefix">С</span><span className="reports-date-value">{formatDate(from)}<PageIcon name="down" /></span><span className="reports-date-prefix">По</span><span className="reports-date-value">{formatDate(to)}<PageIcon name="down" /></span></>}>
-      {close => <DateCalendar from={from} to={to} disabled={disabled} onApply={value => { onChange(value); close(); }} />}
+      {close => <DateCalendar from={from} to={to} disabled={disabled} onReset={() => onChange({ from: "", to: "" })} onApply={value => { onChange(value); close(); }} />}
     </Popover>
   </div>;
 }

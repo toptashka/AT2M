@@ -398,7 +398,6 @@ export default function AdminPage({ api = null, demo = false }) {
   const [data, setData] = useState(() => demo ? createDemoData() : null);
   const [loading, setLoading] = useState(!demo);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState("");
   const loadRequest = useRef(null);
   const mounted = useRef(false);
   const load = useCallback(async () => {
@@ -422,7 +421,6 @@ export default function AdminPage({ api = null, demo = false }) {
     if (!demo) Promise.resolve().then(() => { if (!startup.signal.aborted) load(); });
     return () => { startup.abort(); mounted.current = false; loadRequest.current?.abort(); };
   }, [demo, load]);
-  useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(""), 5000); return () => clearTimeout(timer); }, [toast]);
 
   function addDemoAudit(action, object) {
     setData(current => ({ ...current, audit: [{ id: crypto.randomUUID(), date: new Date().toISOString(), user: "Администратор", action, object, ip: "—" }, ...current.audit] }));
@@ -455,7 +453,6 @@ export default function AdminPage({ api = null, demo = false }) {
     const deleted = data.stages.find(s => s.id === change.id);
     const target = data.stages.find(s => s.id === change.target);
     const message = change.type === "delete" && deleted.count > 0 ? `${deleted.count} взаимодействий перенесено в этап «${target.name}». Этап «${deleted.name}» удалён.` : ({ add: "Этап добавлен. Нумерация маршрута обновлена.", edit: "Изменения этапа сохранены.", move: "Порядок этапов обновлён.", delete: "Этап удалён. Нумерация маршрута обновлена." })[change.type];
-    setToast("Workflow обновлён");
     return message;
   }
 
@@ -472,9 +469,9 @@ export default function AdminPage({ api = null, demo = false }) {
           setTab(next); document.getElementById(`admin-tab-${next}`).focus();
         }}>{tabs.map((label, i) => <button type="button" role="tab" id={`admin-tab-${i}`} aria-selected={tab === i} aria-controls={`admin-panel-${i}`} tabIndex={tab === i ? 0 : -1} key={label} onClick={() => setTab(i)}>{label}</button>)}</div>
         {tabs.map((label, i) => <div key={label} role="tabpanel" id={`admin-panel-${i}`} aria-labelledby={`admin-tab-${i}`} hidden={tab !== i} tabIndex={0} className="admin-tab-panel">
-          {i < 2 ? <ImportPanel students={i === 1} partnerships={data.partnerships} api={api} demo={demo} onImported={object => { setToast("Данные импортированы"); if (demo) addDemoAudit("Импорт данных", object); }} /> : i === 2 ? <Workflow stages={data.stages} onApply={apply} /> : <Audit entries={data.audit} demo={demo} refreshing={loading} onRefresh={refreshAudit} />}
+          {i < 2 ? <ImportPanel students={i === 1} partnerships={data.partnerships} api={api} demo={demo} onImported={object => { if (demo) addDemoAudit("Импорт данных", object); }} /> : i === 2 ? <Workflow stages={data.stages} onApply={apply} /> : <Audit entries={data.audit} demo={demo} refreshing={loading} onRefresh={refreshAudit} />}
         </div>)}
       </>}
-    </main>{toast && <div className="admin-toast" role="status"><span>✓ {toast}</span><Button className="admin-icon-button" aria-label="Скрыть уведомление" onClick={() => setToast("")}><Icon src={closeIcon} /></Button></div>}
+    </main>
   </div>;
 }
