@@ -1,8 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import { useAppTheme, setAppTheme } from "../../theme";
 import logo from "../../assets/Logo.svg";
-import "./Header.css";
+
 import ProfileModal from "../Profile/ProfileModal";
 import SettingsDrawer from "../Settings/SettingsDrawer";
+
+import "../WorkRegion/WorkspaceUI.css";
+import "./Header.css";
 
 function Icon({ name }) {
   const paths = {
@@ -43,49 +53,17 @@ function Icon({ name }) {
       aria-hidden="true"
     >
       {paths[name]}
-      <path d="M5 2l14 8-14 8V2z" fill="var(--header-purple)" />
-      <path d="M5 10h14l-14 8V10z" fill="var(--header-orange)" />
     </svg>
   );
 }
 
 const navigation = [
-  { label: "Главная", href: "#/" },
-  { label: "Отчёты", href: "#/reports" },
-  { label: "Календарь", href: "#/calendar" },
-  { label: "FAQ", href: "#/faq" },
-  { label: "Администрирование", href: "#/admin" },
+  ["Главная", "#/"],
+  ["Отчёты", "#/reports"],
+  ["Календарь", "#/calendar"],
+  ["FAQ", "#/faq"],
+  ["Администрирование", "#/admin"],
 ];
-
-function ProfileMenu({ dark, setDark, onOpenProfile, onOpenSettings, onLogout }) {
-  return (
-    <div className="wr-profile-menu" role="menu">
-      <div className="wr-profile-menu-head">
-        <span className="wr-avatar">АИ</span>
-        <div className="wr-profile-id">
-          <p className="wr-profile-name">Алексей Иванов</p>
-          <p className="wr-profile-email">alex.ivanov@mail.ru</p>
-        </div>
-      </div>
-
-      <button type="button" className="wr-profile-item" role="menuitem" onClick={onOpenProfile}>
-        <Icon name="user" /> Профиль
-      </button>
-
-      <button type="button" className="wr-profile-item" role="menuitem" onClick={onOpenSettings}>
-        <Icon name="settings" /> Настройки
-      </button>
-
-      <button type="button" className="wr-profile-item" role="menuitem" onClick={() => setDark((prev) => !prev)}>
-        <Icon name={dark ? "sun" : "moon"} /> {dark ? "Светлая тема" : "Тёмная тема"}
-      </button>
-
-      <button type="button" className="wr-profile-item wr-profile-item--danger" role="menuitem" onClick={onLogout}>
-        <Icon name="logout" /> Выйти
-      </button>
-    </div>
-  );
-}
 
 export default function Header({
   activePage = "Главная",
@@ -93,105 +71,185 @@ export default function Header({
   setProfileOpen,
   dark,
   setDark,
+  userName = "Алексей Иванов",
+  userEmail = "alex.ivanov@mail.ru",
   initials = "АИ",
   profiles,
   onChangePassword,
   onSaveNotifications,
   initialNotifications,
   notificationStorageKey,
-  onLogout
+  onLogout,
 }) {
-  const profileRef = useRef(null);
-  const avatarRef = useRef(null);
-  const [accountView, setAccountView] = useState(null);
-  const closeAccountView = useCallback(() => setAccountView(null), []);
+  const { theme } = useAppTheme();
+  const isDark = dark ?? theme === "dark";
 
-  function openAccountView(view) {
-    setProfileOpen(false);
-    setAccountView(view);
-  }
+  const [localOpen, setLocalOpen] = useState(false);
+  const [view, setView] = useState(null);
+
+  const open = profileOpen ?? localOpen;
+  const changeOpen = setProfileOpen ?? setLocalOpen;
+
+  const ref = useRef(null);
+  const button = useRef(null);
+
+  const closeView = useCallback(() => setView(null), []);
 
   useEffect(() => {
-    if (!profileOpen) return;
+    if (!open) return;
 
-    function handleOutside(event) {
-      if (!profileRef.current?.contains(event.target)) {
-        setProfileOpen(false);
+    function outside(event) {
+      if (!ref.current?.contains(event.target)) {
+        changeOpen(false);
       }
     }
 
-    function handleEscape(event) {
+    function escape(event) {
       if (event.key === "Escape") {
-        setProfileOpen(false);
-        avatarRef.current?.focus();
+        changeOpen(false);
+        button.current?.focus();
       }
     }
 
-    document.addEventListener("pointerdown", handleOutside);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
 
     return () => {
-      document.removeEventListener("pointerdown", handleOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
     };
-  }, [profileOpen, setProfileOpen]);
+  }, [open, changeOpen]);
+
+  function show(next) {
+    changeOpen(false);
+    setView(next);
+  }
 
   return (
     <>
-      <header className="wr-header" data-theme={dark ? "dark" : "light"} data-page={activePage}>
-        <div className="wr-header-inner">
-          <a className="wr-logo" href="#/" aria-label="ИТ Школа — главная">
-            <img src={logo} alt="Логотип" style={{ width: '33px', height: '33px', objectFit: 'contain' }} />
+      <header
+        className="at-header"
+        data-theme={isDark ? "dark" : "light"}
+      >
+        <div className="at-header-inner">
+          <a
+            className="at-logo"
+            href="#/"
+            aria-label="ИТ Школа — главная"
+          >
+            <img src={logo} width="33" height="33" alt="" />
             <span>ИТ Школа</span>
           </a>
 
-          <nav className="wr-nav" aria-label="Основная навигация">
-            {navigation.map(({ label, href }) => (
+          <nav className="at-nav" aria-label="Основная навигация">
+            {navigation.map(([label, href]) => (
               <a
-                key={label}
-                href={href ?? undefined}
-                className={activePage === label ? "is-active" : undefined}
+                key={href}
+                href={href}
+                aria-current={
+                  activePage === label ? "page" : undefined
+                }
               >
                 {label}
               </a>
             ))}
           </nav>
 
-          <div className="wr-header-actions">
-            <div className="wr-profile" ref={profileRef}>
-              <button
-                type="button"
-                className="wr-avatar-btn"
-                ref={avatarRef}
-                aria-label="Меню пользователя"
-                aria-expanded={profileOpen}
-                onClick={() => setProfileOpen((open) => !open)}
-              >
-                <span className="wr-avatar">{initials}</span>
-              </button>
+          <div
+            className="at-profile"
+            ref={ref}
+            onBlur={(event) => {
+              if (
+                event.relatedTarget &&
+                !event.currentTarget.contains(event.relatedTarget)
+              ) {
+                changeOpen(false);
+              }
+            }}
+          >
+            <button
+              ref={button}
+              type="button"
+              className="at-avatar-button"
+              aria-label="Меню пользователя"
+              aria-expanded={open}
+              onClick={() => changeOpen(!open)}
+            >
+              <span className="at-avatar">{initials}</span>
+            </button>
 
-              {profileOpen && (
-                <ProfileMenu
-                  dark={dark}
-                  setDark={setDark}
-                  onOpenProfile={() => openAccountView("profile")}
-                  onOpenSettings={() => openAccountView("settings")}
-                  onLogout={onLogout}
-                />
-              )}
-            </div>
+            {open && (
+              <div className="at-profile-menu">
+                <div className="at-identity">
+                  <span className="at-avatar">{initials}</span>
+                  <div>
+                    <strong>{userName}</strong>
+                    <small>{userEmail}</small>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => show("profile")}
+                >
+                  <Icon name="user" />
+                  Профиль
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => show("settings")}
+                >
+                  <Icon name="settings" />
+                  Настройки
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (setDark) {
+                      setDark(!isDark);
+                    } else {
+                      setAppTheme(isDark ? "light" : "dark");
+                    }
+                  }}
+                >
+                  <Icon name={isDark ? "sun" : "moon"} />
+                  {isDark ? "Светлая тема" : "Тёмная тема"}
+                </button>
+
+                <button
+                  type="button"
+                  className="at-logout"
+                  disabled={!onLogout}
+                  onClick={() => {
+                    changeOpen(false);
+                    onLogout?.();
+                  }}
+                >
+                  <Icon name="logout" />
+                  Выйти
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {accountView === "profile" && (
-        <ProfileModal dark={dark} onClose={closeAccountView} returnFocusRef={avatarRef} profiles={profiles} />
+      {view === "profile" && (
+        <ProfileModal
+          profiles={profiles}
+          dark={isDark}
+          onClose={closeView}
+          returnFocusRef={button}
+        />
       )}
-      {accountView === "settings" && (
+
+      {view === "settings" && (
         <SettingsDrawer
-          dark={dark}
-          onClose={closeAccountView}
-          returnFocusRef={avatarRef}
+          dark={isDark}
+          onClose={closeView}
+          returnFocusRef={button}
           onChangePassword={onChangePassword}
           onSaveNotifications={onSaveNotifications}
           initialNotifications={initialNotifications}

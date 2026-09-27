@@ -1,6 +1,20 @@
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import {
+  Empty,
+  Select,
+  Tabs,
+  usePreference,
+} from "./WorkspaceUI";
+import { ProductFilter } from "./WorkspaceFilters";
+import {
+  filterLabels,
+  OWNERS,
+  selection,
+  includesSelection,
+  listText,
+} from "./workspaceModel";
 import { downloadChart } from "./chartExport";
-import "./WorkRegionUpdates.css";
+import downloadIcon from "../../assets/download.svg";
 
 export const INCOMING_DEMO = [
   {
@@ -118,218 +132,6 @@ export const INCOMING_DEMO = [
   },
 ];
 
-const SORTS = {
-  newest: "Сначала новые",
-  oldest: "Сначала старые",
-  kam: "Сначала КАМ",
-  cms: "Сначала CMS",
-};
-
-export function sortRequests(requests, mode) {
-  const stamp = (item) => {
-    const value = Date.parse(item.createdAt);
-    return Number.isFinite(value) ? value : null;
-  };
-
-  return requests
-    .map((item, index) => ({ item, index }))
-    .sort((a, b) => {
-      if (mode === "kam" || mode === "cms") {
-        const source = mode === "kam" ? "КАМ" : "CMS";
-        const difference =
-          Number(b.item.source === source) -
-          Number(a.item.source === source);
-
-        if (difference) return difference;
-      }
-
-      const left = stamp(a.item);
-      const right = stamp(b.item);
-
-      if (left === null || right === null) {
-        if (left === right) return a.index - b.index;
-        return left === null ? 1 : -1;
-      }
-
-      return (
-        (mode === "oldest" ? left - right : right - left) ||
-        a.index - b.index
-      );
-    })
-    .map(({ item }) => item);
-}
-
-function useChoice(key, fallback, allowed) {
-  const [value, setValue] = useState(() => {
-    try {
-      const saved = sessionStorage.getItem(key);
-      return allowed.includes(saved) ? saved : fallback;
-    } catch {
-      return fallback;
-    }
-  });
-
-  function update(next) {
-    setValue(next);
-
-    try {
-      sessionStorage.setItem(key, next);
-    } catch {
-      // Память вкладки недоступна.
-    }
-  }
-
-  return [value, update];
-}
-
-export function IncomingRequests({
-  requests,
-  onAccept,
-  onReject,
-}) {
-  const listId = useId();
-
-  const [open, setOpen] = useChoice(
-    "at2m:incoming:open",
-    "yes",
-    ["yes", "no"],
-  );
-
-  const [expanded, setExpanded] = useChoice(
-    "at2m:incoming:expanded",
-    "no",
-    ["yes", "no"],
-  );
-
-  const [sort, setSort] = useChoice(
-    "at2m:incoming:sort",
-    "newest",
-    Object.keys(SORTS),
-  );
-
-  const sorted = sortRequests(requests, sort);
-  const visible =
-    expanded === "yes" ? sorted : sorted.slice(0, 3);
-
-  return (
-    <section className="wm-incoming wx-incoming">
-      <div className="wm-incoming-heading">
-        <button
-          type="button"
-          className="wm-incoming-toggle"
-          aria-expanded={open === "yes"}
-          aria-controls={listId}
-          onClick={() => setOpen(open === "yes" ? "no" : "yes")}
-        >
-          <span
-            className={`wu-chevron${
-              open === "yes" ? "" : " is-closed"
-            }`}
-          />
-          Входящие запросы
-        </button>
-
-        <span className="wu-muted wu-small">
-          · {requests.length} новых
-        </span>
-
-        <label className="wx-select">
-          <span className="wx-sr-only">
-            Сортировка входящих запросов
-          </span>
-
-          <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value)}
-          >
-            {Object.entries(SORTS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-
-          <span className="wu-chevron" aria-hidden="true" />
-        </label>
-      </div>
-
-      <div id={listId} hidden={open !== "yes"}>
-        <div className="wm-request-list">
-          {visible.map((request) => (
-            <article
-              className="wu-panel wm-request"
-              key={request.id}
-            >
-              <div className="wm-request-title">
-                <span className="wm-source">
-                  {request.source}
-                </span>
-
-                <h4>{request.name}</h4>
-                <p>{request.program}</p>
-
-                <small className="wu-muted">
-                  {request.time}
-                </small>
-              </div>
-
-              <div className="wm-initiator">
-                <p className="wu-muted wu-small">Инициатор</p>
-                <p>{request.initiator}</p>
-              </div>
-
-              <dl className="wm-request-details">
-                {request.details.map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-
-              <div className="wm-request-actions">
-                <button
-                  type="button"
-                  className="wu-button"
-                  onClick={() => onReject(request)}
-                >
-                  Отклонить
-                </button>
-
-                <button
-                  type="button"
-                  className="wu-button wu-primary"
-                  onClick={() => onAccept(request)}
-                >
-                  Принять в работу
-                </button>
-              </div>
-            </article>
-          ))}
-
-          {!requests.length && (
-            <p className="wx-empty">Новых запросов нет.</p>
-          )}
-        </div>
-
-        {requests.length > 3 && (
-          <button
-            type="button"
-            className="wm-show-more"
-            onClick={() =>
-              setExpanded(expanded === "yes" ? "no" : "yes")
-            }
-          >
-            {expanded === "yes"
-              ? "Скрыть"
-              : `Показать ещё ${requests.length - 3}`}
-          </button>
-        )}
-      </div>
-    </section>
-  );
-}
-
 const DEMAND = [
   {
     id: "requests",
@@ -412,248 +214,410 @@ const KAM = [
   },
 ];
 
+const SORTS = [
+  { value: "newest", label: "Сначала новые" },
+  { value: "oldest", label: "Сначала старые" },
+  { value: "kam", label: "Сначала КАМ" },
+  { value: "cms", label: "Сначала CMS" },
+];
+
+export function sortRequests(requests, mode) {
+  return requests
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      if (mode === "kam" || mode === "cms") {
+        const source = mode === "kam" ? "КАМ" : "CMS";
+
+        const group =
+          Number(b.item.source === source) -
+          Number(a.item.source === source);
+
+        if (group) return group;
+      }
+
+      const left = Date.parse(a.item.createdAt);
+      const right = Date.parse(b.item.createdAt);
+
+      if (!Number.isFinite(left) || !Number.isFinite(right)) {
+        return a.index - b.index;
+      }
+
+      return (
+        (mode === "oldest" ? left - right : right - left) ||
+        a.index - b.index
+      );
+    })
+    .map((entry) => entry.item);
+}
+
+export function IncomingRequests({
+  requests,
+  onAccept,
+  onReject,
+}) {
+  const [sort, setSort] = usePreference(
+    "workspace:incoming-sort",
+    "newest"
+  );
+
+  const [all, setAll] = useState(false);
+  const sorted = sortRequests(requests, sort);
+
+  return (
+    <section className="aw-incoming">
+      <div className="aw-section-title">
+        <h2>Входящие запросы</h2>
+
+        {requests.length > 0 && (
+          <span className="at-muted">
+            · {requests.length} новых
+          </span>
+        )}
+
+        <Select
+          label="Сортировка"
+          value={sort}
+          options={SORTS}
+          onChange={setSort}
+        />
+      </div>
+
+      {!requests.length ? (
+        <Empty title="Входящих запросов пока нет" />
+      ) : (
+        <div className="aw-requests">
+          {(all ? sorted : sorted.slice(0, 3)).map((request) => (
+            <article
+              className="aw-panel aw-request"
+              key={request.id}
+            >
+              <div>
+                <span className="aw-source">
+                  {request.source}
+                </span>
+
+                <h3>{request.name}</h3>
+                <p>{request.program}</p>
+
+                <small className="at-muted">
+                  {request.time}
+                </small>
+              </div>
+
+              <div>
+                <small className="at-muted">Инициатор</small>
+                <p>{request.initiator}</p>
+              </div>
+
+              <dl>
+                {request.details.map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <div className="aw-request-actions">
+                <button
+                  type="button"
+                  className="at-button"
+                  onClick={() => onReject(request)}
+                >
+                  Отклонить
+                </button>
+
+                <button
+                  type="button"
+                  className="at-button primary"
+                  onClick={() => onAccept(request)}
+                >
+                  Принять в работу
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {requests.length > 3 && (
+        <button
+          type="button"
+          className="aw-show-more"
+          onClick={() => setAll(!all)}
+        >
+          {all
+            ? "Скрыть"
+            : "Показать ещё " + (requests.length - 3)}
+        </button>
+      )}
+    </section>
+  );
+}
+
 export function WorkspaceChart({
   kind = "demand",
-  data,
-  appliedFilters = [],
+  filters,
+  manager = true,
+  empty = false,
+  notify,
 }) {
   const metrics = kind === "kam" ? KAM : DEMAND;
 
-  const title =
-    kind === "kam"
-      ? "Эффективность и нагрузка КАМов"
-      : "Востребованность ИТ-направлений";
-
-  const [metricId, setMetricId] = useChoice(
-    `at2m:chart:${kind}:metric`,
-    metrics[0].id,
-    metrics.map((item) => item.id),
+  const [metricId, setMetricId] = usePreference(
+    "workspace:metric:" + kind,
+    metrics[0].id
   );
 
-  const [owner, setOwner] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [owner, setOwner] = usePreference(
+    "workspace:local-owner",
+    ""
+  );
 
-  const saving = useRef(false);
+  const [products, setProducts] = usePreference(
+    "workspace:local-products:" + kind,
+    []
+  );
+
+  const [busy, setBusy] = useState(false);
+  const lock = useRef(false);
   const menu = useRef(null);
 
   const metric =
     metrics.find((item) => item.id === metricId) || metrics[0];
 
-  // При передаче data данные макета не подмешиваются.
-  const source =
-    data === undefined ? metric.rows : data[metric.id] || [];
+  const title =
+    kind === "demand"
+      ? "Востребованность ИТ-программ"
+      : manager
+        ? "Эффективность и нагрузка КАМов"
+        : "Моя эффективность";
 
-  const rows = source.filter(
-    ([name]) => kind !== "kam" || !owner || name === owner,
-  );
+  const unsupported =
+    filters.search ||
+    selection(filters.status).length ||
+    selection(filters.institution).length ||
+    selection(filters.city).length ||
+    filters.changed ||
+    selection(filters.products).length ||
+    selection(products).length ||
+    (filters.start &&
+      (filters.start > "2026-09-01" ||
+        filters.end < "2026-09-30")) ||
+    (kind === "kam" && selection(filters.direction).length) ||
+    (kind === "demand" && selection(filters.owner).length);
 
-  const owners = [
-    ...new Set(
-      (
-        data === undefined
-          ? metrics.flatMap((item) => item.rows)
-          : Object.values(data).flat()
-      ).map(([name]) => name),
-    ),
+  const names = [
+    "Иванов А.А.",
+    "Смирнова М.С.",
+    "Соколов Д.В.",
   ];
+
+  const rows =
+    empty || unsupported
+      ? []
+      : metric.rows.filter(([name]) => {
+          if (kind === "demand") {
+            return includesSelection(filters.direction, name);
+          }
+
+          return (
+            (!selection(filters.owner).length ||
+              selection(filters.owner).some(
+                (value) =>
+                  name === names[OWNERS.indexOf(value)]
+              )) &&
+            includesSelection(owner, name) &&
+            (manager || name === names[0])
+          );
+        });
 
   const maximum = Math.max(
     1,
-    ...rows.map(([, value]) => value),
+    ...metric.rows.map(([, value]) => value)
   );
 
   const total = rows.reduce(
     (sum, [, value]) => sum + value,
-    0,
+    0
   );
 
-  const number = (value) => value.toLocaleString("ru-RU");
+  async function save(format) {
+    if (lock.current) return;
 
-  async function exportAs(format) {
-    if (saving.current || !rows.length) return;
-
-    saving.current = true;
+    lock.current = true;
     setBusy(true);
-    setNotice("");
-
-    if (menu.current) menu.current.open = false;
+    menu.current.removeAttribute("open");
 
     try {
       await downloadChart({
         title,
         metric: metric.unit,
         rows: rows.map((row) => [...row]),
+        format,
         filters: [
-          ...appliedFilters,
+          ...filterLabels(filters),
+          ["Метрика", metric.unit],
+          [
+            "Локальные продукты",
+            listText(products) || "Все продукты",
+          ],
           ...(kind === "kam"
-            ? [["КАМ", owner || "Все"]]
+            ? [
+                [
+                  "КАМ графика",
+                  listText(owner) ||
+                    (manager ? "Все" : names[0]),
+                ],
+              ]
             : []),
         ],
-        format,
       });
 
-      setNotice(
-        `Файл ${format.toUpperCase()} подготовлен к скачиванию.`,
+      notify(
+        "Файл " +
+          format.toUpperCase() +
+          " подготовлен к скачиванию."
       );
     } catch (error) {
-      setNotice(
-        error.message || "Не удалось подготовить файл.",
+      notify(
+        error.message || "Не удалось скачать график.",
+        true
       );
     } finally {
-      saving.current = false;
+      lock.current = false;
       setBusy(false);
     }
   }
 
   return (
-    <section
-      className={`wu-panel wx-chart wx-chart--${kind}`}
-      aria-busy={busy}
-    >
-      <div className="wx-chart-head">
+    <section className={"aw-panel aw-chart aw-chart-" + kind}>
+      <div className="aw-chart-head">
         <h3>{title}</h3>
 
-        {kind === "kam" && (
-          <label className="wx-select">
-            <span className="wx-sr-only">Фильтр по КАМ</span>
-
-            <select
-              value={owner}
-              onChange={(event) => setOwner(event.target.value)}
-            >
-              <option value="">КАМ: Все</option>
-
-              {owners.map((name) => (
-                <option key={name}>{name}</option>
-              ))}
-            </select>
-
-            <span className="wu-chevron" aria-hidden="true" />
-          </label>
+        {kind === "demand" && (
+          <Tabs
+            value={metric.id}
+            options={metrics.map((item) => [
+              item.id,
+              item.tab,
+            ])}
+            onChange={setMetricId}
+          />
         )}
 
-        <details
-          ref={menu}
-          className="wx-export"
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.currentTarget.open = false;
-              event.currentTarget
-                .querySelector("summary")
-                ?.focus();
-            }
-          }}
-        >
+        {kind === "kam" && manager && (
+          <Select
+            multiple
+            allMeansEmpty
+            label="КАМ: Все"
+            allLabel="Все ответственные"
+            searchPlaceholder="Поиск сотрудников"
+            value={selection(owner)}
+            options={names}
+            onChange={setOwner}
+          />
+        )}
+
+        <details className="at-select aw-export" ref={menu}>
           <summary
-            title="Скачать график"
             aria-label="Скачать график"
+            title="Скачать график"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M12 3v12m-4-4 4 4 4-4M4 15v5h16v-5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <img
+              src={downloadIcon}
+              width="18"
+              height="18"
+              alt=""
+            />
           </summary>
 
-          <div className="wx-export-menu">
-            <button
-              type="button"
-              disabled={busy || !rows.length}
-              onClick={() => exportAs("png")}
-            >
-              Скачать PNG
-            </button>
-
-            <button
-              type="button"
-              disabled={busy || !rows.length}
-              onClick={() => exportAs("pdf")}
-            >
-              Скачать PDF
-            </button>
+          <div className="at-options">
+            {["png", "pdf"].map((format) => (
+              <button
+                type="button"
+                key={format}
+                disabled={busy || !rows.length}
+                onClick={() => save(format)}
+              >
+                Скачать {format.toUpperCase()}
+              </button>
+            ))}
           </div>
         </details>
       </div>
 
-      <div
-        className="wu-tabs wx-chart-tabs"
-        aria-label="Метрика графика"
-      >
-        {metrics.map((item) => (
-          <button
-            type="button"
-            key={item.id}
-            className={metric.id === item.id ? "is-active" : ""}
-            aria-pressed={metric.id === item.id}
-            onClick={() => {
-              setMetricId(item.id);
-              setNotice("");
-            }}
-          >
-            {item.tab}
-          </button>
-        ))}
-      </div>
-
       {kind === "kam" && (
-        <p className="wu-muted wu-small wx-unit">
-          {metric.unit}
-        </p>
+        <>
+          <Tabs
+            value={metric.id}
+            options={metrics.map((item) => [
+              item.id,
+              item.tab,
+            ])}
+            onChange={setMetricId}
+          />
+
+          <small className="at-muted aw-unit">
+            {metric.unit}
+          </small>
+        </>
       )}
 
-      <div className="wx-bars">
-        {rows.map(([name, value]) => (
-          <div
-            className="wx-bar"
-            key={name}
-            tabIndex={0}
-            aria-label={`${name}: ${number(value)}. ${metric.unit}`}
-          >
-            <span>{name}</span>
+      {!rows.length ? (
+        <Empty
+          title={
+            empty
+              ? kind === "kam"
+                ? "Нет данных по эффективности КАМов"
+                : "Данных пока нет"
+              : "Нет статистических данных для выбранных фильтров"
+          }
+        >
+          {empty
+            ? "Статистика появится после загрузки или синхронизации данных."
+            : "В демонстрационном наборе нет детализации для этого сочетания."}
+        </Empty>
+      ) : (
+        <div className="aw-bars">
+          {rows.map(([name, value]) => (
+            <div className="aw-bar" key={name} tabIndex={0}>
+              <span>{name}</span>
 
-            <span className="wx-track">
-              <span
-                style={{
-                  width: `${(value / maximum) * 100}%`,
-                }}
-              />
-            </span>
+              <span className="aw-track">
+                <i
+                  style={{
+                    width: (value / maximum) * 100 + "%",
+                  }}
+                />
+              </span>
 
-            <span>{number(value)}</span>
+              <strong>{value.toLocaleString("ru-RU")}</strong>
 
-            <span className="wx-tooltip" aria-hidden="true">
-              {name} · {number(value)}
-              {kind === "demand" && total > 0
-                ? ` · ${Math.round(
-                    (value / total) * 100,
-                  )}% от общего числа`
-                : ""}
-            </span>
-          </div>
-        ))}
+              <span className="aw-tooltip">
+                {name}
+                <br />
+                {metric.unit}: {value.toLocaleString("ru-RU")}
 
-        {!rows.length && (
-          <p className="wx-empty">
-            Нет статистических данных за указанный период.
-            Измените параметры фильтрации.
-          </p>
-        )}
+                {kind === "demand" && (
+                  <>
+                    <br />
+                    {Math.round((value / total) * 100)}% от общего
+                    числа
+                  </>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="aw-chart-products">
+        <ProductFilter
+          value={products}
+          onChange={setProducts}
+        />
       </div>
-
-      <p className="wx-chart-notice" role="status">
-        {notice}
-      </p>
     </section>
   );
 }

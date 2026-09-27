@@ -1,394 +1,214 @@
-.at2m-header {
-  --header-surface: #ffffff;
-  --header-background: #f9f9fa;
-  --header-text: #101828;
-  --header-muted: #747984;
-  --header-border: #e6e7e9;
-  --header-accent: #ff4f12;
-  --header-purple: #7700ff;
-  --header-shadow: 0 12px 32px rgb(16 24 40 / 12%);
-
+.at-header {
   position: relative;
-  z-index: 20;
+  z-index: 30;
   width: 100%;
   min-width: 768px;
-  height: 72px;
-  box-sizing: border-box;
-  border: 1px solid var(--header-border);
-  background: var(--header-surface);
-  color: var(--header-text);
+  background: var(--a-card);
+  border-bottom: 1px solid var(--a-border);
+  color: var(--a-text);
   font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
-  text-align: left;
-  color-scheme: light;
 }
 
-.at2m-header[data-theme="dark"] {
-  --header-surface: #1b2332;
-  --header-background: #212938;
-  --header-text: #e8e8ee;
-  --header-muted: #9da1ac;
-  --header-border: #323a4a;
-  --header-accent: #ffa789;
-  --header-shadow: 0 12px 32px rgb(0 0 0 / 25%);
-  color-scheme: dark;
-}
-
-.at2m-header *,
-.at2m-header *::before,
-.at2m-header *::after {
-  box-sizing: border-box;
-}
-
-.at2m-header .at2m-header__inner {
-  display: flex;
-  align-items: center;
-  width: calc(100% - 158px);
-  max-width: 1600px;
-  height: 100%;
-  margin: 0 auto;
-}
-
-.at2m-header .at2m-header__logo {
-  display: flex;
-  align-items: center;
-  flex: 0 0 261px;
-  gap: 8px;
-  color: var(--header-text);
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 28px;
-}
-
-.wr-header {
-  background: var(--header-surface);
-  border-bottom: 1px solid var(--header-border);
-  --header-bg: #f9f9fa;
-  --header-surface: #ffffff;
-  --header-border: #e6e7e9;
-  --header-text: #101828;
-  --header-text-secondary: #747984;
-  --header-text-muted: #747984;
-  --header-orange: #ff4f12;
-  --header-purple: #7700ff;
-  --header-avatar: #7700ff;
-  --header-orange-soft: rgb(255 79 18 / 10%);
-  --header-shadow: 0 16px 40px rgb(16 24 40 / 12%);
-  color: var(--header-text);
-  font-family: var(--font-sans, "Rostelecom Basis", Arial, sans-serif);
-  color-scheme: light;
-}
-
-.wr-header-inner {
-  max-width: 1280px;
-  margin: 0 auto;
+.at-header .at-header-inner {
   display: flex;
   align-items: center;
   gap: 32px;
-  height: 64px;
-  padding: 0 clamp(20px, 4vw, 64px);
+  width: calc(100% - 160px);
+  max-width: 1600px;
+  height: 72px;
+  margin: auto;
 }
 
-.wr-header .wr-logo {
+.at-header .at-logo {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: none;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--header-text);
+  flex: 0 0 229px;
+  font-size: 20px;
+  font-weight: 500;
+  color: inherit;
   text-decoration: none;
+  white-space: nowrap;
 }
 
-.wr-header .wr-nav {
+.at-header .at-logo img {
+  object-fit: contain;
+}
+
+.at-header .at-nav {
   display: flex;
-  align-items: center;
-  gap: 28px;
+  align-self: stretch;
+  align-items: stretch;
   flex: 1;
+  gap: 40px;
   min-width: 0;
 }
 
-.wr-header .wr-nav a {
+.at-header .at-nav a {
   position: relative;
-  padding: 22px 0;
-  font-size: 14px;
-  color: var(--header-text-secondary);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.wr-header .wr-nav a:hover {
-  color: var(--header-text);
-}
-
-.wr-header .wr-nav a.is-active {
-  color: var(--header-text);
-  font-weight: 600;
-}
-
-.wr-header .wr-nav a.is-active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: var(--header-orange);
-}
-
-.wr-header-actions {
   display: flex;
   align-items: center;
-  width: fit-content;
-  height: 100%;
-  padding: 0;
-  color: var(--header-muted);
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 20px;
+  color: var(--a-muted);
   text-decoration: none;
   white-space: nowrap;
 }
 
-.wr-header .wr-profile {
-  position: relative;
+.at-header .at-nav a:hover,
+.at-header .at-nav a[aria-current="page"] {
+  color: var(--a-accent);
 }
 
-.wr-header .wr-avatar-btn {
-  border: 0;
-  background: none;
+.at-header .at-nav a::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: calc(50% - 16px);
+  width: 32px;
+  height: 2px;
+  background: var(--a-accent);
+  opacity: 0;
+  transform: scaleX(0.6);
+}
+
+.at-header .at-nav a[aria-current="page"]::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.at-header .at-profile {
+  position: relative;
+  margin-left: auto;
+  flex: none;
+}
+
+.at-header .at-avatar-button {
+  display: block;
   padding: 0;
+  border: 0;
   border-radius: 50%;
+  background: transparent;
   cursor: pointer;
 }
 
-.wr-header .wr-avatar-btn:focus-visible {
-  outline: 2px solid var(--header-purple);
-  outline-offset: 2px;
+.at-header .at-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--a-field);
+  color: var(--a-avatar);
+  font-size: 11px;
+  flex: none;
 }
 
-.wr-header .wr-profile-menu {
+.at-header .at-profile-menu {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  z-index: 30;
   width: 240px;
   padding: 12px;
-  border: 1px solid var(--header-border);
+  border: 1px solid var(--a-border);
   border-radius: 12px;
-  background: var(--header-surface);
-  color: var(--header-text);
-  box-shadow: var(--header-shadow);
+  background: var(--a-card);
+  box-shadow: 0 12px 32px #0002;
 }
 
-.wr-header .wr-profile-menu-head {
+.at-header .at-identity {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 4px 4px 16px;
 }
 
-.wr-header .wr-profile-name {
+.at-header .at-identity strong {
+  display: block;
   font-size: 14px;
-  font-weight: 700;
-  color: var(--header-text);
 }
 
-.wr-header .wr-profile-email {
+.at-header .at-identity small {
+  display: block;
   margin-top: 2px;
+  color: var(--a-muted);
   font-size: 12px;
-  color: var(--header-text-muted);
+  overflow-wrap: anywhere;
 }
 
-.wr-header .wr-profile-item {
+.at-header .at-profile-menu > button {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   height: 40px;
-  padding: 0 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 6px;
+  padding: 0 8px;
   background: none;
-  color: var(--header-text);
-  font-size: 14px;
+  color: var(--a-text);
   text-align: left;
+  font: inherit;
   cursor: pointer;
 }
 
-.wr-header .wr-profile-item svg {
-  flex: none;
+.at-header .at-profile-menu > button:hover {
+  background: var(--a-field);
+}
+
+.at-header .at-profile-menu svg {
   width: 18px;
   height: 18px;
-  color: var(--header-text-muted);
-}
-
-.wr-header .wr-profile-item:hover {
-  background: var(--header-bg);
-}
-
-.wr-header .wr-profile-item--danger,
-.wr-header .wr-profile-item--danger svg {
-  color: var(--header-orange);
-}
-
-.wr-header .wr-profile-item--danger:hover {
-  background: var(--header-orange-soft);
-}
-
-.wr-header[data-theme="dark"] .wr-profile-menu {
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-}
-
-@media (max-width: 1024px) {
-  .wr-header .wr-nav {
-    gap: 16px;
-  }
-}
-
-@media (max-width: 640px) {
-  .wr-header-inner {
-    gap: 16px;
-    padding: 0 16px;
-  }
-
-  .wr-header .wr-nav {
-    display: none;
-  }
-}
-
-.wr-header[data-theme="dark"] {
-  --header-bg: #212938;
-  --header-surface: #1b2332;
-  --header-border: #323a4a;
-  --header-text: #e8e8ee;
-  --header-text-secondary: #9da1ac;
-  --header-text-muted: #9da1ac;
-  --header-orange: #ffa789;
-  --header-purple: #7700ff;
-  --header-avatar: #9da1ac;
-  --header-orange-soft: rgb(255 167 137 / 12%);
-  --header-shadow: 0 16px 40px rgb(0 0 0 / 50%);
-  color-scheme: dark;
-}
-
-.wr-header .wr-avatar {
-  display: grid;
-  place-items: center;
+  color: var(--a-muted);
   flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--header-bg);
-  color: var(--header-avatar);
-  font-size: 12px;
 }
 
-.wr-header p {
-  margin: 0;
+.at-header .at-profile-menu .at-logout,
+.at-header .at-logout svg {
+  color: var(--a-accent);
 }
 
-.wr-header button {
-  font-family: inherit;
+.at-header button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
-.wr-header[data-page="Отчёты"] .wr-header-inner {
-  width: calc(100% - 160px);
-  max-width: 1600px;
-  padding-inline: 0;
+.at-header :is(button, a):focus-visible {
+  outline: 2px solid var(--a-accent);
+  outline-offset: 3px;
 }
 
-.wr-header[data-page="Отчёты"] .wr-avatar {
-  font-weight: 600;
-}
-
-.wr-header[data-page="Отчёты"] .wr-profile-name {
-  color: var(--header-text);
-}
-
-.wr-header[data-page="Отчёты"] .wr-profile-email {
-  margin-top: 2px;
-  color: var(--header-text-muted);
-}
-
-.wr-header[data-page="Отчёты"][data-theme="dark"] .wr-profile-menu {
-  box-shadow: var(--header-shadow);
-}
-
-@media (max-width: 1279px) {
-  .wr-header[data-page="Отчёты"] .wr-header-inner {
-    width: calc(100% - 64px);
-  }
-}
-
-@media (max-width: 1024px) {
-  .wr-header[data-page="Отчёты"] .wr-header-inner {
-    width: calc(100% - 48px);
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 0 24px;
-    height: auto;
-    padding-top: 16px;
-  }
-
-  .wr-header[data-page="Отчёты"] .wr-header-actions {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .wr-header[data-page="Отчёты"] .wr-nav {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    gap: 28px;
-  }
-
-  .wr-header[data-page="Отчёты"] .wr-nav a {
-    padding-block: 16px;
-  }
-}
-
-.wr-header[data-page="Отчёты"],
-.wr-header[data-page="Отчёты"] .wr-profile-menu {
+.at-header,
+.at-header .at-nav,
+.at-header .at-nav a,
+.at-header .at-nav a::after,
+.at-header .at-avatar,
+.at-header .at-profile-menu,
+.at-header .at-profile-menu > button,
+.at-header .at-profile-menu svg {
   transition:
     background-color var(--theme-transition-duration, 240ms) ease,
     color var(--theme-transition-duration, 240ms) ease,
-    border-color var(--theme-transition-duration, 240ms) ease;
-}
-
-.wr-header[data-page="Календарь"] .wr-header-inner {
-  width: calc(100% - 160px);
-  max-width: 1600px;
-  margin-inline: auto;
-  padding-inline: 0;
-}
-
-.wr-header[data-page="Календарь"] .wr-avatar {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--header-bg);
-  color: var(--header-avatar);
-  font-size: 12px;
-}
-
-.wr-header[data-page="Календарь"] .wr-profile-email {
-  margin-top: 2px;
-}
-
-.wr-header[data-page="Календарь"] .wr-profile-menu {
-  box-shadow: var(--header-shadow);
+    border-color var(--theme-transition-duration, 240ms) ease,
+    box-shadow var(--theme-transition-duration, 240ms) ease,
+    opacity var(--theme-transition-duration, 240ms) ease,
+    transform var(--theme-transition-duration, 240ms) ease;
 }
 
 @media (max-width: 1279px) {
-  .wr-header[data-page="Календарь"] .wr-header-inner {
+  .at-header .at-header-inner {
     width: calc(100% - 64px);
+  }
+
+  .at-header .at-logo {
+    flex-basis: 180px;
+  }
+
+  .at-header .at-nav {
+    gap: 24px;
   }
 }
 
 @media (max-width: 1024px) {
-  .wr-header[data-page="Календарь"] .wr-header-inner {
+  .at-header .at-header-inner {
     width: calc(100% - 48px);
     display: grid;
     grid-template-columns: 1fr auto;
@@ -397,66 +217,24 @@
     padding-top: 16px;
   }
 
-  .wr-header[data-page="Календарь"] .wr-header-actions {
+  .at-header .at-profile {
     grid-column: 2;
     grid-row: 1;
   }
 
-  .wr-header[data-page="Календарь"] .wr-nav {
+  .at-header .at-nav {
     grid-column: 1 / -1;
     grid-row: 2;
     gap: 28px;
-  }
-
-  .wr-header[data-page="Календарь"] .wr-nav a {
-    padding-block: 16px;
+    height: 52px;
   }
 }
 
-.wr-header[data-page="Календарь"] :is(.wr-header, .wr-profile-menu, .calendar-button, .calendar-select, .calendar-scroll, .calendar-popover, .calendar-event) {
-  transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease;
-}
-
-.wr-header[data-page="FAQ"] .wr-header-inner {
-  width: calc(100% - 160px);
-  max-width: 1600px;
-  height: 72px;
-  padding-inline: 0;
-}
-
-.wr-header[data-page="FAQ"] .wr-nav a.is-active {
-  color: var(--header-orange);
-}
-
-@media (max-width: 1199px) {
-  .wr-header[data-page="FAQ"] .wr-header-inner {
-    width: calc(100% - 64px);
-  }
-}
-
-.wr-header[data-page="Администрирование"] .wr-header-inner {
-  width: calc(100% - 160px);
-  max-width: 1600px;
-  height: 72px;
-  padding-inline: 0;
-  margin-inline: auto;
-}
-
-.wr-header[data-page="Администрирование"] .wr-nav a.is-active {
-  color: var(--header-orange);
-}
-
-@media (max-width: 1279px) {
-  .wr-header[data-page="Администрирование"] .wr-header-inner {
-    width: calc(100% - 64px);
-  }
-}
-
-@media (max-width: 1024px) {
-  .wr-header[data-page="Администрирование"] .wr-header-inner {
-    gap: 16px;
-  }
-  .wr-header[data-page="Администрирование"] .wr-nav {
-    gap: 20px;
+@media (prefers-reduced-motion: reduce) {
+  .at-header,
+  .at-header *,
+  .at-header *::before,
+  .at-header *::after {
+    transition: none;
   }
 }

@@ -1,0 +1,723 @@
+:root {
+  --a-page: #f9f9fa;
+  --a-card: #ffffff;
+  --a-field: #f9f9fa;
+  --a-text: #101828;
+  --a-muted: #747984;
+  --a-border: #e6e7e9;
+  --a-accent: #ff4f12;
+  --a-on-accent: #ffffff;
+  --a-purple: #7700ff;
+  --a-error: #ff2626;
+  --a-error-bg: #fff0ef;
+  --a-backdrop: rgb(68 83 113 / 30%);
+  --a-chart: #7700ff;
+  --a-avatar: #7700ff;
+  --a-hover-border: #477cff;
+  --a-focus: #477cff;
+  --a-disabled-bg: #e8e9ed;
+  --a-disabled-text: #9da5b5;
+}
+
+:root[data-theme="dark"] {
+  --a-page: #151d2c;
+  --a-card: #1b2332;
+  --a-field: #212938;
+  --a-text: #e8e8ee;
+  --a-muted: #9da1ac;
+  --a-border: #323a4a;
+  --a-accent: #ffa789;
+  --a-on-accent: #591c06;
+  --a-error: #ff9393;
+  --a-error-bg: #482d38;
+  --a-backdrop: rgb(4 6 10 / 64%);
+  --a-chart: #b28aff;
+  --a-avatar: #9da1ac;
+  --a-hover-border: #858b96;
+  --a-focus: #b28aff;
+  --a-disabled-bg: #1b2332;
+  --a-disabled-text: #657084;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+.at-muted {
+  color: var(--a-muted);
+}
+
+.at-button,
+.at-icon,
+.at-select summary,
+.at-select-trigger,
+.at-input {
+  font: inherit;
+  color: var(--a-text);
+  background: var(--a-card);
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+}
+
+.at-button {
+  min-height: 40px;
+  padding: 8px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.at-button.primary {
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+  border-color: var(--a-accent);
+}
+
+.at-button.danger {
+  background: var(--a-error);
+  color: #ffffff;
+  border-color: var(--a-error);
+}
+
+.at-button:disabled,
+.at-icon:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.at-icon {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.at-icon img {
+  width: 18px;
+  height: 18px;
+}
+
+.at-icon:hover,
+.at-button:not(.primary):not(.danger):hover {
+  background: var(--a-field);
+}
+
+.at-input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  min-width: 0;
+  padding: 8px 12px;
+  background: var(--a-field);
+}
+
+.at-input::placeholder {
+  color: var(--a-muted);
+}
+
+textarea.at-input {
+  height: 120px;
+  resize: vertical;
+}
+
+.at-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.at-field > span:first-child {
+  color: var(--a-muted);
+  font-size: 12px;
+}
+
+.at-field:focus-within > span:first-child {
+  color: var(--a-focus);
+}
+
+.at-field:has(.at-input[aria-invalid="true"]) > span:first-child,
+.at-field:has(.at-input:user-invalid) > span:first-child {
+  color: var(--a-error);
+}
+
+.at-chevron,
+.at-chevron-image {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 0;
+  transform: none;
+}
+
+.at-chevron {
+  background:
+    url("../../assets/chevron-down.svg")
+    center / contain no-repeat;
+}
+
+.at-select[open] > summary > .at-chevron {
+  background-image: url("../../assets/chevron-right.svg");
+}
+
+.at-select {
+  position: relative;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.at-select summary,
+.at-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.at-select summary::-webkit-details-marker {
+  display: none;
+}
+
+.at-select summary > span,
+.at-select-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.at-select-trigger {
+  width: 100%;
+  text-align: left;
+  box-shadow: none;
+}
+
+.at-dialog .at-select-trigger {
+  background: var(--a-field);
+}
+
+.at-select[open] > summary,
+.at-select-trigger[aria-expanded="true"] {
+  border-color: var(--a-focus);
+}
+
+.at-options {
+  position: absolute;
+  z-index: 45;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(320px, 80vw);
+  max-height: 280px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  background: var(--a-card);
+  box-shadow: 0 12px 32px #0002;
+}
+
+.at-options > button {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--a-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-options > button:hover,
+.at-options > button[aria-pressed="true"] {
+  background: var(--a-field);
+}
+
+.at-options > button[aria-pressed="true"] {
+  color: var(--a-accent);
+}
+
+.at-options .at-input {
+  margin-bottom: 8px;
+}
+
+.at-select-popup {
+  margin: 0;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+  color: var(--a-text);
+}
+
+.at-select-popup > button > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.at-select-popup.at-multi-popup:popover-open {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  overflow: auto;
+}
+
+.at-multi-popup .at-multi-title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.at-multi-popup > .at-input {
+  flex: none;
+  margin: 0;
+  background: var(--a-card);
+}
+
+.at-multi-list {
+  min-height: 36px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  flex: 1 1 auto;
+}
+
+.at-multi-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  color: var(--a-text);
+  cursor: pointer;
+}
+
+.at-multi-option:hover {
+  background: var(--a-field);
+}
+
+.at-multi-option input {
+  appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 2px solid var(--a-border);
+  border-radius: 4px;
+  background: var(--a-card);
+  position: relative;
+  cursor: pointer;
+}
+
+.at-multi-option input:checked,
+.at-multi-option input:indeterminate {
+  border-color: var(--a-accent);
+  background: var(--a-accent);
+}
+
+.at-multi-option input:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 4px;
+  height: 8px;
+  border-right: 2px solid var(--a-on-accent);
+  border-bottom: 2px solid var(--a-on-accent);
+  transform: rotate(45deg);
+}
+
+.at-multi-option input:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 5px;
+  height: 2px;
+  background: var(--a-on-accent);
+}
+
+.at-multi-option input:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: 2px;
+}
+
+.at-options.at-multi-popup > .at-multi-apply {
+  flex: none;
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  text-align: center;
+  border-radius: 8px;
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+}
+
+.at-options.at-multi-popup > .at-multi-apply:hover:not(:disabled) {
+  background: #e7430d;
+}
+
+:root[data-theme="dark"]
+  .at-options.at-multi-popup
+  > .at-multi-apply:hover:not(:disabled) {
+  background: #ffbba3;
+}
+
+.at-dialog {
+  width: 720px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+  margin: auto;
+  padding: 24px;
+  border: 1px solid var(--a-border);
+  border-radius: 12px;
+  background: var(--a-card);
+  color: var(--a-text);
+  font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+  overflow: auto;
+}
+
+.at-dialog-wide {
+  width: 1160px;
+}
+
+.at-dialog::backdrop {
+  background: var(--a-backdrop);
+}
+
+.at-dialog h2,
+.at-dialog h3,
+.at-dialog p {
+  margin: 0;
+}
+
+.at-dialog h2 {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.at-dialog h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.at-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.at-dialog form {
+  display: grid;
+  gap: 24px;
+}
+
+.at-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.at-dialog-grid > .full {
+  grid-column: 1 / -1;
+}
+
+.at-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.at-form-actions .primary {
+  min-width: 220px;
+}
+
+.at-error {
+  color: var(--a-error);
+  background: var(--a-error-bg);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.at-toast {
+  position: fixed;
+  z-index: 100;
+  top: 88px;
+  right: max(24px, calc((100vw - 1600px) / 2));
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: min(460px, calc(100vw - 32px));
+  padding: 16px;
+  background: var(--a-card);
+  color: var(--a-text);
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px #0002;
+  font-size: 14px;
+}
+
+.at-toast.is-error {
+  color: var(--a-error);
+}
+
+.at-toast button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.at-empty {
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  text-align: center;
+  min-height: 180px;
+  padding: 24px;
+}
+
+.at-empty strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.at-empty p {
+  margin: 0;
+  color: var(--a-muted);
+}
+
+.at-tabs {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  background: var(--a-field);
+  border-radius: 6px;
+  padding: 3px;
+  overflow-x: auto;
+}
+
+.at-tabs button {
+  flex: 1;
+  min-height: 24px;
+  padding: 2px 14px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--a-muted);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.at-tabs button.is-active {
+  background: var(--a-card);
+  color: var(--a-accent);
+}
+
+.at-button:focus-visible,
+.at-icon:focus-visible,
+.at-options button:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: 2px;
+}
+
+.at-input:not(:disabled):hover,
+.at-select-trigger:not(:disabled):hover,
+.at-select summary:not([aria-disabled="true"]):hover {
+  border-color: var(--a-hover-border);
+}
+
+.at-input:not(:disabled):focus,
+.at-select-trigger:focus-visible,
+.at-select-trigger[aria-expanded="true"],
+.at-select summary:focus-visible,
+.at-select[open] > summary {
+  border-color: var(--a-focus);
+  outline: 1px solid var(--a-focus);
+  outline-offset: 0;
+}
+
+.at-select-trigger[aria-expanded="true"]:not(:focus-visible),
+.at-select-trigger:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+.at-select-trigger:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: 2px;
+}
+
+.at-input:user-invalid,
+.at-input[aria-invalid="true"],
+.at-input[aria-invalid="true"]:hover,
+.at-input:user-invalid:focus,
+.at-input[aria-invalid="true"]:focus {
+  border-color: var(--a-error);
+  outline-color: var(--a-error);
+}
+
+.at-input:disabled,
+.at-select-trigger:disabled {
+  background: var(--a-disabled-bg);
+  color: var(--a-disabled-text);
+  border-color: var(--a-border);
+  opacity: 1;
+  cursor: default;
+}
+
+.at-input:disabled::placeholder {
+  color: var(--a-disabled-text);
+}
+
+.at-input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.at-input[type="date"]::-webkit-inner-spin-button {
+  display: none;
+}
+
+.at-icon img.at-close-asset {
+  width: 17px;
+  height: 17px;
+}
+
+:root[data-theme="dark"] .at-close-asset {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+.at-dialog,
+.at-options {
+  scrollbar-color: auto;
+  scrollbar-width: auto;
+}
+
+.at-dialog::-webkit-scrollbar,
+.at-options::-webkit-scrollbar,
+.at-multi-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.at-dialog::-webkit-scrollbar-track,
+.at-options::-webkit-scrollbar-track,
+.at-multi-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.at-dialog::-webkit-scrollbar-thumb,
+.at-options::-webkit-scrollbar-thumb,
+.at-multi-list::-webkit-scrollbar-thumb {
+  background: #929292;
+  border: 2px solid var(--a-card);
+  border-radius: 8px;
+}
+
+.at-dialog::-webkit-scrollbar-button,
+.at-options::-webkit-scrollbar-button,
+.at-multi-list::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.at-dialog::-webkit-scrollbar-corner,
+.at-options::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@supports (-moz-appearance: none) {
+  .at-dialog,
+  .at-options,
+  .at-multi-list {
+    scrollbar-width: thin;
+    scrollbar-color: #929292 transparent;
+  }
+}
+
+.aw-summary > .at-icon[aria-expanded] {
+  font-size: 0;
+  line-height: 0;
+}
+
+.aw-summary > .at-icon[aria-expanded]::after {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 24px;
+  background:
+    url("../../assets/chevron-down.svg")
+    center / contain no-repeat;
+}
+
+.aw-summary > .at-icon[aria-expanded="true"]::after {
+  background-image: url("../../assets/chevron-right.svg");
+}
+
+.at-button,
+.at-input,
+.at-select-trigger,
+.at-select summary,
+.at-options,
+.at-dialog,
+.at-tabs,
+.at-toast {
+  transition:
+    background-color var(--theme-transition-duration, 240ms) ease,
+    color var(--theme-transition-duration, 240ms) ease,
+    border-color var(--theme-transition-duration, 240ms) ease;
+}
+
+@media (max-width: 700px) {
+  .at-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .at-form-actions {
+    flex-wrap: wrap;
+  }
+
+  .at-form-actions .primary {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .at-button,
+  .at-input,
+  .at-select-trigger,
+  .at-select summary,
+  .at-options,
+  .at-dialog,
+  .at-tabs,
+  .at-toast {
+    transition: none;
+  }
+}
