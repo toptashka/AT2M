@@ -191,7 +191,6 @@
 .admin-stage-preview p span { color: var(--admin-muted); }
 .admin-stage-preview .admin-new-stage { border-color: var(--admin-purple) !important; }
 .admin-stage-preview > .admin-hint { display: block; padding: 12px 0; }
-.admin-toast { position: fixed; z-index: 30; bottom: 24px; right: 32px; display: flex; align-items: center; gap: 20px; max-width: 440px; padding: 8px 12px 8px 20px; border: 1px solid var(--admin-border); border-radius: 8px; color: var(--admin-text); background: var(--admin-card); box-shadow: var(--admin-shadow); animation: admin-modal-in 180ms ease both; font-size: 12px; }
 .admin-spinner { display: inline-block; width: 14px; height: 14px; margin-right: 8px; border: 2px solid var(--admin-border); border-top-color: var(--admin-accent); border-radius: 50%; vertical-align: -2px; animation: admin-spin 700ms linear infinite; }
 .admin-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .admin-page, .admin-card, .admin-button, .admin-select-trigger, .admin-input, .admin-modal, .admin-notice, .admin-table th { transition: background-color 240ms ease, color 240ms ease, border-color 180ms ease; }

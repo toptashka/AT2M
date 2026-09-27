@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Header from "../Header/Header";
+import Footer from "../Footer/Footer";
 import { setAppTheme, useAppTheme } from "../../theme";
 import arrowRight from "../../assets/ArrowRight.svg";
 import playIcon from "../../assets/Play.svg";
@@ -230,7 +231,7 @@ export default function FaqPage() {
           </aside>
         </div>
       </main>
-      <footer className="faq-footer"><div><p>© 2026 ИТ Школа РТК · ООО «Ростелеком Информационные Технологии»</p><p>Версия 1.0.0</p></div></footer>
+      <Footer />
     </div>
   );
 }

@@ -46,32 +46,52 @@ function useAnimatedState(initialValue = null) {
     timer.current = window.setTimeout(() => {
       setValue(null);
       setClosing(false);
-    }, 180);
+    }, 220);
   }, []);
 
   return [value, update, closing];
 }
 
 
+function FilterChoices({ label, items, value, onApply }) {
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState(() => value.length ? [...value] : items.map(item => item.value));
+  const all = items.length > 0 && items.every(item => selected.includes(item.value));
+  const visible = items.filter(item => item.label.toLocaleLowerCase("ru").includes(query.trim().toLocaleLowerCase("ru")));
+
+  return <>
+    <input type="search" className="calendar-filter-search" aria-label={`Поиск: ${label}`} placeholder="Поиск"
+      value={query} onChange={event => setQuery(event.target.value)} />
+    <div className="calendar-filter-options" role="group" aria-label={label}>
+      <label className="calendar-filter-check"><input type="checkbox" checked={all} disabled={!items.length}
+        onChange={() => setSelected(all ? [] : items.map(item => item.value))} /><span>Все</span></label>
+      {visible.map(item => <label className="calendar-filter-check" key={item.value}>
+        <input type="checkbox" checked={selected.includes(item.value)} onChange={() => setSelected(previous => previous.includes(item.value)
+          ? previous.filter(value => value !== item.value) : [...previous, item.value])} /><span>{item.label}</span>
+      </label>)}
+      {!visible.length && <p className="calendar-filter-hint">Ничего не найдено</p>}
+    </div>
+    {!selected.length && items.length > 0 && <p className="calendar-filter-hint">Выберите хотя бы один вариант</p>}
+    <button type="button" className="calendar-button calendar-primary calendar-filter-apply" disabled={!selected.length}
+      onClick={() => onApply(all ? [] : selected)}>Применить</button>
+  </>;
+}
+
 function SelectFilter({ label, value, options, onChange }) {
   const id = useId();
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
   const listRef = useRef(null);
-  const searchRef = useRef({ text: "", time: 0 });
   const [present, setPresent, closing] = useAnimatedState();
+  const [session, setSession] = useState(0);
   const open = Boolean(present) && !closing;
-  const items = [
-    { value: "", label },
-    ...options.map((option) => typeof option === "string" ? { value: option, label: option } : option),
-  ];
-  const selected = items.find((item) => item.value === value);
+  const items = options.map(option => typeof option === "string" ? { value: option, label: option } : option);
+  const summary = value.length ? `${items.find(item => item.value === value[0])?.label ?? value[0]}${value.length > 1 ? ` + ещё ${value.length - 1}` : ""}` : label;
 
   useEffect(() => {
     if (listRef.current) listRef.current.inert = closing;
     if (!open) return;
-    const list = listRef.current;
-    (list.querySelector('[aria-selected="true"]') || list.querySelector('[role="option"]'))?.focus();
+    listRef.current?.querySelector('input[type="search"]')?.focus({ preventScroll: true });
     function outside(event) {
       if (!rootRef.current?.contains(event.target)) setPresent(null);
     }
@@ -84,80 +104,32 @@ function SelectFilter({ label, value, options, onChange }) {
   }, [open, closing, setPresent]);
 
   function close() {
-    triggerRef.current?.focus();
     setPresent(null);
+    triggerRef.current?.focus({ preventScroll: true });
   }
 
-  function handleKey(event) {
-    if (event.key === "Escape" && open) {
-      event.preventDefault();
-      event.stopPropagation();
-      close();
-      return;
-    }
-    if (event.key === "Tab") {
-      if (open) close();
-      return;
-    }
-    const navigation = ["ArrowDown", "ArrowUp", "Home", "End"];
-    if (navigation.includes(event.key)) {
-      event.preventDefault();
-      if (!open) { setPresent(true); return; }
-      const buttons = [...listRef.current.querySelectorAll('[role="option"]')];
-      const index = buttons.indexOf(document.activeElement);
-      const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1
-        : (index + (event.key === "ArrowDown" ? 1 : -1) + buttons.length) % buttons.length;
-      buttons[next]?.focus();
-      return;
-    }
-    if (open && event.key.length === 1 && event.key !== " " && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      const now = event.timeStamp;
-      searchRef.current.text = (now - searchRef.current.time < 700 ? searchRef.current.text : "") + event.key.toLocaleLowerCase("ru");
-      searchRef.current.time = now;
-      const buttons = [...listRef.current.querySelectorAll('[role="option"]')];
-      buttons.find((button) => button.textContent.toLocaleLowerCase("ru").startsWith(searchRef.current.text))?.focus();
-    }
-  }
-
-  return (
-    <div className="calendar-control-select" ref={rootRef} onKeyDown={handleKey}>
-      <button
-        type="button"
-        className="calendar-select"
-        ref={triggerRef}
-        aria-label={`${label}: ${selected?.label || value || label}`}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={present ? id : undefined}
-        onClick={() => setPresent(open ? null : true)}
-      >
-        <span className="calendar-control-select-value">{selected?.label || value || label}</span>
-        <PageIcon name="down" className="calendar-control-select-arrow" />
-      </button>
-      {present && (
-        <div className="calendar-control-select-list calendar-control-motion" data-closing={closing} ref={listRef} id={id} role="listbox" aria-label={label} aria-hidden={closing || undefined}>
-          {items.map((item) => (
-            <button
-              className="calendar-control-select-option"
-              type="button"
-              role="option"
-              key={item.value}
-              aria-selected={value === item.value}
-              tabIndex={-1}
-              onClick={() => { onChange(item.value); close(); }}
-            >
-              {item.label}
-            </button>
-          ))}
+  return <div className="calendar-control-select" ref={rootRef} onKeyDown={event => {
+    if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); close(); }
+  }}>
+    <button type="button" className="calendar-select" ref={triggerRef} aria-label={value.length ? `${label}: ${summary}` : label}
+      title={label} aria-haspopup="dialog" aria-expanded={open} aria-controls={present ? id : undefined}
+      onClick={() => { if (!open) setSession(previous => previous + 1); setPresent(open ? null : true); }}>
+      <span className="calendar-control-select-value">{summary}</span>
+      <PageIcon name="down" className="calendar-control-select-arrow" />
+    </button>
+    {present && <div className="calendar-filter-reveal calendar-control-motion" data-closing={closing}>
+      <div className="calendar-filter-clip">
+        <div className="calendar-control-select-list" ref={listRef} id={id} role="dialog" aria-label={label} aria-hidden={closing || undefined}>
+          <FilterChoices key={session} label={label} items={items} value={value} onApply={next => { onChange(next); close(); }} />
         </div>
-      )}
-    </div>
-  );
+      </div>
+    </div>}
+  </div>;
 }
 
 
 const emptyEvents = [];
-const emptyFilters = { program: "", product: "", manager: "", type: "", institution: "", city: "", urgency: "" };
+const emptyFilters = { program: [], product: [], manager: [], type: [], institution: [], city: [], urgency: [] };
 const types = { deadline: "Дедлайн этапа", license: "Передача лицензии", training: "Старт обучения" };
 const statuses = { overdue: "Просрочено", urgent: "Горящий срок", planned: "Плановое" };
 const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -287,7 +259,7 @@ function FloatingPanel({ anchor, title, onClose, children, closing }) {
       panel.style.top = `${top}px`;
     }
     position();
-    panel.querySelector("button, select")?.focus();
+    panel.querySelector("button, select")?.focus({ preventScroll: true });
     const observer = new ResizeObserver(position);
     observer.observe(panel);
     window.addEventListener("resize", position);
@@ -337,7 +309,7 @@ function MonthView({ date, today, days, events, onOpen, onMore, onDay }) {
           <div className="calendar-cell" key={day} data-outside={day.slice(0, 7) !== date.slice(0, 7)}>
             <div className="calendar-cell-heading">
               <button type="button" className="calendar-date" data-today={day === today} aria-label={`Открыть день: ${fullDate(day)}`} aria-current={day === today ? "date" : undefined} onClick={() => onDay(day)}>{Number(day.slice(-2))}</button>
-              {day === today && <span>Сегодня</span>}
+              
             </div>
             {items.slice(0, 2).map((event) => <EventButton key={event.id} event={event} onOpen={onOpen} />)}
             {items.length > 2 && <button className="calendar-more" type="button" aria-haspopup="dialog" onClick={(event) => onMore(day, event.currentTarget)}>+{eventCount(items.length - 2)}</button>}
@@ -362,7 +334,7 @@ function TimeView({ days, today, events, view, onOpen, onDay }) {
         {days.map((day) => <div className="calendar-time-date" key={day}>
           <button type="button" className="calendar-date" data-today={day === today} aria-label={`Открыть день: ${fullDate(day)}`} onClick={() => onDay(day)}>{Number(day.slice(-2))}</button>
           <span>{formatDate(day, view === "day" ? { weekday: "long", day: "numeric", month: "long" } : { weekday: "short" })}</span>
-          {view === "day" && day === today && <small>Сегодня</small>}
+          
         </div>)}
       </div>
       <div className="calendar-all-day">
@@ -432,11 +404,11 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
   const to = view === "month" ? addDays(weekStart(lastOfMonth), 6) : view === "week" ? addDays(from, 6) : date;
   const days = Array.from({ length: Math.round((toDate(to) - toDate(from)) / 86400000) + 1 }, (_, i) => addDays(from, i));
 
-  const filtered = events.filter((event) => Object.entries(filters).every(([key, value]) => !value || (key === "urgency" ? urgency(event, today) : event[key]) === value));
+  const filtered = events.filter((event) => Object.entries(filters).every(([key, value]) => !value.length || value.includes(key === "urgency" ? urgency(event, today) : event[key])));
   const visible = filtered.filter((event) => event.date >= from && event.date <= to);
   const hasEvents = view === "month" ? visible.some((event) => event.date.slice(0, 7) === date.slice(0, 7)) : visible.length > 0;
-  const hasFilters = Object.values(filters).some(Boolean);
-  const extraCount = [filters.institution, filters.city, filters.urgency].filter(Boolean).length;
+  const hasFilters = Object.values(filters).some(value => value.length > 0);
+  const extraCount = [filters.institution, filters.city, filters.urgency].filter(value => value.length > 0).length;
   const title = view === "month" ? formatDate(date, { month: "long", year: "numeric" }).replace(/ г\.$/, "")
     : view === "day" ? fullDate(date)
       : from.slice(0, 7) === to.slice(0, 7) ? `${Number(from.slice(-2))}–${fullDate(to)}` : `${fullDate(from)} — ${fullDate(to)}`;
@@ -468,11 +440,11 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
             <button className="calendar-button calendar-arrow" type="button" aria-label="Предыдущий период" onClick={() => move(-1)}><PageIcon name="left" /></button>
             <span className="calendar-period" aria-live="polite">{title}</span>
             <button className="calendar-button calendar-arrow" type="button" aria-label="Следующий период" onClick={() => move(1)}><PageIcon name="right" /></button>
-            <button className="calendar-button" type="button" onClick={() => { setDate(today); setPopup(null); }}>Сегодня</button>
+            <button className="calendar-button" type="button" onClick={() => { setDate(today); setPopup(null); }}>{view === "month" ? "Текущий месяц" : view === "week" ? "Текущая неделя" : "Текущий день"}</button>
           </div>
         </div>
         <div className="calendar-filters">
-          {[["program", "ИТ-программа"], ["product", "ИТ-продукт"], ["manager", "Ответственный КАМ"]].map(([key, label]) => <SelectFilter key={key} label={label} options={filterOptions[key] ?? options[key]} value={filters[key]} onChange={(value) => changeFilter(key, value)} />)}
+          {[["program", "ИТ-направление"], ["product", "ИТ-продукт"], ["manager", "Ответственный КАМ"]].map(([key, label]) => <SelectFilter key={key} label={label} options={filterOptions[key] ?? options[key]} value={filters[key]} onChange={(value) => changeFilter(key, value)} />)}
           <SelectFilter label="Тип события" options={Object.entries(types).map(([value, label]) => ({ value, label }))} value={filters.type} onChange={(value) => changeFilter("type", value)} />
           <button className="calendar-button" type="button" aria-haspopup="dialog" aria-expanded={popup?.kind === "filters" && !closing} onClick={(event) => { setDraft(filters); setPopup({ kind: "filters", anchor: event.currentTarget }); }}>Ещё фильтры{extraCount ? ` · ${extraCount}` : ""}</button>
           {hasFilters && <button className="calendar-reset" type="button" onClick={resetFilters}>Сбросить фильтры</button>}
@@ -494,7 +466,7 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
       {popup && <FloatingPanel closing={closing} key={popup.kind} anchor={popup.anchor} onClose={closePopup} title={popup.kind === "filters" ? "Ещё фильтры" : popup.kind === "list" ? fullDate(popup.day) : popup.event.title}>
         {popup.kind === "filters" ? <form className="calendar-extra-filters" onSubmit={(event) => { event.preventDefault(); setFilters(draft); closePopup(); }}>
           {[["institution", "Учреждение"], ["city", "Город"], ["urgency", "Статус срочности"]].map(([key, label]) => <SelectFilter key={key} label={label} value={draft[key]} options={key === "urgency" ? Object.entries(statuses).map(([value, text]) => ({ value, label: text })) : filterOptions[key] ?? options[key]} onChange={(value) => setDraft((previous) => ({ ...previous, [key]: value }))} />)}
-          <div className="calendar-filter-actions"><button type="button" className="calendar-button" onClick={() => setDraft((previous) => ({ ...previous, institution: "", city: "", urgency: "" }))}>Сбросить</button><button className="calendar-button calendar-primary" type="submit">Применить</button></div>
+          <div className="calendar-filter-actions"><button type="button" className="calendar-button" onClick={() => setDraft((previous) => ({ ...previous, institution: [], city: [], urgency: [] }))}>Сбросить</button><button className="calendar-button calendar-primary" type="submit">Применить</button></div>
         </form> : popup.kind === "list" ? <div className="calendar-event-list">
           {visible.filter((event) => event.date === popup.day).sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "")).map((event) => <EventButton key={event.id} event={event} showTime onOpen={(item) => openEvent(item, popup.anchor)} />)}
         </div> : <div className="calendar-details">
