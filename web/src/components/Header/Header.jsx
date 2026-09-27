@@ -1,5 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./Header.css";
+import ProfileModal from "../Profile/ProfileModal";
+import SettingsDrawer from "../Settings/SettingsDrawer";
 
 function LogoMark() {
   return (
@@ -8,8 +10,8 @@ function LogoMark() {
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
-      <path d="M5 2l14 8-14 8V2z" fill="var(--wr-purple)" />
-      <path d="M5 10h14l-14 8V10z" fill="var(--wr-orange)" />
+      <path d="M5 2l14 8-14 8V2z" fill="var(--header-purple)" />
+      <path d="M5 10h14l-14 8V10z" fill="var(--header-orange)" />
     </svg>
   );
 }
@@ -128,12 +130,12 @@ function LogoutIcon() {
 const NAV_LINKS = [
   { label: "Главная", href: "#/" },
   { label: "Отчёты", href: "#/reports" },
-  { label: "Календарь", href: null },
-  { label: "FAQ", href: null },
-  { label: "Администрирование", href: null },
+  { label: "Календарь", href: "#/calendar" },
+  { label: "FAQ", href: "#/faq" },
+  { label: "Администрирование", href: "#/admin" },
 ];
 
-function ProfileMenu({ dark, setDark }) {
+function ProfileMenu({ dark, setDark, onOpenProfile, onOpenSettings }) {
   return (
     <div className="wr-profile-menu" role="menu">
       <div className="wr-profile-menu-head">
@@ -149,6 +151,7 @@ function ProfileMenu({ dark, setDark }) {
         type="button"
         className="wr-profile-item"
         role="menuitem"
+        onClick={onOpenProfile}
       >
         <UserIcon />
         Профиль
@@ -158,6 +161,7 @@ function ProfileMenu({ dark, setDark }) {
         type="button"
         className="wr-profile-item"
         role="menuitem"
+        onClick={onOpenSettings}
       >
         <GearIcon />
         Настройки
@@ -191,8 +195,21 @@ export default function Header({
   dark,
   setDark,
   activePage = "Главная",
+  profiles,
+  onChangePassword,
+  onSaveNotifications,
+  initialNotifications,
+  notificationStorageKey,
 }) {
   const profileRef = useRef(null);
+  const avatarRef = useRef(null);
+  const [accountView, setAccountView] = useState(null);
+  const closeAccountView = useCallback(() => setAccountView(null), []);
+
+  function openAccountView(view) {
+    setProfileOpen(false);
+    setAccountView(view);
+  }
 
   useEffect(() => {
     function onClickOutside(event) {
@@ -212,7 +229,8 @@ export default function Header({
   }, [setProfileOpen]);
 
   return (
-    <header className="wr-header">
+    <>
+    <header className="wr-header" data-theme={dark ? "dark" : "light"} data-page={activePage}>
       <div className="wr-header-inner">
         <div className="wr-logo">
           <LogoMark />
@@ -250,6 +268,7 @@ export default function Header({
             <button
               type="button"
               className="wr-avatar-btn"
+              ref={avatarRef}
               aria-label="Меню пользователя"
               onClick={() => setProfileOpen((open) => !open)}
               aria-expanded={profileOpen}
@@ -259,11 +278,22 @@ export default function Header({
             </button>
 
             {profileOpen && (
-              <ProfileMenu dark={dark} setDark={setDark} />
+              <ProfileMenu dark={dark} setDark={setDark}
+                onOpenProfile={() => openAccountView("profile")}
+                onOpenSettings={() => openAccountView("settings")} />
             )}
           </div>
         </div>
       </div>
     </header>
+    {accountView === "profile" && (
+      <ProfileModal dark={dark} onClose={closeAccountView} returnFocusRef={avatarRef} profiles={profiles} />
+    )}
+    {accountView === "settings" && (
+      <SettingsDrawer dark={dark} onClose={closeAccountView} returnFocusRef={avatarRef}
+        onChangePassword={onChangePassword} onSaveNotifications={onSaveNotifications}
+        initialNotifications={initialNotifications} notificationStorageKey={notificationStorageKey} />
+    )}
+    </>
   );
 }
