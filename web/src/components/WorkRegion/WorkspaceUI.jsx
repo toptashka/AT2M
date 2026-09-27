@@ -1,6 +1,7 @@
 import {
   cloneElement,
   isValidElement,
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -10,138 +11,128 @@ import {
 
 import chevronRight from "../../assets/chevron-right.svg";
 import chevronDown from "../../assets/chevron-down.svg";
+import unionIcon from "../../assets/Union.svg";
 import "./WorkspaceUI.css";
 
-export function Select({
-  value,
-  options,
-  onChange,
+export function CheckIcon() {
+  return (
+    <span
+      className="at-check-svg"
+      style={{ "--check-image": `url("${unionIcon}")` }}
+      aria-hidden="true"
+    />
+  );
+}
+
+export function useAnimatedState() {
+  const [present, setPresent] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const timer = useRef(null);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const update = useCallback((next) => {
+    clearTimeout(timer.current);
+
+    if (next) {
+      setClosing(false);
+      setPresent(true);
+      return;
+    }
+
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setPresent(false);
+      setClosing(false);
+      return;
+    }
+
+    setClosing(true);
+
+    timer.current = setTimeout(() => {
+      setPresent(false);
+      setClosing(false);
+    }, 180);
+  }, []);
+
+  return [present, update, closing];
+}
+
+export function Popover({
   label,
+  summary,
+  children,
   disabled = false,
-  searchable = false,
-  multiple = false,
-  allMeansEmpty = false,
-  allLabel = "Все варианты",
-  searchPlaceholder = "Поиск",
-  menuTitle,
+  width = 320,
+  className = "",
+  panelClassName = "",
 }) {
   const root = useRef(null);
   const trigger = useRef(null);
-  const popup = useRef(null);
+  const panel = useRef(null);
   const id = useId();
 
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [draft, setDraft] = useState([]);
+  const [present, setPresent, closing] = useAnimatedState();
+  const [session, setSession] = useState(0);
   const [position, setPosition] = useState({});
 
-  const items = options.map((item) =>
-    typeof item === "string"
-      ? { value: item, label: item }
-      : item
-  );
+  const open = present && !closing;
 
-  const values = Array.isArray(value)
-    ? value
-    : value
-      ? [value]
-      : [];
+  function close(restore = true) {
+    setPresent(false);
 
-  const selected = items.filter((item) =>
-    multiple
-      ? values.includes(item.value)
-      : item.value === value
-  );
-
-  const visible = items.filter((item) =>
-    item.label
-      .toLocaleLowerCase("ru")
-      .includes(search.toLocaleLowerCase("ru"))
-  );
-
-  const allSelected =
-    items.length > 0 &&
-    items.every((item) => draft.includes(item.value));
-
-  const someSelected = items.some((item) =>
-    draft.includes(item.value)
-  );
-
-  function close(restoreFocus = false) {
-    setOpen(false);
-
-    if (restoreFocus) {
+    if (restore) {
       trigger.current?.focus({ preventScroll: true });
     }
   }
 
-  function show() {
-    setSearch("");
-
-    setDraft(
-      multiple && allMeansEmpty && !values.length
-        ? items.map((item) => item.value)
-        : values
-    );
-
-    setOpen(true);
-  }
-
   useLayoutEffect(() => {
-    if (!open || disabled) return;
+    if (!present || disabled) return;
 
-    const node = popup.current;
+    const node = panel.current;
 
     function place() {
       const rect = trigger.current.getBoundingClientRect();
       const viewport = window.visualViewport;
 
-      const leftEdge = viewport?.offsetLeft || 0;
-      const topEdge = viewport?.offsetTop || 0;
-      const width = viewport?.width || window.innerWidth;
-      const height = viewport?.height || window.innerHeight;
-
-      const gap = 6;
-      const margin = 12;
+      const left = viewport?.offsetLeft || 0;
+      const top = viewport?.offsetTop || 0;
+      const vw = viewport?.width || window.innerWidth;
+      const vh = viewport?.height || window.innerHeight;
 
       const below = Math.max(
         0,
-        topEdge + height - rect.bottom - gap - margin
+        top + vh - rect.bottom - 18
       );
 
       const above = Math.max(
         0,
-        rect.top - topEdge - gap - margin
+        rect.top - top - 18
       );
 
-      const upwards = below < 300 && above > below;
+      const up = below < 320 && above > below;
 
-      const popupWidth = Math.min(
-        Math.max(rect.width, multiple ? 320 : 200),
-        width - margin * 2
+      const panelWidth = Math.min(
+        Math.max(rect.width, width),
+        vw - 24
       );
 
       setPosition({
         position: "fixed",
         inset: "auto",
         left: Math.max(
-          leftEdge + margin,
-          Math.min(
-            rect.left,
-            leftEdge + width - popupWidth - margin
-          )
+          left + 12,
+          Math.min(rect.left, left + vw - panelWidth - 12)
         ),
-        top: upwards ? undefined : rect.bottom + gap,
-        bottom: upwards
-          ? window.innerHeight - rect.top + gap
+        top: up ? undefined : rect.bottom + 6,
+        bottom: up
+          ? window.innerHeight - rect.top + 6
           : undefined,
-        width: popupWidth,
+        width: panelWidth,
         minWidth: 0,
-        maxWidth: popupWidth,
-        maxHeight: Math.min(
-          multiple ? 420 : 280,
-          upwards ? above : below
-        ),
+        maxWidth: panelWidth,
+        maxHeight: Math.min(560, up ? above : below),
       });
     }
 
@@ -170,14 +161,14 @@ export function Select({
       window.visualViewport?.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("scroll", place);
     };
-  }, [open, disabled, multiple]);
+  }, [present, disabled, width]);
 
   useEffect(() => {
     if (!open) return;
 
     function outside(event) {
       if (!root.current?.contains(event.target)) {
-        setOpen(false);
+        setPresent(false);
       }
     }
 
@@ -188,62 +179,52 @@ export function Select({
       document.removeEventListener("pointerdown", outside);
       document.removeEventListener("focusin", outside);
     };
-  }, [open]);
-
-  useEffect(() => {
-    if (disabled) {
-      setOpen(false);
-    }
-  }, [disabled]);
-
-  function toggle(option) {
-    setDraft((previous) =>
-      previous.includes(option)
-        ? previous.filter((item) => item !== option)
-        : [...previous, option]
-    );
-  }
+  }, [open, setPresent]);
 
   return (
     <div
-      className="at-select"
+      className={`at-select ${className}`}
       ref={root}
       onKeyDown={(event) => {
-        if (event.key === "Escape" && open) {
+        if (event.key === "Escape" && present) {
           event.preventDefault();
           event.stopPropagation();
-          close(true);
+          close();
         }
       }}
     >
       <button
-        ref={trigger}
         type="button"
+        ref={trigger}
         className="at-select-trigger"
         aria-label={label}
         aria-expanded={open}
-        aria-controls={open ? id : undefined}
+        aria-controls={present ? id : undefined}
         disabled={disabled}
-        onClick={() => (open ? close() : show())}
+        onClick={() => {
+          if (open) {
+            close();
+          } else {
+            setSession((value) => value + 1);
+            setPresent(true);
+          }
+        }}
         onKeyDown={(event) => {
           if (event.key !== "ArrowDown") return;
 
           event.preventDefault();
 
           if (!open) {
-            show();
+            setSession((value) => value + 1);
+            setPresent(true);
           } else {
-            popup.current
+            panel.current
               ?.querySelector("input, button")
               ?.focus();
           }
         }}
       >
-        <span>
-          {selected.map((item) => item.label).join(", ") ||
-            label ||
-            "Не назначен"}
-        </span>
+        <span>{summary || label}</span>
 
         <img
           className="at-chevron-image"
@@ -252,124 +233,228 @@ export function Select({
         />
       </button>
 
-      {open && !disabled && (
+      {present && !disabled && (
         <div
+          ref={panel}
           id={id}
-          ref={popup}
           popover="manual"
-          className={`at-options at-select-popup${
-            multiple ? " at-multi-popup" : ""
-          }`}
+          className={`at-options at-select-popup ${panelClassName}`}
           style={position}
+          data-closing={closing}
+          inert={closing || undefined}
           role="group"
           aria-label={label}
         >
-          {multiple && (
-            <p className="at-multi-title">
-              {menuTitle || label}
-            </p>
-          )}
-
-          {(searchable || multiple) && (
-            <input
-              className="at-input"
-              aria-label={searchPlaceholder}
-              placeholder={searchPlaceholder}
-              value={search}
-              onChange={(event) =>
-                setSearch(event.target.value)
-              }
-            />
-          )}
-
-          {multiple ? (
-            <>
-              <div className="at-multi-list">
-                <label className="at-multi-option">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={(node) => {
-                      if (node) {
-                        node.indeterminate =
-                          someSelected && !allSelected;
-                      }
-                    }}
-                    onChange={() =>
-                      setDraft(
-                        allSelected
-                          ? []
-                          : items.map((item) => item.value)
-                      )
-                    }
-                  />
-
-                  <span>{allLabel}</span>
-                </label>
-
-                {visible.map((item) => (
-                  <label
-                    className="at-multi-option"
-                    key={item.value}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={draft.includes(item.value)}
-                      onChange={() => toggle(item.value)}
-                    />
-
-                    <span>{item.label}</span>
-                  </label>
-                ))}
-
-                {!visible.length && (
-                  <p className="at-muted">
-                    Ничего не найдено
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className="at-button primary at-multi-apply"
-                disabled={allMeansEmpty && !draft.length}
-                onClick={() => {
-                  onChange(
-                    allMeansEmpty && allSelected ? [] : draft
-                  );
-
-                  close(true);
-                }}
-              >
-                Применить
-              </button>
-            </>
-          ) : (
-            visible.map((item) => (
-              <button
-                type="button"
-                key={item.value}
-                aria-pressed={item.value === value}
-                onClick={() => {
-                  onChange(item.value);
-                  close(true);
-                }}
-              >
-                <span>{item.label}</span>
-
-                {item.value === value && (
-                  <span aria-hidden="true">✓</span>
-                )}
-              </button>
-            ))
-          )}
-
-          {!multiple && !visible.length && (
-            <p className="at-muted">Ничего не найдено</p>
-          )}
+          <div className="at-popup-content" key={session}>
+            {children(close)}
+          </div>
         </div>
       )}
     </div>
+  );
+}
+
+function SelectMenu({
+  items,
+  value,
+  multiple,
+  allMeansEmpty,
+  allLabel,
+  searchable,
+  searchPlaceholder,
+  menuTitle,
+  onChange,
+  close,
+}) {
+  const values = Array.isArray(value)
+    ? value
+    : value
+      ? [value]
+      : [];
+
+  const [draft, setDraft] = useState(() =>
+    allMeansEmpty && !values.length
+      ? items.map((item) => item.value)
+      : values
+  );
+
+  const [search, setSearch] = useState("");
+
+  const all =
+    items.length > 0 &&
+    items.every((item) => draft.includes(item.value));
+
+  const some = items.some((item) =>
+    draft.includes(item.value)
+  );
+
+  const visible = items.filter((item) =>
+    item.label
+      .toLocaleLowerCase("ru")
+      .includes(search.trim().toLocaleLowerCase("ru"))
+  );
+
+  return (
+    <div className={multiple ? "at-multi-menu" : "at-single-menu"}>
+      {multiple && (
+        <p className="at-multi-title">{menuTitle}</p>
+      )}
+
+      {(searchable || multiple) && (
+        <input
+          className="at-input"
+          aria-label={searchPlaceholder}
+          placeholder={searchPlaceholder}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+      )}
+
+      {multiple ? (
+        <>
+          <div className="at-multi-list">
+            <label className="at-multi-option">
+              <input
+                type="checkbox"
+                checked={all}
+                ref={(node) => {
+                  if (node) {
+                    node.indeterminate = some && !all;
+                  }
+                }}
+                onChange={() =>
+                  setDraft(
+                    all ? [] : items.map((item) => item.value)
+                  )
+                }
+              />
+
+              <span>{allLabel}</span>
+            </label>
+
+            {visible.map((item) => (
+              <label
+                className="at-multi-option"
+                key={item.value}
+              >
+                <input
+                  type="checkbox"
+                  checked={draft.includes(item.value)}
+                  onChange={() =>
+                    setDraft((previous) =>
+                      previous.includes(item.value)
+                        ? previous.filter(
+                            (current) => current !== item.value
+                          )
+                        : [...previous, item.value]
+                    )
+                  }
+                />
+
+                <span>{item.label}</span>
+              </label>
+            ))}
+
+            {!visible.length && (
+              <p className="at-muted">Ничего не найдено</p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="at-button primary at-multi-apply"
+            disabled={allMeansEmpty && !draft.length}
+            onClick={() => {
+              onChange(allMeansEmpty && all ? [] : draft);
+              close();
+            }}
+          >
+            Применить
+          </button>
+        </>
+      ) : (
+        <>
+          {visible.map((item) => (
+            <button
+              type="button"
+              key={item.value}
+              aria-pressed={item.value === value}
+              onClick={() => {
+                onChange(item.value);
+                close();
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+
+          {!visible.length && (
+            <p className="at-muted">Ничего не найдено</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+export function Select({
+  value,
+  options,
+  onChange,
+  label,
+  disabled = false,
+  searchable = false,
+  multiple = false,
+  allMeansEmpty = false,
+  allLabel = "Все варианты",
+  searchPlaceholder = "Поиск",
+  menuTitle,
+}) {
+  const items = options.map((item) =>
+    typeof item === "string"
+      ? { value: item, label: item }
+      : item
+  );
+
+  const values = Array.isArray(value)
+    ? value
+    : value
+      ? [value]
+      : [];
+
+  const selected = items.filter((item) =>
+    multiple
+      ? values.includes(item.value)
+      : item.value === value
+  );
+
+  return (
+    <Popover
+      label={label}
+      summary={
+        selected.map((item) => item.label).join(", ") ||
+        label ||
+        "Не назначен"
+      }
+      disabled={disabled}
+      width={multiple ? 320 : 200}
+      panelClassName={multiple ? "at-multi-popup" : ""}
+    >
+      {(close) => (
+        <SelectMenu
+          items={items}
+          value={value}
+          multiple={multiple}
+          allMeansEmpty={allMeansEmpty}
+          allLabel={allLabel}
+          searchable={searchable}
+          searchPlaceholder={searchPlaceholder}
+          menuTitle={menuTitle || label}
+          onChange={onChange}
+          close={close}
+        />
+      )}
+    </Popover>
   );
 }
 
@@ -383,10 +468,15 @@ export function Dialog({
   showClose = true,
 }) {
   const ref = useRef(null);
+  const timer = useRef(null);
+  const locked = useRef(false);
+
+  const [closing, setClosing] = useState(false);
   const id = useId();
 
   useEffect(() => {
     const node = ref.current;
+
     const previous =
       returnFocusRef?.current || document.activeElement;
 
@@ -396,6 +486,7 @@ export function Dialog({
     node.showModal();
 
     return () => {
+      clearTimeout(timer.current);
       node.close();
       document.body.style.overflow = overflow;
 
@@ -405,21 +496,44 @@ export function Dialog({
     };
   }, [returnFocusRef]);
 
+  function close(action = onClose) {
+    if (busy || locked.current) return;
+
+    locked.current = true;
+
+    const finish = () => {
+      try {
+        action();
+      } finally {
+        locked.current = false;
+        setClosing(false);
+      }
+    };
+
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      finish();
+      return;
+    }
+
+    setClosing(true);
+    timer.current = setTimeout(finish, 180);
+  }
+
   return (
     <dialog
       ref={ref}
       className={`at-dialog${wide ? " at-dialog-wide" : ""}`}
+      data-closing={closing}
       aria-labelledby={id}
-      aria-busy={busy}
+      aria-busy={busy || closing}
       onCancel={(event) => {
         event.preventDefault();
-
-        if (!busy) {
-          onClose();
-        }
+        close();
       }}
       onClick={(event) => {
-        if (event.target !== event.currentTarget || busy) return;
+        if (event.target !== event.currentTarget) return;
 
         const rect = event.currentTarget.getBoundingClientRect();
 
@@ -429,7 +543,7 @@ export function Dialog({
           event.clientY < rect.top ||
           event.clientY > rect.bottom
         ) {
-          onClose();
+          close();
         }
       }}
     >
@@ -441,15 +555,17 @@ export function Dialog({
             type="button"
             className="at-icon"
             aria-label="Закрыть"
-            disabled={busy}
-            onClick={onClose}
+            disabled={busy || closing}
+            onClick={() => close()}
           >
             ×
           </button>
         )}
       </div>
 
-      {children}
+      {typeof children === "function"
+        ? children(close, closing)
+        : children}
     </dialog>
   );
 }

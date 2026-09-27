@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Select, Field } from "./WorkspaceUI";
+import { Select, Field, Popover } from "./WorkspaceUI";
+import WorkspaceCalendar from "./WorkspaceCalendar";
 import {
   OWNERS,
   PROGRAMS,
@@ -7,13 +7,6 @@ import {
   INITIAL_FILTERS,
   selection,
 } from "./workspaceModel";
-
-const iso = (date) =>
-  [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
 
 export function ProductFilter({ value, onChange }) {
   return (
@@ -32,202 +25,35 @@ export function ProductFilter({ value, onChange }) {
 }
 
 export function PeriodFilter({ value, onChange }) {
-  const ref = useRef(null);
-  const [draft, setDraft] = useState(value);
-  const [month, setMonth] = useState(new Date().getMonth());
-  const [year, setYear] = useState(new Date().getFullYear());
-
-  function pick(day) {
-    if (!draft.start || draft.end) {
-      setDraft({ start: day, end: "" });
-    } else {
-      setDraft({
-        start: day < draft.start ? day : draft.start,
-        end: day < draft.start ? draft.start : day,
-      });
-    }
-  }
-
-  function preset(kind) {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = today.getMonth();
-
-    let start;
-    let end;
-
-    if (kind === 0) {
-      start = new Date(y, m, 1);
-      end = new Date(y, m + 1, 0);
-    }
-
-    if (kind === 1) {
-      start = new Date(y, m - 1, 1);
-      end = new Date(y, m, 0);
-    }
-
-    if (kind === 2) {
-      start = new Date(y, Math.floor(m / 3) * 3, 1);
-      end = new Date(y, Math.floor(m / 3) * 3 + 3, 0);
-    }
-
-    if (kind === 3) {
-      start = new Date(m < 8 ? y - 1 : y, 8, 1);
-      end = new Date(start.getFullYear() + 1, 7, 31);
-    }
-
-    setDraft({ start: iso(start), end: iso(end) });
-    setMonth(start.getMonth());
-    setYear(start.getFullYear());
-  }
+  const format = (date) =>
+    date.split("-").reverse().join(".");
 
   return (
-    <details ref={ref} className="at-select aw-period">
-      <summary onClick={() => setDraft(value)}>
-        <span>
-          {value.start
-            ? value.start.split("-").reverse().join(".") +
-              " — " +
-              value.end.split("-").reverse().join(".")
-            : "Период"}
-        </span>
-
-        <i className="at-chevron" />
-      </summary>
-
-      <div className="aw-calendar at-options">
-        <div className="aw-presets">
-          {[
-            "Текущий месяц",
-            "Прошлый месяц",
-            "Квартал",
-            "Учебный год",
-          ].map((name, index) => (
-            <button
-              type="button"
-              key={name}
-              onClick={() => preset(index)}
-            >
-              {name}
-            </button>
-          ))}
-        </div>
-
-        <div className="aw-months">
-          {[0, 1].map((offset) => {
-            const first = new Date(year, month + offset, 1);
-            const blank = (first.getDay() + 6) % 7;
-
-            const days = new Date(
-              first.getFullYear(),
-              first.getMonth() + 1,
-              0
-            ).getDate();
-
-            return (
-              <div key={offset}>
-                <div className="aw-month-title">
-                  <button
-                    type="button"
-                    className="at-icon"
-                    aria-label="Предыдущий месяц"
-                    onClick={() => setMonth(month - 1)}
-                  >
-                    ‹
-                  </button>
-
-                  <strong>
-                    {first.toLocaleDateString("ru-RU", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </strong>
-
-                  <button
-                    type="button"
-                    className="at-icon"
-                    aria-label="Следующий месяц"
-                    onClick={() => setMonth(month + 1)}
-                  >
-                    ›
-                  </button>
-                </div>
-
-                <div className="aw-days">
-                  {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(
-                    (day) => <small key={day}>{day}</small>
-                  )}
-
-                  {Array.from({ length: blank }, (_, index) => (
-                    <span key={"blank-" + index} />
-                  ))}
-
-                  {Array.from({ length: days }, (_, index) => {
-                    const day = iso(
-                      new Date(
-                        first.getFullYear(),
-                        first.getMonth(),
-                        index + 1
-                      )
-                    );
-
-                    const selected =
-                      day === draft.start || day === draft.end;
-
-                    const inRange =
-                      day > draft.start && day < draft.end;
-
-                    return (
-                      <button
-                        type="button"
-                        key={day}
-                        onClick={() => pick(day)}
-                        aria-label={day}
-                        aria-pressed={selected}
-                        className={
-                          selected
-                            ? "selected"
-                            : inRange
-                              ? "range"
-                              : ""
-                        }
-                      >
-                        {index + 1}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="at-form-actions">
-          <button
-            type="button"
-            className="at-button"
-            onClick={() => {
-              onChange({ start: "", end: "" });
-              ref.current.removeAttribute("open");
-            }}
-          >
-            Сбросить
-          </button>
-
-          <button
-            type="button"
-            className="at-button primary"
-            disabled={!draft.start || !draft.end}
-            onClick={() => {
-              onChange(draft);
-              ref.current.removeAttribute("open");
-            }}
-          >
-            Применить
-          </button>
-        </div>
-      </div>
-    </details>
+    <Popover
+      label="Период"
+      width={808}
+      panelClassName="at-calendar-popup"
+      summary={
+        value.start && value.end
+          ? format(value.start) + " — " + format(value.end)
+          : "Период"
+      }
+    >
+      {(close) => (
+        <WorkspaceCalendar
+          from={value.start}
+          to={value.end}
+          onReset={() => onChange({ start: "", end: "" })}
+          onApply={(range) => {
+            onChange({
+              start: range.from,
+              end: range.to,
+            });
+            close();
+          }}
+        />
+      )}
+    </Popover>
   );
 }
 
@@ -253,7 +79,7 @@ export default function WorkspaceFilters({
     <div className="aw-toolbar">
       <input
         className="at-input"
-        placeholder="Поиск"
+        placeholder="Найти учреждение, программу или ИТ-продукт…"
         aria-label="Поиск взаимодействий"
         value={value.search}
         onChange={(event) =>
@@ -265,7 +91,7 @@ export default function WorkspaceFilters({
         multiple
         allMeansEmpty
         value={selection(value.direction)}
-        label="IT направления"
+        label="ИТ-направление"
         allLabel="Все направления"
         searchPlaceholder="Поиск направлений"
         options={PROGRAMS}
@@ -281,7 +107,7 @@ export default function WorkspaceFilters({
         multiple
         allMeansEmpty
         value={selection(value.status)}
-        label="Все статусы"
+        label="Статус"
         allLabel="Все статусы"
         searchPlaceholder="Поиск статусов"
         options={[
@@ -312,54 +138,58 @@ export default function WorkspaceFilters({
         onChange={(next) => onChange({ ...value, ...next })}
       />
 
-      <details className="at-select aw-extra">
-        <summary>
-          Ещё фильтры
-          <i className="at-chevron" />
-        </summary>
-
-        <div className="at-options">
-          <Select
-            multiple
-            allMeansEmpty
-            value={selection(value.institution)}
-            label="Учреждение"
-            allLabel="Все учреждения"
-            searchPlaceholder="Поиск учреждений"
-            options={institutions}
-            onChange={(next) => change("institution", next)}
-          />
-
-          <Select
-            multiple
-            allMeansEmpty
-            value={selection(value.city)}
-            label="Город"
-            allLabel="Все города"
-            searchPlaceholder="Поиск городов"
-            options={cities}
-            onChange={(next) => change("city", next)}
-          />
-
-          <Field label="Дата изменения">
-            <input
-              className="at-input"
-              type="date"
-              value={value.changed}
-              onChange={(event) =>
-                change("changed", event.target.value)
-              }
+      <Popover
+        label="Ещё фильтры"
+        width={304}
+        panelClassName="at-extra-popup"
+      >
+        {(close) => (
+          <div className="at-extra-content">
+            <Select
+              multiple
+              allMeansEmpty
+              value={selection(value.institution)}
+              label="Учреждение"
+              allLabel="Все учреждения"
+              searchPlaceholder="Поиск учреждений"
+              options={institutions}
+              onChange={(next) => change("institution", next)}
             />
-          </Field>
 
-          <button
-            type="button"
-            onClick={() => onChange(INITIAL_FILTERS)}
-          >
-            Сбросить фильтры
-          </button>
-        </div>
-      </details>
+            <Select
+              multiple
+              allMeansEmpty
+              value={selection(value.city)}
+              label="Город"
+              allLabel="Все города"
+              searchPlaceholder="Поиск городов"
+              options={cities}
+              onChange={(next) => change("city", next)}
+            />
+
+            <Field label="Дата изменения">
+              <input
+                className="at-input"
+                type="date"
+                value={value.changed}
+                onChange={(event) =>
+                  change("changed", event.target.value)
+                }
+              />
+            </Field>
+
+            <button
+              type="button"
+              onClick={() => {
+                onChange(INITIAL_FILTERS);
+                close();
+              }}
+            >
+              Сбросить фильтры
+            </button>
+          </div>
+        )}
+      </Popover>
     </div>
   );
 }

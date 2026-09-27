@@ -135,7 +135,8 @@ textarea.at-input {
   font-size: 12px;
 }
 
-.at-field:focus-within > span:first-child {
+/* Подпись селекта не меняет цвет при раскрытии списка. */
+.at-field:has(> .at-input:focus) > span:first-child {
   color: var(--a-focus);
 }
 
@@ -199,6 +200,16 @@ textarea.at-input {
   box-shadow: none;
 }
 
+.at-select-trigger > span {
+  color: var(--a-text);
+  text-shadow: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.at-select-trigger:disabled > span {
+  color: var(--a-disabled-text);
+}
+
 .at-dialog .at-select-trigger {
   background: var(--a-field);
 }
@@ -246,10 +257,6 @@ textarea.at-input {
   background: var(--a-field);
 }
 
-.at-options > button[aria-pressed="true"] {
-  color: var(--a-accent);
-}
-
 .at-options .at-input {
   margin-bottom: 8px;
 }
@@ -263,27 +270,31 @@ textarea.at-input {
   color: var(--a-text);
 }
 
-.at-select-popup > button > span:first-child {
+.at-popup-content {
   min-width: 0;
-  overflow-wrap: anywhere;
+  min-height: 0;
 }
 
-.at-select-popup.at-multi-popup:popover-open {
+.at-multi-popup {
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.at-multi-menu {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
-  border-radius: 12px;
-  overflow: auto;
+  min-height: 0;
 }
 
-.at-multi-popup .at-multi-title {
+.at-multi-title {
   margin: 0;
   font-size: 14px;
   line-height: 20px;
+  color: var(--a-text);
 }
 
-.at-multi-popup > .at-input {
+.at-multi-menu > .at-input {
   flex: none;
   margin: 0;
   background: var(--a-card);
@@ -291,6 +302,7 @@ textarea.at-input {
 
 .at-multi-list {
   min-height: 36px;
+  max-height: 240px;
   overflow: auto;
   overscroll-behavior: contain;
   flex: 1 1 auto;
@@ -333,13 +345,19 @@ textarea.at-input {
 .at-multi-option input:checked::after {
   content: "";
   position: absolute;
-  left: 3px;
-  top: 0;
-  width: 4px;
-  height: 8px;
-  border-right: 2px solid var(--a-on-accent);
-  border-bottom: 2px solid var(--a-on-accent);
-  transform: rotate(45deg);
+  inset: 0;
+  margin: auto;
+  width: 11px;
+  height: 7px;
+  border: 0;
+  transform: none;
+  background: var(--a-on-accent);
+  -webkit-mask:
+    url("../../assets/Union.svg")
+    center / contain no-repeat;
+  mask:
+    url("../../assets/Union.svg")
+    center / contain no-repeat;
 }
 
 .at-multi-option input:indeterminate::after {
@@ -357,25 +375,75 @@ textarea.at-input {
   outline-offset: 2px;
 }
 
-.at-options.at-multi-popup > .at-multi-apply {
-  flex: none;
+.at-multi-menu > .at-multi-apply {
   display: block;
+  flex: none;
   width: 100%;
   min-height: 40px;
   text-align: center;
-  border-radius: 8px;
   background: var(--a-accent);
   color: var(--a-on-accent);
 }
 
-.at-options.at-multi-popup > .at-multi-apply:hover:not(:disabled) {
+.at-multi-menu > .at-multi-apply:hover:not(:disabled) {
   background: #e7430d;
 }
 
 :root[data-theme="dark"]
-  .at-options.at-multi-popup
-  > .at-multi-apply:hover:not(:disabled) {
+  .at-multi-menu > .at-multi-apply:hover:not(:disabled) {
   background: #ffbba3;
+}
+
+.at-single-menu {
+  display: grid;
+  gap: 4px;
+}
+
+.at-single-menu > button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--a-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-single-menu > button:hover,
+.at-single-menu > button[aria-pressed="true"] {
+  background: var(--a-field);
+}
+
+.at-single-menu > button:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: -2px;
+}
+
+.at-extra-content {
+  display: grid;
+  gap: 12px;
+}
+
+.at-extra-content > button {
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--a-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-check-svg {
+  display: inline-block;
+  width: 11px;
+  height: 7px;
+  flex: none;
+  background: currentColor;
+  vertical-align: middle;
+  -webkit-mask: var(--check-image) center / contain no-repeat;
+  mask: var(--check-image) center / contain no-repeat;
 }
 
 .at-dialog {
@@ -400,6 +468,11 @@ textarea.at-input {
 
 .at-dialog::backdrop {
   background: var(--a-backdrop);
+  animation: aw-backdrop-open 180ms ease both;
+}
+
+.at-dialog[data-closing="true"]::backdrop {
+  animation: aw-backdrop-close 180ms ease both;
 }
 
 .at-dialog h2,
@@ -681,6 +754,357 @@ textarea.at-input {
   background-image: url("../../assets/chevron-right.svg");
 }
 
+/* Фильтры по скриншоту. */
+.aw .aw-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 248fr)
+    minmax(132px, 156fr)
+    minmax(132px, 156fr)
+    minmax(80px, 92fr)
+    minmax(154px, 176fr)
+    minmax(104px, 136fr)
+    minmax(110px, 128fr);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.aw .aw-toolbar > .at-input {
+  grid-column: auto;
+}
+
+.aw .aw-toolbar > .at-input,
+.aw .aw-toolbar > .at-select > .at-select-trigger {
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  background: var(--a-card);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--a-text);
+}
+
+.aw[data-theme="dark"] .aw-toolbar > .at-input {
+  background: var(--a-field);
+}
+
+.aw .aw-toolbar .at-select-trigger {
+  gap: 8px;
+}
+
+.aw .aw-toolbar .at-chevron-image {
+  width: 16px;
+  height: 16px;
+}
+
+.aw .aw-toolbar > .at-input::placeholder {
+  color: var(--a-muted);
+  text-overflow: ellipsis;
+}
+
+.aw .aw-toolbar > .at-input:hover,
+.aw .aw-toolbar > .at-select > .at-select-trigger:hover {
+  border-color: var(--a-hover-border);
+}
+
+.aw .aw-toolbar > .at-input:focus,
+.aw .aw-toolbar > .at-select > .at-select-trigger:focus-visible {
+  border-color: var(--a-focus);
+}
+
+/* Календарь из ReportsPage. */
+.at-calendar-popup {
+  padding: 24px;
+  overflow: auto;
+}
+
+.aw-date-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.at-calendar-popup button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-calendar-popup button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.aw-date-calendar {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 32px;
+}
+
+.aw-date-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aw-date-presets button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--a-text);
+  padding: 8px;
+  text-align: center;
+}
+
+.aw-date-presets button:hover {
+  background: var(--a-field);
+}
+
+.aw-date-presets button:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-calendar-months {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+  row-gap: 12px;
+}
+
+.aw-date-calendar-month {
+  min-width: 0;
+}
+
+.aw-date-month-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.aw-date-calendar-arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 36px;
+  flex: 0 0 32px;
+  padding: 4px;
+  border: 1px solid var(--a-border);
+  border-radius: 4px;
+  color: var(--a-muted);
+  background: var(--a-card);
+}
+
+.aw-date-calendar-arrow:not(:disabled):hover {
+  border-color: var(--a-hover-border);
+}
+
+.aw-date-calendar-arrow:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-month-selects {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.aw-date-calendar-grid {
+  width: 100%;
+}
+
+.aw-date-calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.aw-date-calendar-week > [role="columnheader"] {
+  color: var(--a-muted);
+  font-size: 12px;
+  line-height: 28px;
+  text-align: center;
+}
+
+.aw-date-calendar-week > button {
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  min-height: 36px;
+  padding: 0;
+  color: var(--a-text);
+  background: transparent;
+  font-size: 14px;
+}
+
+.aw-date-calendar-week > button[data-in-range="true"] {
+  border-radius: 0;
+  background: var(--a-field);
+}
+
+.aw-date-calendar-week > button[data-endpoint="true"] {
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+  border-radius: 4px;
+}
+
+.aw-date-calendar-week > button:hover,
+.aw-date-calendar-week > button:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-calendar-week > button[aria-current="date"] {
+  font-weight: 700;
+}
+
+.aw-date-calendar-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--a-muted);
+}
+
+.aw-date-text-button {
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--a-text);
+  background: transparent;
+}
+
+.aw-date-text-button:hover {
+  color: var(--a-accent);
+}
+
+.aw-date-text-button:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-month-select {
+  position: relative;
+  width: 86px;
+  min-width: 0;
+}
+
+.aw-date-month-select + .aw-date-month-select {
+  width: 56px;
+}
+
+.aw-date-month-select-trigger {
+  width: 100%;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--a-border);
+  border-radius: 4px;
+  color: var(--a-text);
+  background: var(--a-card);
+  text-align: center;
+}
+
+.aw-date-month-select-trigger:hover,
+.aw-date-month-select-trigger:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-month-options {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  min-width: 100%;
+  max-height: 192px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--a-border);
+  border-radius: 6px;
+  background: var(--a-card);
+  box-shadow: 0 8px 24px rgb(16 24 40 / 12%);
+  scrollbar-width: none;
+}
+
+.aw-date-month-options::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.aw-date-month-options button {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--a-text);
+  background: transparent;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.aw-date-month-options button[aria-selected="true"] {
+  color: var(--a-on-accent);
+  background: var(--a-accent);
+}
+
+.aw-date-month-options button:hover,
+.aw-date-month-options button:focus-visible {
+  border-color: var(--a-focus);
+}
+
+/* Открытие и закрытие из ReportsPage. */
+.at-select-popup:popover-open,
+.at-dialog[open] {
+  animation: aw-open 180ms ease both;
+}
+
+.at-select-popup[data-closing="true"]:popover-open,
+.at-dialog[data-closing="true"] {
+  animation: aw-close 180ms ease both;
+  pointer-events: none;
+}
+
+@keyframes aw-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes aw-close {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes aw-backdrop-open {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes aw-backdrop-close {
+  to { opacity: 0; }
+}
+
 .at-button,
 .at-input,
 .at-select-trigger,
@@ -695,6 +1119,49 @@ textarea.at-input {
     border-color var(--theme-transition-duration, 240ms) ease;
 }
 
+@media (max-width: 1100px) {
+  .aw .aw-toolbar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .aw .aw-toolbar > .at-input {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 850px) {
+  .at-calendar-popup {
+    padding: 16px;
+  }
+
+  .aw-date-calendar {
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .aw-date-calendar-months {
+    gap: 16px;
+  }
+
+  .aw-date-month-heading {
+    gap: 4px;
+  }
+
+  .aw-date-calendar-arrow {
+    width: 24px;
+    flex-basis: 24px;
+  }
+
+  .aw-date-month-select {
+    width: 70px;
+    font-size: 12px;
+  }
+
+  .aw-date-month-select + .aw-date-month-select {
+    width: 48px;
+  }
+}
+
 @media (max-width: 700px) {
   .at-dialog-grid {
     grid-template-columns: 1fr;
@@ -706,6 +1173,25 @@ textarea.at-input {
 
   .at-form-actions .primary {
     min-width: 0;
+  }
+
+  .aw .aw-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .aw-date-calendar {
+    grid-template-columns: 1fr;
+  }
+
+  .aw-date-presets {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .aw-date-calendar-months {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -719,5 +1205,147 @@ textarea.at-input {
   .at-tabs,
   .at-toast {
     transition: none;
+  }
+
+  .at-select-popup,
+  .at-dialog,
+  .at-dialog::backdrop {
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Календарь: цвета кнопок и стрелок как у фильтров. */
+.at-calendar-popup {
+  color: var(--a-text);
+  background: var(--a-card);
+}
+
+.at-calendar-popup .aw-date-calendar-arrow,
+.at-calendar-popup .aw-date-month-select-trigger {
+  background: var(--a-card);
+  border-color: var(--a-border);
+  box-shadow: none;
+}
+
+.at-calendar-popup .aw-date-month-select-trigger {
+  color: var(--a-text);
+}
+
+.at-calendar-popup .aw-date-calendar-arrow {
+  position: relative;
+  color: var(--a-muted);
+}
+
+.at-calendar-popup .aw-date-calendar-arrow:not(:disabled):hover,
+.at-calendar-popup .aw-date-month-select-trigger:not(:disabled):hover {
+  border-color: var(--a-hover-border);
+}
+
+.at-calendar-popup .aw-date-calendar-arrow:focus-visible,
+.at-calendar-popup .aw-date-month-select-trigger:focus-visible {
+  border-color: var(--a-focus);
+  outline: 1px solid var(--a-focus);
+  outline-offset: 0;
+}
+
+/* SVG получает цвет через currentColor в обеих темах. */
+.at-calendar-popup .aw-date-calendar-arrow .aw-date-icon {
+  visibility: hidden;
+}
+
+.at-calendar-popup .aw-date-calendar-arrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  background: currentColor;
+  -webkit-mask: var(--calendar-arrow) center / contain no-repeat;
+  mask: var(--calendar-arrow) center / contain no-repeat;
+}
+
+.at-calendar-popup .aw-date-month-heading > button:first-child {
+  --calendar-arrow: url("../../assets/ArrowLeft.svg");
+}
+
+.at-calendar-popup .aw-date-month-heading > button:last-child {
+  --calendar-arrow: url("../../assets/ArrowRight.svg");
+}
+
+.at-calendar-popup .aw-date-presets button,
+.at-calendar-popup .aw-date-text-button {
+  color: var(--a-text);
+  background: var(--a-card);
+}
+
+.at-calendar-popup .aw-date-presets button:hover,
+.at-calendar-popup .aw-date-text-button:hover {
+  background: var(--a-field);
+}
+
+/* Выбранные даты сохраняют акцентный цвет. */
+.at-calendar-popup .aw-date-calendar-week > button[data-endpoint="true"],
+.at-calendar-popup .aw-date-month-options button[aria-selected="true"] {
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+}
+
+/* Прокрутка списка учреждений и остальных одиночных селектов. */
+.at-single-menu {
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* Прокрутка самого модального окна при нехватке высоты. */
+.at-dialog {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.at-single-menu,
+.at-dialog {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+
+.at-single-menu::-webkit-scrollbar,
+.at-dialog::-webkit-scrollbar {
+  width: 8px;
+}
+
+.at-single-menu::-webkit-scrollbar-track,
+.at-dialog::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.at-single-menu::-webkit-scrollbar-thumb,
+.at-dialog::-webkit-scrollbar-thumb {
+  background: #929292;
+  border: 2px solid var(--a-card);
+  border-radius: 8px;
+}
+
+.at-single-menu::-webkit-scrollbar-thumb:hover,
+.at-dialog::-webkit-scrollbar-thumb:hover {
+  background: #747984;
+}
+
+.at-single-menu::-webkit-scrollbar-button,
+.at-dialog::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@supports (-moz-appearance: none) {
+  .at-single-menu,
+  .at-dialog {
+    scrollbar-width: thin;
+    scrollbar-color: #929292 transparent;
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Select } from "./WorkspaceUI";
+import { Select, CheckIcon } from "./WorkspaceUI";
 import {
   OWNERS,
   STEPS,
@@ -157,7 +157,7 @@ export default function InteractionDetail({
                           : "")
                     }
                   >
-                    {done ? "✓" : ""}
+                    {done && <CheckIcon />}
                   </span>
 
                   <span>
@@ -202,11 +202,15 @@ export default function InteractionDetail({
                   : "aw-accent"
             }
           >
-            {archived
-              ? "✓ Завершено"
-              : future
-                ? "○ Не начат"
-                : "● В работе"}
+            {archived ? (
+              <>
+                <CheckIcon /> Завершено
+              </>
+            ) : future ? (
+              "○ Не начат"
+            ) : (
+              "● В работе"
+            )}
           </span>
         </div>
 
@@ -314,7 +318,11 @@ export default function InteractionDetail({
                         )
                       }
                     >
-                      {data.conditions[index] ? "✓" : "○"}{" "}
+                      {data.conditions[index] ? (
+                        <CheckIcon />
+                      ) : (
+                        "○"
+                      )}{" "}
                       {label}
                     </button>
                   ))}
