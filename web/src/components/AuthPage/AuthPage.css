@@ -2,23 +2,23 @@
   --auth-background: #ffffff;
   --auth-intro-background: #f5efff;
   --auth-card-background: #ffffff;
-  --auth-text: #151d2d;
-  --auth-muted: #747983;
-  --auth-note: #6b7895;
-  --auth-card-border: #cfc4e4;
-  --auth-input-background: #ffffff;
-  --auth-input-border: #e1e2e7;
+  --auth-text: #101828;
+  --auth-muted: #747984;
+  --auth-note: #747984;
+  --auth-card-border: #e6e7e9;
+  --auth-input-background: #f9f9fa;
+  --auth-input-border: #e6e7e9;
   --auth-input-hover: #3377ff;
-  --auth-placeholder: #777e8d;
+  --auth-placeholder: #747984;
   --auth-accent: #ff4f12;
   --auth-accent-hover: #e7430d;
   --auth-button-text: #ffffff;
   --auth-focus: #3377ff;
-  --auth-icon: #8290aa;
+  --auth-icon: #747984;
 
   --auth-error: #ff2626;
   --auth-error-text: #ff2626;
-  --auth-error-background: #fff0f1;
+  --auth-error-background: #fff0ef;
   --auth-error-border: #ffc7cb;
 
   --auth-warning: #df8200;
@@ -57,26 +57,26 @@
 }
 
 .auth-page[data-theme="dark"] {
-  --auth-background: #161e2c;
+  --auth-background: #151d2c;
   --auth-intro-background: #18162d;
-  --auth-card-background: #1b2532;
-  --auth-text: #e5e5ed;
-  --auth-muted: #a1a3af;
-  --auth-note: #979ba7;
-  --auth-card-border: #303b4a;
-  --auth-input-background: #222a39;
-  --auth-input-border: #5b6270;
+  --auth-card-background: #1b2332;
+  --auth-text: #e8e8ee;
+  --auth-muted: #9da1ac;
+  --auth-note: #9da1ac;
+  --auth-card-border: #323a4a;
+  --auth-input-background: #212938;
+  --auth-input-border: #323a4a;
   --auth-input-hover: #b9bec8;
-  --auth-placeholder: #b7bac4;
-  --auth-accent: #ffa788;
+  --auth-placeholder: #9da1ac;
+  --auth-accent: #ffa789;
   --auth-accent-hover: #ffbba3;
-  --auth-button-text: #461b0d;
+  --auth-button-text: #591c06;
   --auth-focus: #c297ff;
-  --auth-icon: #8d98ae;
+  --auth-icon: #9da1ac;
 
   --auth-error: #ff9393;
   --auth-error-text: #ff9393;
-  --auth-error-background: #39272e;
+  --auth-error-background: #482d38;
   --auth-error-border: #66404a;
 
   --auth-warning: #ffcd8a;
@@ -665,7 +665,7 @@
 
 @media (max-width: 768px) {
   .auth-page {
-    --auth-background: #f4f5f8;
+    --auth-background: #ffffff;
     --auth-intro-background: #f7f3ff;
 
     grid-template-columns: minmax(0, 1fr);
@@ -673,7 +673,7 @@
   }
 
   .auth-page[data-theme="dark"] {
-    --auth-background: #161e2c;
+    --auth-background: #151d2c;
     --auth-intro-background: #18162d;
   }
 

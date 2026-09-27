@@ -1,6 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import logo from "../../assets/Logo.svg";
 import "./Header.css";
+import ProfileModal from "../Profile/ProfileModal";
+import SettingsDrawer from "../Settings/SettingsDrawer";
 
 function Icon({ name }) {
   const paths = {
@@ -41,6 +43,8 @@ function Icon({ name }) {
       aria-hidden="true"
     >
       {paths[name]}
+      <path d="M5 2l14 8-14 8V2z" fill="var(--header-purple)" />
+      <path d="M5 10h14l-14 8V10z" fill="var(--header-orange)" />
     </svg>
   );
 }
@@ -48,9 +52,40 @@ function Icon({ name }) {
 const navigation = [
   { label: "Главная", href: "#/" },
   { label: "Отчёты", href: "#/reports" },
-  { label: "Календарь", href: null },
-  { label: "FAQ", href: null },
+  { label: "Календарь", href: "#/calendar" },
+  { label: "FAQ", href: "#/faq" },
+  { label: "Администрирование", href: "#/admin" },
 ];
+
+function ProfileMenu({ dark, setDark, onOpenProfile, onOpenSettings, onLogout }) {
+  return (
+    <div className="wr-profile-menu" role="menu">
+      <div className="wr-profile-menu-head">
+        <span className="wr-avatar">АИ</span>
+        <div className="wr-profile-id">
+          <p className="wr-profile-name">Алексей Иванов</p>
+          <p className="wr-profile-email">alex.ivanov@mail.ru</p>
+        </div>
+      </div>
+
+      <button type="button" className="wr-profile-item" role="menuitem" onClick={onOpenProfile}>
+        <Icon name="user" /> Профиль
+      </button>
+
+      <button type="button" className="wr-profile-item" role="menuitem" onClick={onOpenSettings}>
+        <Icon name="settings" /> Настройки
+      </button>
+
+      <button type="button" className="wr-profile-item" role="menuitem" onClick={() => setDark((prev) => !prev)}>
+        <Icon name={dark ? "sun" : "moon"} /> {dark ? "Светлая тема" : "Тёмная тема"}
+      </button>
+
+      <button type="button" className="wr-profile-item wr-profile-item--danger" role="menuitem" onClick={onLogout}>
+        <Icon name="logout" /> Выйти
+      </button>
+    </div>
+  );
+}
 
 export default function Header({
   activePage = "Главная",
@@ -58,15 +93,23 @@ export default function Header({
   setProfileOpen,
   dark,
   setDark,
-  userName = "Алексей Иванов",
-  userEmail = "alex.ivanov@mail.ru",
   initials = "АИ",
-  onProfile,
-  onSettings,
-  onLogout,
+  profiles,
+  onChangePassword,
+  onSaveNotifications,
+  initialNotifications,
+  notificationStorageKey,
+  onLogout
 }) {
   const profileRef = useRef(null);
-  const profileButtonRef = useRef(null);
+  const avatarRef = useRef(null);
+  const [accountView, setAccountView] = useState(null);
+  const closeAccountView = useCallback(() => setAccountView(null), []);
+
+  function openAccountView(view) {
+    setProfileOpen(false);
+    setAccountView(view);
+  }
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -80,7 +123,7 @@ export default function Header({
     function handleEscape(event) {
       if (event.key === "Escape") {
         setProfileOpen(false);
-        profileButtonRef.current?.focus();
+        avatarRef.current?.focus();
       }
     }
 
@@ -93,131 +136,68 @@ export default function Header({
     };
   }, [profileOpen, setProfileOpen]);
 
-  function handleAction(callback) {
-    setProfileOpen(false);
-    callback?.();
-  }
-
   return (
-    <header
-      className="at2m-header"
-      data-theme={dark ? "dark" : "light"}
-    >
-      <div className="at2m-header__inner">
-        <a
-          className="at2m-header__logo"
-          href="#/"
-          aria-label="ИТ Школа — главная"
-        >
-          <img src={logo} alt="" width="33" height="33" />
-          <span>ИТ Школа</span>
-        </a>
+    <>
+      <header className="wr-header" data-theme={dark ? "dark" : "light"} data-page={activePage}>
+        <div className="wr-header-inner">
+          <a className="wr-logo" href="#/" aria-label="ИТ Школа — главная">
+            <img src={logo} alt="Логотип" style={{ width: '33px', height: '33px', objectFit: 'contain' }} />
+            <span>ИТ Школа</span>
+          </a>
 
-        <nav
-          className="at2m-header__nav"
-          aria-label="Основная навигация"
-        >
-          {navigation.map(({ label, href }) => (
-            <a
-              key={label}
-              href={href ?? undefined}
-              role={href ? undefined : "link"}
-              aria-disabled={href ? undefined : true}
-              aria-current={activePage === label ? "page" : undefined}
-              className={
-                activePage === label
-                  ? "at2m-header__link is-active"
-                  : "at2m-header__link"
-              }
-            >
-              <span>{label}</span>
-            </a>
-          ))}
-        </nav>
-
-        <div className="at2m-header__actions">
-          <div
-            className="at2m-header__profile"
-            ref={profileRef}
-            onBlur={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget)) {
-                setProfileOpen(false);
-              }
-            }}
-          >
-            <button
-              ref={profileButtonRef}
-              type="button"
-              className="at2m-header__profile-button"
-              aria-label="Меню пользователя"
-              aria-expanded={profileOpen}
-              onClick={() => setProfileOpen((open) => !open)}
-            >
-              <span className="at2m-header__avatar">
-                {initials}
-              </span>
-            </button>
-
-            {profileOpen && (
-              <div
-                className="at2m-header__menu"
-                aria-label="Меню профиля"
+          <nav className="wr-nav" aria-label="Основная навигация">
+            {navigation.map(({ label, href }) => (
+              <a
+                key={label}
+                href={href ?? undefined}
+                className={activePage === label ? "is-active" : undefined}
               >
-                <div className="at2m-header__identity">
-                  <span className="at2m-header__avatar">
-                    {initials}
-                  </span>
+                {label}
+              </a>
+            ))}
+          </nav>
 
-                  <div>
-                    <p className="at2m-header__name">
-                      {userName}
-                    </p>
-                    <p className="at2m-header__email">
-                      {userEmail}
-                    </p>
-                  </div>
-                </div>
+          <div className="wr-header-actions">
+            <div className="wr-profile" ref={profileRef}>
+              <button
+                type="button"
+                className="wr-avatar-btn"
+                ref={avatarRef}
+                aria-label="Меню пользователя"
+                aria-expanded={profileOpen}
+                onClick={() => setProfileOpen((open) => !open)}
+              >
+                <span className="wr-avatar">{initials}</span>
+              </button>
 
-                <button
-                  type="button"
-                  className="at2m-header__menu-item"
-                  onClick={() => handleAction(onProfile)}
-                >
-                  <Icon name="user" />
-                  Профиль
-                </button>
-
-                <button
-                  type="button"
-                  className="at2m-header__menu-item"
-                  onClick={() => handleAction(onSettings)}
-                >
-                  <Icon name="settings" />
-                  Настройки
-                </button>
-
-                <button
-                  type="button"
-                  className="at2m-header__menu-item"
-                  onClick={() => setDark((previous) => !previous)}
-                >
-                  <Icon name={dark ? "sun" : "moon"} />
-                  {dark ? "Светлая тема" : "Тёмная тема"}
-                </button>
-
-                <button
-                  type="button"
-                  className="at2m-header__menu-item at2m-header__menu-item--logout"
-                  onClick={() => handleAction(onLogout)}
-                >
-                  <Icon name="logout" />
-                  Выйти
-                </button>
-              </div>
-            )}
+              {profileOpen && (
+                <ProfileMenu
+                  dark={dark}
+                  setDark={setDark}
+                  onOpenProfile={() => openAccountView("profile")}
+                  onOpenSettings={() => openAccountView("settings")}
+                  onLogout={onLogout}
+                />
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {accountView === "profile" && (
+        <ProfileModal dark={dark} onClose={closeAccountView} returnFocusRef={avatarRef} profiles={profiles} />
+      )}
+      {accountView === "settings" && (
+        <SettingsDrawer
+          dark={dark}
+          onClose={closeAccountView}
+          returnFocusRef={avatarRef}
+          onChangePassword={onChangePassword}
+          onSaveNotifications={onSaveNotifications}
+          initialNotifications={initialNotifications}
+          notificationStorageKey={notificationStorageKey}
+        />
+      )}
+    </>
   );
 }

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
-import WorkRegion from "./components/WorkRegion/WorkRegionManager"; 
-// меняйте название адреса, если хотите посмотреть другой .jsx файл :D
+import AdminPage from "./components/AdminPage/AdminPage";
+import FaqPage from "./components/FaqPage/FaqPage";
+import WorkRegion from "./components/WorkRegion/WorkRegionManager";
 import ReportsPage from "./components/ReportsPage/ReportsPage";
+import CalendarPage from "./components/CalendarPage/CalendarPage";
+import { calendarDemoEvents } from "./components/CalendarPage/calendarDemo";
 import AuthCard from "./components/AuthPage/AuthPage";
 import "./components/AuthPage/AuthPage.css";
 
@@ -49,7 +52,7 @@ function App() {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: params,
-        },
+        }
       );
     } catch (networkError) {
       throw {
@@ -61,10 +64,7 @@ function App() {
     if (!response.ok) {
       throw {
         status: response.status,
-        code:
-          response.status === 401
-            ? "INVALID_CREDENTIALS"
-            : "UNKNOWN",
+        code: response.status === 401 ? "INVALID_CREDENTIALS" : "UNKNOWN",
       };
     }
 
@@ -76,7 +76,7 @@ function App() {
     }
   };
 
-  // Проверка входа отключена
+  // Раскомментируйте блок ниже, если нужно вернуть окно логина
   // if (!token) {
   //   return (
   //     <div className="app">
@@ -87,7 +87,17 @@ function App() {
 
   return (
     <div className="app">
-      {route === "/reports" ? <ReportsPage /> : <WorkRegion />}
+      {route === "/admin" ? (
+        <AdminPage demo />
+      ) : route === "/faq" ? (
+        <FaqPage />
+      ) : route === "/calendar" ? (
+        <CalendarPage events={calendarDemoEvents} />
+      ) : route === "/reports" ? (
+        <ReportsPage />
+      ) : (
+        <WorkRegion />
+      )}
     </div>
   );
 }
