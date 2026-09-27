@@ -1,5 +1,6 @@
 import { Select, Field, Popover } from "./WorkspaceUI";
 import WorkspaceCalendar from "./WorkspaceCalendar";
+
 import {
   OWNERS,
   PROGRAMS,
@@ -49,6 +50,7 @@ export function PeriodFilter({ value, onChange }) {
               start: range.from,
               end: range.to,
             });
+
             close();
           }}
         />
@@ -71,15 +73,25 @@ export default function WorkspaceFilters({
 
   const cities = [
     ...new Set(
-      interactions.map((item) => item.city).filter(Boolean)
+      interactions.map((item) => item.city).filter(Boolean),
     ),
   ];
 
   return (
     <div className="aw-toolbar">
       <input
-        className="at-input"
+        className="at-input aw-search-desktop"
         placeholder="Найти учреждение, программу или ИТ-продукт…"
+        aria-label="Поиск взаимодействий"
+        value={value.search}
+        onChange={(event) =>
+          change("search", event.target.value)
+        }
+      />
+
+      <input
+        className="at-input aw-search-mobile"
+        placeholder="Поиск"
         aria-label="Поиск взаимодействий"
         value={value.search}
         onChange={(event) =>
@@ -119,16 +131,18 @@ export default function WorkspaceFilters({
         onChange={(next) => change("status", next)}
       />
 
-      <Select
-        multiple
-        allMeansEmpty
-        value={selection(value.owner)}
-        label="Ответственный КАМ"
-        allLabel="Все ответственные"
-        searchPlaceholder="Поиск сотрудников"
-        options={OWNERS}
-        onChange={(next) => change("owner", next)}
-      />
+      <div className="aw-desktop-owner">
+        <Select
+          multiple
+          allMeansEmpty
+          value={selection(value.owner)}
+          label="Ответственный КАМ"
+          allLabel="Все ответственные"
+          searchPlaceholder="Поиск сотрудников"
+          options={OWNERS}
+          onChange={(next) => change("owner", next)}
+        />
+      </div>
 
       <PeriodFilter
         value={{
@@ -145,6 +159,19 @@ export default function WorkspaceFilters({
       >
         {(close) => (
           <div className="at-extra-content">
+            <div className="aw-mobile-owner">
+              <Select
+                multiple
+                allMeansEmpty
+                value={selection(value.owner)}
+                label="Ответственный КАМ"
+                allLabel="Все ответственные"
+                searchPlaceholder="Поиск сотрудников"
+                options={OWNERS}
+                onChange={(next) => change("owner", next)}
+              />
+            </div>
+
             <Select
               multiple
               allMeansEmpty

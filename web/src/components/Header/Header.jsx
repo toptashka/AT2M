@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -86,6 +87,11 @@ export default function Header({
 
   const [localOpen, setLocalOpen] = useState(false);
   const [view, setView] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navId = useId();
+  const headerRef = useRef(null);
+  const menuButtonRef = useRef(null);
 
   const open = profileOpen ?? localOpen;
   const changeOpen = setProfileOpen ?? setLocalOpen;
@@ -120,7 +126,46 @@ export default function Header({
     };
   }, [open, changeOpen]);
 
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const reset = () => setMobileOpen(false);
+
+    media.addEventListener("change", reset);
+    window.addEventListener("hashchange", reset);
+
+    return () => {
+      media.removeEventListener("change", reset);
+      window.removeEventListener("hashchange", reset);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    function outside(event) {
+      if (!headerRef.current?.contains(event.target)) {
+        setMobileOpen(false);
+      }
+    }
+
+    function escape(event) {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [mobileOpen]);
+
   function show(next) {
+    setMobileOpen(false);
     changeOpen(false);
     setView(next);
   }
@@ -128,8 +173,18 @@ export default function Header({
   return (
     <>
       <header
+        ref={headerRef}
         className="at-header"
         data-theme={isDark ? "dark" : "light"}
+        data-menu-open={mobileOpen}
+        onBlur={(event) => {
+          if (
+            event.relatedTarget &&
+            !event.currentTarget.contains(event.relatedTarget)
+          ) {
+            setMobileOpen(false);
+          }
+        }}
       >
         <div className="at-header-inner">
           <a
@@ -141,7 +196,11 @@ export default function Header({
             <span>ИТ Школа</span>
           </a>
 
-          <nav className="at-nav" aria-label="Основная навигация">
+          <nav
+            id={navId}
+            className="at-nav"
+            aria-label="Основная навигация"
+          >
             {navigation.map(([label, href]) => (
               <a
                 key={href}
@@ -149,6 +208,10 @@ export default function Header({
                 aria-current={
                   activePage === label ? "page" : undefined
                 }
+                onClick={() => {
+                  setMobileOpen(false);
+                  changeOpen(false);
+                }}
               >
                 {label}
               </a>
@@ -173,7 +236,10 @@ export default function Header({
               className="at-avatar-button"
               aria-label="Меню пользователя"
               aria-expanded={open}
-              onClick={() => changeOpen(!open)}
+              onClick={() => {
+                setMobileOpen(false);
+                changeOpen(!open);
+              }}
             >
               <span className="at-avatar">{initials}</span>
             </button>
@@ -182,6 +248,7 @@ export default function Header({
               <div className="at-profile-menu">
                 <div className="at-identity">
                   <span className="at-avatar">{initials}</span>
+
                   <div>
                     <strong>{userName}</strong>
                     <small>{userEmail}</small>
@@ -233,6 +300,27 @@ export default function Header({
               </div>
             )}
           </div>
+
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className="at-mobile-toggle"
+            aria-label={
+              mobileOpen
+                ? "Закрыть навигацию"
+                : "Открыть навигацию"
+            }
+            aria-expanded={mobileOpen}
+            aria-controls={navId}
+            onClick={() => {
+              changeOpen(false);
+              setMobileOpen((previous) => !previous);
+            }}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
       </header>
 
