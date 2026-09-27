@@ -136,28 +136,6 @@
   cursor: pointer;
 }
 
-.at2m-header .at2m-header__notification {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 36px;
-  padding: 0;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--header-muted);
-}
-
-.at2m-header .at2m-header__notification svg {
-  display: block;
-  width: 24px;
-  height: 24px;
-}
-
-.at2m-header .at2m-header__notification:hover {
-  color: var(--header-text);
-}
-
 .at2m-header .at2m-header__profile {
   position: relative;
 }

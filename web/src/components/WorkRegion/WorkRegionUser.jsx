@@ -1,17 +1,12 @@
 import { useState } from "react";
 import { useAppTheme, setAppTheme } from "../../theme";
 import Header from "../Header/Header";
+import { WorkspaceChart } from "./WorkRegionUpdates";
+
 import pdfIcon from "../../assets/pdf.svg";
 import downloadIcon from "../../assets/download.svg";
-import "./WorkRegionUser.css";
 
-const PROGRAMS = [
-  ["Информационная безопасность", 124],
-  ["DevOps", 96],
-  ["Облачные технологии", 82],
-  ["Data Science", 61],
-  ["QA", 49],
-];
+import "./WorkRegionUser.css";
 
 const DEADLINES = [
   [
@@ -91,7 +86,7 @@ const STEPS = [
 ];
 
 const FILTERS = [
-  "ИТ-программа",
+  "ИТ-направление",
   "ИТ-продукт",
   "Статус",
   "Ответственный КАМ",
@@ -249,10 +244,13 @@ function Detail({
 
         <section className="wu-conditions wu-box">
           <h3>Условия завершения</h3>
+
           <p>✓ Получены необходимые материалы</p>
           <p>✓ Прикреплён обязательный документ</p>
+
           <p>
-            {canCompleteStage ? "✓" : "○"} Подтверждено целевое действие
+            {canCompleteStage ? "✓" : "○"} Подтверждено
+            целевое действие
           </p>
         </section>
 
@@ -271,8 +269,8 @@ function Detail({
               </p>
 
               <p>
-                Получены технические материалы от вуза. Необходимо
-                подтвердить дату начала внедрения.
+                Получены технические материалы от вуза.
+                Необходимо подтвердить дату начала внедрения.
               </p>
             </div>
           </div>
@@ -339,8 +337,12 @@ function Detail({
             type="button"
             className="wu-button wu-primary"
             disabled={!canCompleteStage}
-            onClick={() => onAction?.("complete-stage", "bmstu")}
-            style={{ opacity: canCompleteStage ? 1 : 0.4 }}
+            onClick={() =>
+              onAction?.("complete-stage", "bmstu")
+            }
+            style={{
+              opacity: canCompleteStage ? 1 : 0.4,
+            }}
           >
             Завершить этап
           </button>
@@ -372,7 +374,9 @@ export default function WorkRegionUser({
     setAppTheme(dark ? "dark" : "light");
   }
 
-  const normalizedSearch = search.trim().toLocaleLowerCase("ru");
+  const normalizedSearch = search
+    .trim()
+    .toLocaleLowerCase("ru");
 
   const filteredInteractions = INTERACTIONS.filter((item) =>
     [
@@ -395,7 +399,9 @@ export default function WorkRegionUser({
 
   return (
     <div
-      className={`work-region wu${manager ? " wu-manager" : ""}`}
+      className={`work-region wu${
+        manager ? " wu-manager" : ""
+      }`}
       data-theme={theme}
     >
       <Header
@@ -438,7 +444,7 @@ export default function WorkRegionUser({
             type="text"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Найти учреждение, программу или ИТ-продукт..."
+            placeholder="Найти учреждение, направление или ИТ-продукт..."
             aria-label="Поиск взаимодействий"
           />
 
@@ -448,11 +454,18 @@ export default function WorkRegionUser({
               className="wu-button wu-filter"
               key={label}
               onClick={(event) =>
-                onAction?.("filter", label, event.currentTarget)
+                onAction?.(
+                  "filter",
+                  label,
+                  event.currentTarget,
+                )
               }
             >
               {label}
-              <span className="wu-chevron" aria-hidden="true" />
+              <span
+                className="wu-chevron"
+                aria-hidden="true"
+              />
             </button>
           ))}
         </div>
@@ -461,13 +474,14 @@ export default function WorkRegionUser({
           <button
             type="button"
             className="is-active"
-            aria-pressed="true"
+            aria-pressed={true}
           >
             Процессы
           </button>
 
           <button
             type="button"
+            aria-pressed={false}
             onClick={() => onAction?.("learning-products")}
           >
             Обучение и продукты
@@ -477,7 +491,12 @@ export default function WorkRegionUser({
         <div className="wu-stats">
           {[
             ["В работе", 24, "взаимодействия", ""],
-            ["Требуют внимания", 6, "взаимодействий", "attention"],
+            [
+              "Требуют внимания",
+              6,
+              "взаимодействий",
+              "attention",
+            ],
             ["Просрочено", 2, "взаимодействия", "overdue"],
             ["Завершено за месяц", 8, "взаимодействий", ""],
           ].map(([title, count, label, status]) => (
@@ -488,59 +507,19 @@ export default function WorkRegionUser({
               <p className="wu-muted">{title}</p>
 
               <div>
-                <strong className={status}>{count}</strong>
-                <small className="wu-muted">{label}</small>
+                <strong className={status}>
+                  {count}
+                </strong>
+                <small className="wu-muted">
+                  {label}
+                </small>
               </div>
             </section>
           ))}
         </div>
 
         <div className="wu-dashboard">
-          <section className="wu-panel wu-demand">
-            <div className="wu-panel-head">
-              <h3>Востребованность ИТ-программ</h3>
-
-              <div className="wu-tabs">
-                {[
-                  "По заявкам",
-                  "По студентам",
-                  "По потокам",
-                ].map((label, index) => (
-                  <button
-                    type="button"
-                    key={label}
-                    className={index === 0 ? "is-active" : ""}
-                    aria-pressed={index === 0}
-                    onClick={() => {
-                      if (index > 0) {
-                        onAction?.("demand", label);
-                      }
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="wu-bars">
-              {PROGRAMS.map(([label, count]) => (
-                <div className="wu-bar-row" key={label}>
-                  <span>{label}</span>
-
-                  <div className="wu-track">
-                    <span
-                      style={{
-                        width: `${(count / 124) * 100}%`,
-                      }}
-                    />
-                  </div>
-
-                  <span>{count}</span>
-                </div>
-              ))}
-            </div>
-          </section>
+          <WorkspaceChart />
 
           <section className="wu-panel wu-deadlines">
             <div className="wu-panel-head">
@@ -621,7 +600,9 @@ export default function WorkRegionUser({
 
             return (
               <article
-                className={`wu-card${open ? " is-expanded" : ""}`}
+                className={`wu-card${
+                  open ? " is-expanded" : ""
+                }`}
                 key={item.id}
               >
                 <button
@@ -657,7 +638,7 @@ export default function WorkRegionUser({
                       aria-hidden="true"
                     >
                       {Array.from(
-                        { length: 14 },
+                        { length: STEPS.length },
                         (_, index) => (
                           <i
                             key={index}
@@ -674,11 +655,12 @@ export default function WorkRegionUser({
                     </span>
 
                     <small className="wu-muted">
-                      Текущий этап: 08
+                      Текущий этап:{" "}
+                      {String(item.segments).padStart(2, "0")}
                     </small>
 
                     <span>
-                      Сопровождение внедрения
+                      {STEPS[item.segments - 1]}
                     </span>
                   </span>
 
@@ -700,7 +682,9 @@ export default function WorkRegionUser({
                   </span>
 
                   <span
-                    className={`wu-chevron${open ? " is-up" : ""}`}
+                    className={`wu-chevron${
+                      open ? " is-up" : ""
+                    }`}
                     aria-hidden="true"
                   />
                 </button>
@@ -715,6 +699,12 @@ export default function WorkRegionUser({
               </article>
             );
           })}
+
+          {!filteredInteractions.length && (
+            <p className="wu-muted">
+              По вашему запросу взаимодействий не найдено.
+            </p>
+          )}
         </div>
       </main>
     </div>

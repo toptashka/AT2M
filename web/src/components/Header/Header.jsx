@@ -4,12 +4,6 @@ import "./Header.css";
 
 function Icon({ name }) {
   const paths = {
-    bell: (
-      <>
-        <path d="M6 9a6 6 0 0 1 12 0c0 4 1.5 6 1.5 6h-15S6 13 6 9Z" />
-        <path d="M10 19h4" />
-      </>
-    ),
     user: (
       <>
         <circle cx="12" cy="8" r="3.5" />
@@ -32,9 +26,7 @@ function Icon({ name }) {
       <path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14Z" />
     ),
     logout: (
-      <>
-        <path d="M9 4H5v16h4M10 12h10m-4-4 4 4-4 4" />
-      </>
+      <path d="M9 4H5v16h4M10 12h10m-4-4 4 4-4 4" />
     ),
   };
 
@@ -72,7 +64,6 @@ export default function Header({
   onProfile,
   onSettings,
   onLogout,
-  onNotifications,
 }) {
   const profileRef = useRef(null);
   const profileButtonRef = useRef(null);
@@ -145,15 +136,6 @@ export default function Header({
         </nav>
 
         <div className="at2m-header__actions">
-          <button
-            type="button"
-            className="at2m-header__notification"
-            aria-label="Уведомления"
-            onClick={onNotifications}
-          >
-            <Icon name="bell" />
-          </button>
-
           <div
             className="at2m-header__profile"
             ref={profileRef}

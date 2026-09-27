@@ -1,48 +1,19 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import WorkRegionUser from "./WorkRegionUser";
-import "./WorkRegionManager.css";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
-const INITIAL_REQUESTS = [
-  {
-    id: "bmstu-request",
-    source: "CMS",
-    name: "МГТУ им. Н. Э. Баумана",
-    program: "DevOps",
-    time: "Сегодня, 14:32",
-    initiator: "Мария Сергеева",
-    details: [
-      ["Телефон", "+7 999 123-45-67"],
-      ["Почта", "m.sergeeva@bmstu.ru"],
-      ["Студентов", "120"],
-    ],
-  },
-  {
-    id: "itmo-request",
-    source: "КАМ",
-    name: "Университет ИТМО",
-    program: "Облачные технологии",
-    time: "Сегодня, 13:10",
-    initiator: "Александр Иванов",
-    details: [
-      ["Контакт вуза", "Елена Петрова"],
-      ["Телефон", "+7 921 555-20-14"],
-      ["Почта", "e.petrova@itmo.ru"],
-      ["Студентов", "80"],
-    ],
-  },
-  {
-    id: "mephi-request",
-    source: "CMS",
-    name: "НИЯУ МИФИ",
-    program: "Информационная безопасность",
-    time: "Сегодня, 12:45",
-    initiator: "Анна Кузнецова",
-    details: [
-      ["Телефон", "+7 916 234-18-52"],
-      ["Почта", "a.kuznetsova@mephi.ru"],
-    ],
-  },
-];
+import WorkRegionUser from "./WorkRegionUser";
+
+import {
+  IncomingRequests,
+  INCOMING_DEMO,
+  WorkspaceChart,
+} from "./WorkRegionUpdates";
+
+import "./WorkRegionManager.css";
 
 const INSTITUTIONS = [
   "МГТУ им. Н. Э. Баумана",
@@ -79,7 +50,8 @@ const RESULTS = {
   },
   send: {
     title: "Заявка отправлена руководителю",
-    description: "Заявка появится у руководителя во входящих запросах.",
+    description:
+      "Заявка появится у руководителя во входящих запросах.",
   },
   complete: {
     title: "Этап завершён",
@@ -158,7 +130,10 @@ function Modal({
       dialog.close();
       document.body.style.overflow = previousOverflow;
 
-      if (previouslyFocused instanceof HTMLElement) {
+      if (
+        previouslyFocused instanceof HTMLElement &&
+        previouslyFocused.isConnected
+      ) {
         previouslyFocused.focus();
       }
     };
@@ -168,7 +143,8 @@ function Modal({
     titleRef.current?.focus();
   }, [modal.kind]);
 
-  const result = modal.kind === "result" ? RESULTS[modal.result] : null;
+  const result =
+    modal.kind === "result" ? RESULTS[modal.result] : null;
 
   const title =
     result?.title ||
@@ -182,7 +158,9 @@ function Modal({
   const submitLabel = {
     accept: "Принять в работу",
     reject: "Отклонить",
-    create: manager ? "Создать партнёрство" : "Отправить заявку",
+    create: manager
+      ? "Создать партнёрство"
+      : "Отправить заявку",
     complete: "Завершить этап",
   }[modal.kind];
 
@@ -191,10 +169,14 @@ function Modal({
     (modal.kind === "accept" && Boolean(form.owner)) ||
     (modal.kind === "create" &&
       Boolean(form.institution && form.program)) ||
-    (modal.kind === "complete" && Boolean(form.comment.trim()));
+    (modal.kind === "complete" &&
+      Boolean(form.comment.trim()));
 
   function updateField(name, value) {
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
   }
 
   return (
@@ -208,9 +190,16 @@ function Modal({
         if (!busy) onClose();
       }}
       onClick={(event) => {
-        if (busy || event.target !== event.currentTarget) return;
+        if (
+          busy ||
+          event.target !== event.currentTarget
+        ) {
+          return;
+        }
 
-        const rect = event.currentTarget.getBoundingClientRect();
+        const rect =
+          event.currentTarget.getBoundingClientRect();
+
         const outside =
           event.clientX < rect.left ||
           event.clientX > rect.right ||
@@ -220,7 +209,11 @@ function Modal({
         if (outside) onClose();
       }}
     >
-      <h2 id="wmm-modal-title" ref={titleRef} tabIndex={-1}>
+      <h2
+        id="wmm-modal-title"
+        ref={titleRef}
+        tabIndex={-1}
+      >
         {title}
       </h2>
 
@@ -235,7 +228,6 @@ function Modal({
               type="button"
               className="wmm-button wmm-close-button"
               onClick={onClose}
-              autoFocus
             >
               Закрыть
             </button>
@@ -245,7 +237,10 @@ function Modal({
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            if (valid && !busy) onSubmit();
+
+            if (valid && !busy) {
+              onSubmit();
+            }
           }}
         >
           {modal.kind === "accept" && (
@@ -260,7 +255,9 @@ function Modal({
                 placeholder="Выберите ответственного"
                 options={owners}
                 value={form.owner}
-                onChange={(value) => updateField("owner", value)}
+                onChange={(value) =>
+                  updateField("owner", value)
+                }
                 disabled={busy}
               />
 
@@ -274,8 +271,8 @@ function Modal({
 
           {modal.kind === "reject" && (
             <p className="wmm-description">
-              Заявка будет удалена из входящих запросов. Подтвердите
-              отклонение.
+              Заявка будет удалена из входящих запросов.
+              Подтвердите отклонение.
             </p>
           )}
 
@@ -287,16 +284,20 @@ function Modal({
                   placeholder="Выберите учреждение"
                   options={institutions}
                   value={form.institution}
-                  onChange={(value) => updateField("institution", value)}
+                  onChange={(value) =>
+                    updateField("institution", value)
+                  }
                   disabled={busy}
                 />
 
                 <SelectField
-                  label="ИТ-программа"
-                  placeholder="Выберите ИТ-программу"
+                  label="ИТ-направление"
+                  placeholder="Выберите ИТ-направление"
                   options={programs}
                   value={form.program}
-                  onChange={(value) => updateField("program", value)}
+                  onChange={(value) =>
+                    updateField("program", value)
+                  }
                   disabled={busy}
                 />
               </div>
@@ -312,8 +313,8 @@ function Modal({
           {modal.kind === "complete" && (
             <>
               <p className="wmm-description wmm-muted">
-                Добавьте комментарий, подтверждающий и обосновывающий
-                смену статуса
+                Добавьте комментарий, подтверждающий и
+                обосновывающий смену статуса
               </p>
 
               <label className="wmm-field wmm-comment-field">
@@ -353,7 +354,7 @@ function Modal({
               className="wmm-button wmm-button--primary"
               disabled={!valid || busy}
             >
-              {submitLabel}
+              {busy ? "Сохранение…" : submitLabel}
             </button>
           </div>
         </form>
@@ -386,12 +387,17 @@ function FiltersPanel({
       panel.style.width = `${width}px`;
 
       const height = panel.getBoundingClientRect().height;
+
       const left = Math.max(
         16,
-        Math.min(anchorRect.right - width, window.innerWidth - width - 16),
+        Math.min(
+          anchorRect.right - width,
+          window.innerWidth - width - 16,
+        ),
       );
 
       const below = anchorRect.bottom + 8;
+
       const top =
         below + height <= window.innerHeight - 16
           ? below
@@ -410,8 +416,15 @@ function FiltersPanel({
 
     return () => {
       window.removeEventListener("resize", positionPanel);
-      window.removeEventListener("scroll", positionPanel, true);
-      if (panel.matches(":popover-open")) panel.hidePopover();
+      window.removeEventListener(
+        "scroll",
+        positionPanel,
+        true,
+      );
+
+      if (panel.matches(":popover-open")) {
+        panel.hidePopover();
+      }
     };
   }, [anchor, onClose]);
 
@@ -430,7 +443,9 @@ function FiltersPanel({
       className="wmm-filter-panel"
       aria-label="Дополнительные фильтры"
       onToggle={(event) => {
-        if (event.newState === "closed") onClose();
+        if (event.newState === "closed") {
+          onClose();
+        }
       }}
     >
       {fields.map(([name, placeholder, className]) => (
@@ -455,11 +470,9 @@ export default function WorkRegionManager({
   institutions = INSTITUTIONS,
   programs = PROGRAMS,
   owners = OWNERS,
-  incomingRequests = INITIAL_REQUESTS,
-  incomingTotal = 8,
+  incomingRequests = INCOMING_DEMO,
   filterOptions = {},
 }) {
-  const [requestsOpen, setRequestsOpen] = useState(true);
   const [processedIds, setProcessedIds] = useState([]);
   const [modal, setModal] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -483,50 +496,59 @@ export default function WorkRegionManager({
   });
 
   const savingRef = useRef(false);
-  const closeFiltersRef = useRef(() => setFilterAnchor(null));
+
+  const closeFiltersRef = useRef(() => {
+    setFilterAnchor(null);
+  });
 
   const requests = incomingRequests.filter(
     (request) => !processedIds.includes(request.id),
   );
 
-  const total = Math.max(
-    requests.length,
-    incomingTotal -
-      incomingRequests.filter((request) =>
-        processedIds.includes(request.id),
-      ).length,
-  );
-
-  const remaining = Math.max(0, total - requests.length);
-
   function openModal(nextModal) {
+    if (savingRef.current) return;
+
     setFilterAnchor(null);
     setError("");
+
     setForm({
       owner: owners.includes("Александр Иванов")
         ? "Александр Иванов"
-        : owners[0] || "",
+        : typeof owners[0] === "string"
+          ? owners[0]
+          : owners[0]?.value || "",
       institution: "",
       program: "",
       comment: "",
     });
+
     setModal(nextModal);
   }
 
   function closeModal() {
     if (savingRef.current) return;
+
     setModal(null);
     setError("");
   }
 
-  async function forwardAction(action, payload) {
-    if (!onAction) return;
+  async function forwardAction(action, payload, anchor) {
+    if (typeof onAction !== "function") return;
 
     try {
       setPageError("");
-      await onAction(action, payload);
+
+      return await onAction(action, payload, anchor);
     } catch (cause) {
-      setPageError(cause?.message || "Не удалось выполнить действие.");
+      const message =
+        cause?.message || "Не удалось выполнить действие.";
+
+      setPageError(message);
+
+      return {
+        ok: false,
+        error: message,
+      };
     }
   }
 
@@ -538,19 +560,29 @@ export default function WorkRegionManager({
 
     if (action === "complete-stage") {
       if (canCompleteStage) {
-        openModal({ kind: "complete", interactionId: payload });
+        openModal({
+          kind: "complete",
+          interactionId: payload,
+        });
       }
+
       return;
     }
 
-    if (action === "filter" && payload === "Ещё фильтры") {
+    if (
+      action === "filter" &&
+      payload === "Ещё фильтры"
+    ) {
       if (anchor instanceof HTMLElement) {
-        setFilterAnchor((current) => (current === anchor ? null : anchor));
+        setFilterAnchor((current) =>
+          current === anchor ? null : anchor,
+        );
       }
+
       return;
     }
 
-    forwardAction(action, payload);
+    return forwardAction(action, payload, anchor);
   }
 
   async function submitModal() {
@@ -564,34 +596,51 @@ export default function WorkRegionManager({
       if (!form.owner) return;
 
       action = "accept-request";
+
       payload = {
         id: modal.request.id,
         owner: form.owner,
         stage: modal.request.source === "CMS" ? 2 : 1,
       };
+
       result = "accept";
     } else if (modal.kind === "reject") {
       action = "reject-request";
-      payload = { id: modal.request.id };
+
+      payload = {
+        id: modal.request.id,
+      };
+
       result = "reject";
     } else if (modal.kind === "create") {
       if (!form.institution || !form.program) return;
 
-      action = manager ? "create-partnership" : "send-partnership-request";
+      action = manager
+        ? "create-partnership"
+        : "send-partnership-request";
+
       payload = {
         institution: form.institution,
         program: form.program,
         ...(manager ? { stage: 1 } : {}),
       };
+
       result = manager ? "create" : "send";
     } else if (modal.kind === "complete") {
-      if (!canCompleteStage || !form.comment.trim()) return;
+      if (
+        !canCompleteStage ||
+        !form.comment.trim()
+      ) {
+        return;
+      }
 
       action = "complete-stage";
+
       payload = {
         id: modal.interactionId,
         comment: form.comment.trim(),
       };
+
       result = "complete";
     } else {
       return;
@@ -603,26 +652,37 @@ export default function WorkRegionManager({
 
     try {
       if (typeof onAction !== "function") {
-        throw new Error("Обработчик сохранения onAction не подключён.");
+        throw new Error(
+          "Обработчик сохранения onAction не подключён.",
+        );
       }
 
       const response = await onAction(action, payload);
 
       if (response?.ok !== true) {
         throw new Error(
-          response?.error || "Сохранение не подтверждено. Повторите попытку.",
+          response?.error ||
+            "Сохранение не подтверждено. Повторите попытку.",
         );
       }
 
-      if (modal.kind === "accept" || modal.kind === "reject") {
+      if (
+        modal.kind === "accept" ||
+        modal.kind === "reject"
+      ) {
         setProcessedIds((current) => [
           ...new Set([...current, modal.request.id]),
         ]);
       }
 
-      setModal({ kind: "result", result });
+      setModal({
+        kind: "result",
+        result,
+      });
     } catch (cause) {
-      setError(cause?.message || "Не удалось сохранить изменения.");
+      setError(
+        cause?.message || "Не удалось сохранить изменения.",
+      );
     } finally {
       savingRef.current = false;
       setBusy(false);
@@ -630,7 +690,11 @@ export default function WorkRegionManager({
   }
 
   function updateFilter(name, value) {
-    const next = { ...filters, [name]: value };
+    const next = {
+      ...filters,
+      [name]: value,
+    };
+
     setFilters(next);
     forwardAction("filters", next);
   }
@@ -643,152 +707,23 @@ export default function WorkRegionManager({
     >
       {manager && (
         <>
-          <section className="wu-panel wm-performance">
-            <div className="wu-panel-head">
-              <h3>Эффективность и нагрузка КАМов</h3>
+          <WorkspaceChart kind="kam" />
 
-              <button
-                type="button"
-                className="wu-button wu-filter"
-                onClick={() => forwardAction("kam-filter")}
-              >
-                КАМ: Все
-                <span className="wu-chevron" />
-              </button>
-            </div>
-
-            <div className="wu-tabs wm-tabs">
-              {[
-                "Запуски",
-                "В активной работе",
-                "SLA / просрочки",
-                "Скорость прохождения",
-              ].map((label, index) => (
-                <button
-                  type="button"
-                  key={label}
-                  className={index === 0 ? "is-active" : ""}
-                  aria-pressed={index === 0}
-                  onClick={() => {
-                    if (index > 0) forwardAction("kam-metric", label);
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <p className="wu-muted wu-small wm-chart-label">
-              Запуски программ · количество
-            </p>
-
-            <div className="wu-bars">
-              {[
-                ["Иванов А.А.", 14],
-                ["Смирнова М.С.", 11],
-                ["Соколов Д.В.", 9],
-              ].map(([name, count]) => (
-                <div className="wu-bar-row" key={name}>
-                  <span>{name}</span>
-                  <div className="wu-track">
-                    <span style={{ width: `${(count / 14) * 100}%` }} />
-                  </div>
-                  <span>{count}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="wm-incoming">
-            <div className="wm-incoming-heading">
-              <button
-                type="button"
-                className="wm-incoming-toggle"
-                aria-expanded={requestsOpen}
-                aria-controls="wm-request-list"
-                onClick={() => setRequestsOpen((value) => !value)}
-              >
-                <span
-                  className={`wu-chevron${requestsOpen ? "" : " is-closed"}`}
-                />
-                Входящие запросы
-              </button>
-
-              <span className="wu-muted wu-small">· {total} новых</span>
-
-              <button
-                type="button"
-                className="wu-button wu-filter"
-                onClick={() => forwardAction("request-sort")}
-              >
-                Сначала новые
-                <span className="wu-chevron" />
-              </button>
-            </div>
-
-            {requestsOpen && (
-              <>
-                <div className="wm-request-list" id="wm-request-list">
-                  {requests.map((request) => (
-                    <article className="wu-panel wm-request" key={request.id}>
-                      <div className="wm-request-title">
-                        <span className="wm-source">{request.source}</span>
-                        <h4>{request.name}</h4>
-                        <p>{request.program}</p>
-                        <small className="wu-muted">{request.time}</small>
-                      </div>
-
-                      <div className="wm-initiator">
-                        <p className="wu-muted wu-small">Инициатор</p>
-                        <p>{request.initiator}</p>
-                      </div>
-
-                      <dl className="wm-request-details">
-                        {request.details.map(([label, value]) => (
-                          <div key={label}>
-                            <dt>{label}</dt>
-                            <dd>{value}</dd>
-                          </div>
-                        ))}
-                      </dl>
-
-                      <div className="wm-request-actions">
-                        <button
-                          type="button"
-                          className="wu-button"
-                          onClick={() =>
-                            openModal({ kind: "reject", request })
-                          }
-                        >
-                          Отклонить
-                        </button>
-
-                        <button
-                          type="button"
-                          className="wu-button wu-primary"
-                          onClick={() =>
-                            openModal({ kind: "accept", request })
-                          }
-                        >
-                          Принять в работу
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                {remaining > 0 && (
-                  <button
-                    type="button"
-                    className="wm-show-more"
-                    onClick={() => forwardAction("more-requests")}
-                  >
-                    Показать ещё {remaining}
-                  </button>
-                )}
-              </>
-            )}
-          </section>
+          <IncomingRequests
+            requests={requests}
+            onAccept={(request) =>
+              openModal({
+                kind: "accept",
+                request,
+              })
+            }
+            onReject={(request) =>
+              openModal({
+                kind: "reject",
+                request,
+              })
+            }
+          />
         </>
       )}
 
