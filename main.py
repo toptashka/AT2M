@@ -721,6 +721,27 @@ def update_program_priority(
         
         return ProgramResponse(id=program.id, name=program.name, priority=program.priority)
 
+class StageResponse(BaseModel):
+    id: int
+    step_number: int
+    title: str
+    description: Optional[str] = None
+
+@app.get("/api/v1/workflow/stages", response_model=list[StageResponse])
+def get_workflow_stages(
+    db: Session = Depends(get_db),
+    current_user: str = Depends(require_role("Пользователь"))
+):
+    stages = db.query(models.WorkflowStage).order_by(models.WorkflowStage.step_number).all()
+    return [
+        StageResponse(
+            id=s.id,
+            step_number=s.step_number,
+            title=s.title,
+            description=s.description
+        ) for s in stages
+    ]
+
 @app.get("/")
 def read_root():
         return {"status": "ok", "message": "Бэкенд успешно запущен!"}
