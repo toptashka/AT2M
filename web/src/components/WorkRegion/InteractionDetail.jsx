@@ -284,6 +284,13 @@ export default function InteractionDetail({
                   <p>{contact.name || "—"}</p>
 
                   <dl className="aw-contact">
+                    {contact.position?.trim() && (
+                      <div>
+                        <dt>Должность</dt>
+                        <dd>{contact.position}</dd>
+                      </div>
+                    )}
+
                     <div>
                       <dt>Телефон</dt>
                       <dd>{contact.phone || "—"}</dd>

@@ -1,4 +1,5 @@
 import { Select, Field, Popover } from "./WorkspaceUI";
+import DateField from "./DateField";
 import WorkspaceCalendar from "./WorkspaceCalendar";
 
 import {
@@ -161,6 +162,7 @@ export default function WorkspaceFilters({
           <div className="at-extra-content">
             <div className="aw-mobile-owner">
               <Select
+                inline
                 multiple
                 allMeansEmpty
                 value={selection(value.owner)}
@@ -173,6 +175,7 @@ export default function WorkspaceFilters({
             </div>
 
             <Select
+                inline
               multiple
               allMeansEmpty
               value={selection(value.institution)}
@@ -184,6 +187,7 @@ export default function WorkspaceFilters({
             />
 
             <Select
+                inline
               multiple
               allMeansEmpty
               value={selection(value.city)}
@@ -195,13 +199,11 @@ export default function WorkspaceFilters({
             />
 
             <Field label="Дата изменения">
-              <input
-                className="at-input"
-                type="date"
+              <DateField
+                label="Дата изменения"
                 value={value.changed}
-                onChange={(event) =>
-                  change("changed", event.target.value)
-                }
+                onChange={(next) => change("changed", next)}
+                inline
               />
             </Field>
 

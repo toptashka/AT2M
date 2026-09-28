@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 
-import chevronRight from "../../assets/chevron-right.svg";
 import chevronDown from "../../assets/chevron-down.svg";
 import unionIcon from "../../assets/Union.svg";
 import "./WorkspaceUI.css";
@@ -53,7 +52,7 @@ export function useAnimatedState() {
     timer.current = setTimeout(() => {
       setPresent(false);
       setClosing(false);
-    }, 180);
+    }, 220);
   }, []);
 
   return [present, update, closing];
@@ -67,124 +66,115 @@ export function Popover({
   width = 320,
   className = "",
   panelClassName = "",
+  inline = false,
 }) {
   const root = useRef(null);
   const trigger = useRef(null);
   const panel = useRef(null);
   const id = useId();
-
   const [present, setPresent, closing] = useAnimatedState();
   const [session, setSession] = useState(0);
-  const [position, setPosition] = useState({});
-
-  const open = present && !closing;
+  const open = present && !closing && !disabled;
 
   function close(restore = true) {
     setPresent(false);
-
-    if (restore) {
-      trigger.current?.focus({ preventScroll: true });
-    }
+    if (restore) trigger.current?.focus({ preventScroll: true });
   }
 
   useLayoutEffect(() => {
-    if (!present || disabled) return;
-
+    if (!present || disabled || inline) return;
     const node = panel.current;
+    let side = null;
 
     function place() {
+      if (!trigger.current || !node.isConnected) return;
       const rect = trigger.current.getBoundingClientRect();
       const viewport = window.visualViewport;
-
-      const left = viewport?.offsetLeft || 0;
-      const top = viewport?.offsetTop || 0;
-      const vw = viewport?.width || window.innerWidth;
-      const vh = viewport?.height || window.innerHeight;
-
-      const below = Math.max(
-        0,
-        top + vh - rect.bottom - 18
-      );
-
-      const above = Math.max(
-        0,
-        rect.top - top - 18
-      );
-
-      const up = below < 320 && above > below;
-
-      const panelWidth = Math.min(
-        Math.max(rect.width, width),
-        vw - 24
-      );
-
-      setPosition({
+      const left = viewport?.offsetLeft ?? 0;
+      const top = viewport?.offsetTop ?? 0;
+      const vw = viewport?.width ?? window.innerWidth;
+      const vh = viewport?.height ?? window.innerHeight;
+      const below = Math.max(0, top + vh - rect.bottom - 18);
+      const above = Math.max(0, rect.top - top - 18);
+      const panelWidth = Math.min(Math.max(rect.width, width), vw - 24);
+      if (side === null) side = below < 320 && above > below ? "up" : "down";
+      const up = side === "up";
+      node.dataset.side = side;
+      Object.assign(node.style, {
         position: "fixed",
         inset: "auto",
-        left: Math.max(
-          left + 12,
-          Math.min(rect.left, left + vw - panelWidth - 12)
-        ),
-        top: up ? undefined : rect.bottom + 6,
-        bottom: up
-          ? window.innerHeight - rect.top + 6
-          : undefined,
-        width: panelWidth,
-        minWidth: 0,
-        maxWidth: panelWidth,
-        maxHeight: Math.min(560, up ? above : below),
+        left: `${Math.max(left + 12, Math.min(rect.left, left + vw - panelWidth - 12))}px`,
+        top: up ? "auto" : `${rect.bottom + 6}px`,
+        bottom: up ? `${window.innerHeight - rect.top + 6}px` : "auto",
+        width: `${panelWidth}px`,
+        minWidth: "0",
+        maxWidth: `${panelWidth}px`,
+        maxHeight: `${Math.min(560, up ? above : below)}px`,
       });
     }
 
     place();
-    node.showPopover();
-
+    if (!node.matches(":popover-open")) node.showPopover();
     const observer = new ResizeObserver(place);
     observer.observe(trigger.current);
-
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
-
     window.visualViewport?.addEventListener("resize", place);
     window.visualViewport?.addEventListener("scroll", place);
 
     return () => {
-      if (node.matches(":popover-open")) {
-        node.hidePopover();
-      }
-
       observer.disconnect();
-
+      if (node.matches(":popover-open")) node.hidePopover();
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
-
       window.visualViewport?.removeEventListener("resize", place);
       window.visualViewport?.removeEventListener("scroll", place);
     };
-  }, [present, disabled, width]);
+  }, [present, disabled, width, inline]);
 
   useEffect(() => {
     if (!open) return;
-
+    let frame = 0;
     function outside(event) {
-      if (!root.current?.contains(event.target)) {
-        setPresent(false);
-      }
+      if (!root.current?.contains(event.target)) setPresent(false);
     }
-
+    function keyboard(event) {
+      if (event.key !== "Tab") return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (!root.current?.contains(document.activeElement)) setPresent(false);
+      });
+    }
     document.addEventListener("pointerdown", outside);
-    document.addEventListener("focusin", outside);
-
+    document.addEventListener("keydown", keyboard);
     return () => {
+      cancelAnimationFrame(frame);
       document.removeEventListener("pointerdown", outside);
-      document.removeEventListener("focusin", outside);
+      document.removeEventListener("keydown", keyboard);
     };
   }, [open, setPresent]);
 
+  const content = present && !disabled ? (
+    <div
+      ref={panel}
+      id={id}
+      popover={inline ? undefined : "manual"}
+      className={`at-options ${inline ? "at-inline-popup" : "at-select-popup"} ${panelClassName}`}
+      data-closing={closing}
+      inert={closing || undefined}
+      role="group"
+      aria-label={label}
+    >
+      <div className="at-popup-content" key={session}>
+        {children(close)}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div
-      className={`at-select ${className}`}
       ref={root}
+      className={`at-select ${inline ? "at-select-inline" : ""} ${className}`}
       onKeyDown={(event) => {
         if (event.key === "Escape" && present) {
           event.preventDefault();
@@ -194,62 +184,37 @@ export function Popover({
       }}
     >
       <button
-        type="button"
         ref={trigger}
+        type="button"
         className="at-select-trigger"
         aria-label={label}
         aria-expanded={open}
         aria-controls={present ? id : undefined}
         disabled={disabled}
         onClick={() => {
-          if (open) {
-            close();
-          } else {
+          if (open) close();
+          else {
             setSession((value) => value + 1);
             setPresent(true);
           }
         }}
         onKeyDown={(event) => {
           if (event.key !== "ArrowDown") return;
-
           event.preventDefault();
-
           if (!open) {
             setSession((value) => value + 1);
             setPresent(true);
-          } else {
-            panel.current
-              ?.querySelector("input, button")
-              ?.focus();
-          }
+          } else panel.current?.querySelector("input, button")?.focus();
         }}
       >
         <span>{summary || label}</span>
-
-        <img
-          className="at-chevron-image"
-          src={open ? chevronRight : chevronDown}
-          alt=""
-        />
+        <img className="at-chevron-image" src={chevronDown} alt="" />
       </button>
-
-      {present && !disabled && (
-        <div
-          ref={panel}
-          id={id}
-          popover="manual"
-          className={`at-options at-select-popup ${panelClassName}`}
-          style={position}
-          data-closing={closing}
-          inert={closing || undefined}
-          role="group"
-          aria-label={label}
-        >
-          <div className="at-popup-content" key={session}>
-            {children(close)}
-          </div>
+      {inline && content ? (
+        <div className="at-filter-reveal" data-closing={closing}>
+          <div className="at-filter-clip">{content}</div>
         </div>
-      )}
+      ) : content}
     </div>
   );
 }
@@ -373,7 +338,7 @@ function SelectMenu({
           </button>
         </>
       ) : (
-        <>
+        <div className="at-single-list">
           {visible.map((item) => (
             <button
               type="button"
@@ -391,7 +356,7 @@ function SelectMenu({
           {!visible.length && (
             <p className="at-muted">Ничего не найдено</p>
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -409,6 +374,7 @@ export function Select({
   allLabel = "Все варианты",
   searchPlaceholder = "Поиск",
   menuTitle,
+  inline = false,
 }) {
   const items = options.map((item) =>
     typeof item === "string"
@@ -431,6 +397,7 @@ export function Select({
   return (
     <Popover
       label={label}
+      inline={inline}
       summary={
         selected.map((item) => item.label).join(", ") ||
         label ||
@@ -662,7 +629,6 @@ export function usePreference(key, fallback) {
     try {
       sessionStorage.setItem(key, JSON.stringify(result));
     } catch {
-      // Хранилище браузера недоступно.
     }
   }
 

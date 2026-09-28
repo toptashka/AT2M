@@ -135,7 +135,7 @@ textarea.at-input {
   font-size: 12px;
 }
 
-/* Подпись селекта не меняет цвет при раскрытии списка. */
+
 .at-field:has(> .at-input:focus) > span:first-child {
   color: var(--a-focus);
 }
@@ -399,7 +399,7 @@ textarea.at-input {
   gap: 4px;
 }
 
-.at-single-menu > button {
+.at-single-list > button {
   min-height: 36px;
   padding: 8px 12px;
   border: 0;
@@ -411,12 +411,12 @@ textarea.at-input {
   cursor: pointer;
 }
 
-.at-single-menu > button:hover,
-.at-single-menu > button[aria-pressed="true"] {
+.at-single-list > button:hover,
+.at-single-list > button[aria-pressed="true"] {
   background: var(--a-field);
 }
 
-.at-single-menu > button:focus-visible {
+.at-single-list > button:focus-visible {
   outline: 2px solid var(--a-focus);
   outline-offset: -2px;
 }
@@ -754,7 +754,7 @@ textarea.at-input {
   background-image: url("../../assets/chevron-right.svg");
 }
 
-/* Фильтры по скриншоту. */
+
 .aw .aw-toolbar {
   display: grid;
   grid-template-columns:
@@ -817,7 +817,7 @@ textarea.at-input {
   border-color: var(--a-focus);
 }
 
-/* Календарь из ReportsPage. */
+
 .at-calendar-popup {
   padding: 24px;
   overflow: auto;
@@ -1065,7 +1065,7 @@ textarea.at-input {
   border-color: var(--a-focus);
 }
 
-/* Открытие и закрытие из ReportsPage. */
+
 .at-select-popup:popover-open,
 .at-dialog[open] {
   animation: aw-open 180ms ease both;
@@ -1214,7 +1214,7 @@ textarea.at-input {
   }
 }
 
-/* Календарь: цвета кнопок и стрелок как у фильтров. */
+
 .at-calendar-popup {
   color: var(--a-text);
   background: var(--a-card);
@@ -1248,7 +1248,7 @@ textarea.at-input {
   outline-offset: 0;
 }
 
-/* SVG получает цвет через currentColor в обеих темах. */
+
 .at-calendar-popup .aw-date-calendar-arrow .aw-date-icon {
   visibility: hidden;
 }
@@ -1284,58 +1284,58 @@ textarea.at-input {
   background: var(--a-field);
 }
 
-/* Выбранные даты сохраняют акцентный цвет. */
+
 .at-calendar-popup .aw-date-calendar-week > button[data-endpoint="true"],
 .at-calendar-popup .aw-date-month-options button[aria-selected="true"] {
   background: var(--a-accent);
   color: var(--a-on-accent);
 }
 
-/* Прокрутка списка учреждений и остальных одиночных селектов. */
-.at-single-menu {
-  max-height: 240px;
+
+.at-single-list {
+  max-height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
 
-/* Прокрутка самого модального окна при нехватке высоты. */
+
 .at-dialog {
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-.at-single-menu,
+.at-single-list,
 .at-dialog {
   scrollbar-width: auto;
   scrollbar-color: auto;
 }
 
-.at-single-menu::-webkit-scrollbar,
+.at-single-list::-webkit-scrollbar,
 .at-dialog::-webkit-scrollbar {
   width: 8px;
 }
 
-.at-single-menu::-webkit-scrollbar-track,
+.at-single-list::-webkit-scrollbar-track,
 .at-dialog::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.at-single-menu::-webkit-scrollbar-thumb,
+.at-single-list::-webkit-scrollbar-thumb,
 .at-dialog::-webkit-scrollbar-thumb {
   background: #929292;
   border: 2px solid var(--a-card);
   border-radius: 8px;
 }
 
-.at-single-menu::-webkit-scrollbar-thumb:hover,
+.at-single-list::-webkit-scrollbar-thumb:hover,
 .at-dialog::-webkit-scrollbar-thumb:hover {
   background: #747984;
 }
 
-.at-single-menu::-webkit-scrollbar-button,
+.at-single-list::-webkit-scrollbar-button,
 .at-dialog::-webkit-scrollbar-button {
   display: none;
   width: 0;
@@ -1343,9 +1343,229 @@ textarea.at-input {
 }
 
 @supports (-moz-appearance: none) {
-  .at-single-menu,
+  .at-single-list,
   .at-dialog {
     scrollbar-width: thin;
     scrollbar-color: #929292 transparent;
+  }
+}
+.at-select > .at-select-trigger > .at-chevron-image {
+  transition: transform 180ms ease;
+}
+
+.at-select > .at-select-trigger[aria-expanded="true"] > .at-chevron-image {
+  transform: rotate(180deg);
+}
+
+.at-select-popup:popover-open {
+  transform-origin: top center;
+  animation: aw-filter-enter 280ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.at-select-popup[data-side="up"]:popover-open {
+  transform-origin: bottom center;
+}
+
+.at-select-popup[data-closing="true"]:popover-open {
+  animation: aw-filter-leave 220ms ease both;
+  pointer-events: none;
+}
+
+.at-filter-reveal {
+  display: grid;
+  grid-template-rows: 1fr;
+  margin-top: 8px;
+  animation: aw-filter-expand 280ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.at-filter-reveal[data-closing="true"] {
+  animation: aw-filter-collapse 220ms ease both;
+  pointer-events: none;
+}
+
+.at-filter-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.at-inline-popup.at-options {
+  position: static;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  overflow: visible;
+  box-shadow: none;
+}
+
+.at-multi-list,
+.at-single-list {
+  display: grid;
+  grid-auto-rows: 40px;
+  align-content: start;
+  gap: 0;
+  max-height: 200px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #929292 transparent;
+}
+
+.at-multi-option,
+.at-single-list > button {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  margin: 0;
+}
+
+.at-multi-option > span,
+.at-single-list > button {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.at-multi-option > span {
+  min-width: 0;
+}
+
+.at-single-menu {
+  max-height: none;
+  overflow: visible;
+  scrollbar-gutter: auto;
+}
+
+.at-single-list > button {
+  width: 100%;
+}
+
+.at-single-list > button:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: -2px;
+}
+
+.aw-date-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.aw-date-field-error {
+  color: var(--a-error);
+}
+
+.aw-single-date-calendar {
+  display: grid;
+  gap: 12px;
+}
+
+.aw-single-date-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aw-single-date-icon {
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: var(--date-icon) center / contain no-repeat;
+  mask: var(--date-icon) center / contain no-repeat;
+}
+
+.aw-single-date-selectors {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+}
+
+.aw-single-date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  text-align: center;
+}
+
+.aw-single-date-grid > span {
+  padding-block: 4px;
+  color: var(--a-muted);
+  font-size: 12px;
+}
+
+.aw-single-date-grid > button {
+  min-width: 0;
+  height: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--a-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.aw-single-date-grid > button:hover {
+  background: var(--a-field);
+}
+
+.aw-single-date-grid > button[aria-current="date"] {
+  border-color: var(--a-accent);
+}
+
+.aw-single-date-grid > button[aria-pressed="true"] {
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+}
+
+.aw-single-date-grid > button:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: -2px;
+}
+
+.aw-single-date-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+@keyframes aw-filter-enter {
+  from { opacity: 0; transform: translateY(-8px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes aw-filter-leave {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-4px) scale(.98); }
+}
+
+@keyframes aw-filter-expand {
+  from { grid-template-rows: 0fr; opacity: 0; margin-top: 0; }
+  to { grid-template-rows: 1fr; opacity: 1; margin-top: 8px; }
+}
+
+@keyframes aw-filter-collapse {
+  from { grid-template-rows: 1fr; opacity: 1; margin-top: 8px; }
+  to { grid-template-rows: 0fr; opacity: 0; margin-top: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .at-filter-reveal,
+  .at-filter-reveal[data-closing="true"],
+  .at-select-popup:popover-open,
+  .at-select-popup[data-closing="true"]:popover-open {
+    animation: none;
+  }
+
+  .at-select > .at-select-trigger > .at-chevron-image {
+    transition: none;
   }
 }

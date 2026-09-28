@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import DateField from "./DateField";
 import { Dialog, Field, Select } from "./WorkspaceUI";
 import {
   OWNERS,
@@ -99,12 +100,20 @@ export default function WorkspaceModal({
 
   const text = (label, key, type = "text") => (
     <Field label={label}>
-      <input
-        className="at-input"
-        type={type}
-        value={form[key] || ""}
-        onChange={(event) => change(key, event.target.value)}
-      />
+      {type === "date" ? (
+        <DateField
+          label={label}
+          value={form[key] || ""}
+          onChange={(value) => change(key, value)}
+        />
+      ) : (
+        <input
+          className="at-input"
+          type={type}
+          value={form[key] || ""}
+          onChange={(event) => change(key, event.target.value)}
+        />
+      )}
     </Field>
   );
 

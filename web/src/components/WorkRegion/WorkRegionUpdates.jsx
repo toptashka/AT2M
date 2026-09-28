@@ -5,7 +5,6 @@ import {
   Tabs,
   usePreference,
 } from "./WorkspaceUI";
-import { ProductFilter } from "./WorkspaceFilters";
 import {
   filterLabels,
   OWNERS,
@@ -374,11 +373,6 @@ export function WorkspaceChart({
     ""
   );
 
-  const [products, setProducts] = usePreference(
-    "workspace:local-products:" + kind,
-    []
-  );
-
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const menu = useRef(null);
@@ -400,7 +394,6 @@ export function WorkspaceChart({
     selection(filters.city).length ||
     filters.changed ||
     selection(filters.products).length ||
-    selection(products).length ||
     (filters.start &&
       (filters.start > "2026-09-01" ||
         filters.end < "2026-09-30")) ||
@@ -437,11 +430,6 @@ export function WorkspaceChart({
     ...metric.rows.map(([, value]) => value)
   );
 
-  const total = rows.reduce(
-    (sum, [, value]) => sum + value,
-    0
-  );
-
   async function save(format) {
     if (lock.current) return;
 
@@ -458,10 +446,6 @@ export function WorkspaceChart({
         filters: [
           ...filterLabels(filters),
           ["Метрика", metric.unit],
-          [
-            "Локальные продукты",
-            listText(products) || "Все продукты",
-          ],
           ...(kind === "kam"
             ? [
                 [
@@ -581,7 +565,7 @@ export function WorkspaceChart({
       ) : (
         <div className="aw-bars">
           {rows.map(([name, value]) => (
-            <div className="aw-bar" key={name} tabIndex={0}>
+            <div className="aw-bar" key={name} tabIndex={kind === "kam" ? 0 : undefined}>
               <span>{name}</span>
 
               <span className="aw-track">
@@ -594,30 +578,19 @@ export function WorkspaceChart({
 
               <strong>{value.toLocaleString("ru-RU")}</strong>
 
-              <span className="aw-tooltip">
-                {name}
-                <br />
-                {metric.unit}: {value.toLocaleString("ru-RU")}
-
-                {kind === "demand" && (
-                  <>
-                    <br />
-                    {Math.round((value / total) * 100)}% от общего
-                    числа
-                  </>
-                )}
-              </span>
+              {kind === "kam" && (
+                <span className="aw-tooltip">
+                  {name}
+                  <br />
+                  {metric.unit}: {value.toLocaleString("ru-RU")}
+                </span>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      <div className="aw-chart-products">
-        <ProductFilter
-          value={products}
-          onChange={setProducts}
-        />
-      </div>
+
     </section>
   );
 }
