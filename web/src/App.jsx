@@ -76,14 +76,13 @@ function App() {
     }
   };
 
-  // Раскомментируйте блок ниже, если нужно вернуть окно логина
-  // if (!token) {
-  //   return (
-  //     <div className="app">
-  //       <AuthCard onLogin={handleLogin} />
-  //     </div>
-  //   );
-  // }
+  if (!token) {
+    return (
+      <div className="app">
+        <AuthCard onLogin={handleLogin} />
+      </div>
+    );
+  }
 
   return (
     <div className="app">

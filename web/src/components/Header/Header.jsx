@@ -1,13 +1,6 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppTheme, setAppTheme } from "../../theme";
 import logo from "../../assets/Logo.svg";
-
 import ProfileModal from "../Profile/ProfileModal";
 import SettingsDrawer from "../Settings/SettingsDrawer";
 
@@ -65,15 +58,37 @@ const navigation = [
   ["Администрирование", "#/admin"],
 ];
 
+function getUserFromToken() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(escape(atob(base64)));
+    const payload = JSON.parse(jsonPayload);
+
+    const name = payload.name || payload.preferred_username || "Пользователь";
+    
+    const nameParts = name.trim().split(" ");
+    const initials = nameParts.length > 1 
+      ? (nameParts[0][0] + nameParts[1][0]).toUpperCase() 
+      : name.slice(0, 2).toUpperCase();
+      
+    const email = payload.email || "";
+    return { name, initials, email };
+  } catch (error) {
+    console.error("Ошибка расшифровки токена:", error);
+    return null;
+  }
+}
+
 export default function Header({
   activePage = "Главная",
   profileOpen,
   setProfileOpen,
   dark,
   setDark,
-  userName = "Алексей Иванов",
-  userEmail = "alex.ivanov@mail.ru",
-  initials = "АИ",
   profiles,
   onChangePassword,
   onSaveNotifications,
@@ -92,6 +107,11 @@ export default function Header({
 
   const ref = useRef(null);
   const button = useRef(null);
+
+  const tokenUser = getUserFromToken();
+  const currentName = tokenUser?.name || "Пользователь";
+  const currentEmail = tokenUser?.email || "";
+  const currentInitials = tokenUser?.initials || "РТ";
 
   const closeView = useCallback(() => setView(null), []);
 
@@ -124,6 +144,17 @@ export default function Header({
     changeOpen(false);
     setView(next);
   }
+
+  const handleLogoutClick = () => {
+    changeOpen(false);
+    if (onLogout) {
+      onLogout();
+    } else {
+      localStorage.removeItem("token");
+      window.location.hash = "";
+      window.location.reload();
+    }
+  };
 
   return (
     <>
@@ -175,16 +206,16 @@ export default function Header({
               aria-expanded={open}
               onClick={() => changeOpen(!open)}
             >
-              <span className="at-avatar">{initials}</span>
+              <span className="at-avatar">{currentInitials}</span>
             </button>
 
             {open && (
               <div className="at-profile-menu">
                 <div className="at-identity">
-                  <span className="at-avatar">{initials}</span>
+                  <span className="at-avatar">{currentInitials}</span>
                   <div>
-                    <strong>{userName}</strong>
-                    <small>{userEmail}</small>
+                    <strong>{currentName}</strong>
+                    {currentEmail && <small>{currentEmail}</small>}
                   </div>
                 </div>
 
@@ -221,11 +252,7 @@ export default function Header({
                 <button
                   type="button"
                   className="at-logout"
-                  disabled={!onLogout}
-                  onClick={() => {
-                    changeOpen(false);
-                    onLogout?.();
-                  }}
+                  onClick={handleLogoutClick}
                 >
                   <Icon name="logout" />
                   Выйти

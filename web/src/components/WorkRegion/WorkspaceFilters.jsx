@@ -1,14 +1,8 @@
 import { Select, Field, Popover } from "./WorkspaceUI";
 import WorkspaceCalendar from "./WorkspaceCalendar";
-import {
-  OWNERS,
-  PROGRAMS,
-  PRODUCTS,
-  INITIAL_FILTERS,
-  selection,
-} from "./workspaceModel";
+import { INITIAL_FILTERS, selection } from "./workspaceModel";
 
-export function ProductFilter({ value, onChange }) {
+export function ProductFilter({ value, onChange, products = [] }) {
   return (
     <Select
       multiple
@@ -18,26 +12,21 @@ export function ProductFilter({ value, onChange }) {
       allLabel="Все продукты"
       searchPlaceholder="Поиск продуктов"
       value={selection(value)}
-      options={PRODUCTS}
+      options={products}
       onChange={onChange}
     />
   );
 }
 
 export function PeriodFilter({ value, onChange }) {
-  const format = (date) =>
-    date.split("-").reverse().join(".");
+  const format = (date) => date.split("-").reverse().join(".");
 
   return (
     <Popover
       label="Период"
       width={808}
       panelClassName="at-calendar-popup"
-      summary={
-        value.start && value.end
-          ? format(value.start) + " — " + format(value.end)
-          : "Период"
-      }
+      summary={value.start && value.end ? format(value.start) + " — " + format(value.end) : "Период"}
     >
       {(close) => (
         <WorkspaceCalendar
@@ -45,10 +34,7 @@ export function PeriodFilter({ value, onChange }) {
           to={value.end}
           onReset={() => onChange({ start: "", end: "" })}
           onApply={(range) => {
-            onChange({
-              start: range.from,
-              end: range.to,
-            });
+            onChange({ start: range.from, end: range.to });
             close();
           }}
         />
@@ -57,23 +43,16 @@ export function PeriodFilter({ value, onChange }) {
   );
 }
 
-export default function WorkspaceFilters({
-  value,
-  onChange,
-  interactions,
-}) {
-  const change = (key, next) =>
-    onChange({ ...value, [key]: next });
+export default function WorkspaceFilters({ value, onChange, interactions = [] }) {
+  const change = (key, next) => onChange({ ...value, [key]: next });
 
-  const institutions = [
-    ...new Set(interactions.map((item) => item.name)),
-  ];
+  const list = Array.isArray(interactions) ? interactions : [];
 
-  const cities = [
-    ...new Set(
-      interactions.map((item) => item.city).filter(Boolean)
-    ),
-  ];
+  const institutions = [...new Set(list.map((item) => item.name).filter(Boolean))];
+  const cities = [...new Set(list.map((item) => item.city).filter(Boolean))];
+  const dynamicPrograms = [...new Set(list.map((item) => item.direction).filter(Boolean))];
+  const dynamicProducts = [...new Set(list.map((item) => item.product).filter(Boolean))];
+  const dynamicOwners = [...new Set(list.map((item) => item.owner).filter(Boolean))];
 
   return (
     <div className="aw-toolbar">
@@ -81,12 +60,9 @@ export default function WorkspaceFilters({
         className="at-input"
         placeholder="Найти учреждение, программу или ИТ-продукт…"
         aria-label="Поиск взаимодействий"
-        value={value.search}
-        onChange={(event) =>
-          change("search", event.target.value)
-        }
+        value={value.search || ""}
+        onChange={(event) => change("search", event.target.value)}
       />
-
       <Select
         multiple
         allMeansEmpty
@@ -94,15 +70,14 @@ export default function WorkspaceFilters({
         label="ИТ-направление"
         allLabel="Все направления"
         searchPlaceholder="Поиск направлений"
-        options={PROGRAMS}
+        options={dynamicPrograms}
         onChange={(next) => change("direction", next)}
       />
-
       <ProductFilter
         value={value.products}
         onChange={(next) => change("products", next)}
+        products={dynamicProducts}
       />
-
       <Select
         multiple
         allMeansEmpty
@@ -110,15 +85,9 @@ export default function WorkspaceFilters({
         label="Статус"
         allLabel="Все статусы"
         searchPlaceholder="Поиск статусов"
-        options={[
-          "В работе",
-          "Требует внимания",
-          "Просрочено",
-          "Завершено",
-        ]}
+        options={["В работе", "Требует внимания", "Просрочено", "Завершено"]}
         onChange={(next) => change("status", next)}
       />
-
       <Select
         multiple
         allMeansEmpty
@@ -126,23 +95,14 @@ export default function WorkspaceFilters({
         label="Ответственный КАМ"
         allLabel="Все ответственные"
         searchPlaceholder="Поиск сотрудников"
-        options={OWNERS}
+        options={dynamicOwners}
         onChange={(next) => change("owner", next)}
       />
-
       <PeriodFilter
-        value={{
-          start: value.start,
-          end: value.end,
-        }}
+        value={{ start: value.start, end: value.end }}
         onChange={(next) => onChange({ ...value, ...next })}
       />
-
-      <Popover
-        label="Ещё фильтры"
-        width={304}
-        panelClassName="at-extra-popup"
-      >
+      <Popover label="Ещё фильтры" width={304} panelClassName="at-extra-popup">
         {(close) => (
           <div className="at-extra-content">
             <Select
@@ -155,7 +115,6 @@ export default function WorkspaceFilters({
               options={institutions}
               onChange={(next) => change("institution", next)}
             />
-
             <Select
               multiple
               allMeansEmpty
@@ -166,18 +125,14 @@ export default function WorkspaceFilters({
               options={cities}
               onChange={(next) => change("city", next)}
             />
-
             <Field label="Дата изменения">
               <input
                 className="at-input"
                 type="date"
-                value={value.changed}
-                onChange={(event) =>
-                  change("changed", event.target.value)
-                }
+                value={value.changed || ""}
+                onChange={(event) => change("changed", event.target.value)}
               />
             </Field>
-
             <button
               type="button"
               onClick={() => {
