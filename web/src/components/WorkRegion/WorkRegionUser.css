@@ -1,0 +1,1055 @@
+.aw {
+  min-width: 768px;
+  min-height: 100vh;
+  background: var(--a-page);
+  color: var(--a-text);
+  font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+  transition:
+    background-color var(--theme-transition-duration, 240ms) ease,
+    color var(--theme-transition-duration, 240ms) ease;
+}
+
+.aw h1,
+.aw h2,
+.aw h3,
+.aw p,
+.aw dl,
+.aw dd {
+  margin: 0;
+}
+
+.aw h1 {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 500;
+}
+
+.aw h2 {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.aw h3 {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.aw small {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.aw dt {
+  color: var(--a-muted);
+  font-size: 12px;
+}
+
+.aw button,
+.aw input,
+.aw select,
+.aw textarea {
+  font-family: inherit;
+}
+
+.aw-page {
+  width: calc(100% - 160px);
+  max-width: 1600px;
+  margin: auto;
+  padding: 24px 0 80px;
+}
+
+.aw-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.aw-heading p {
+  margin-top: 8px;
+}
+
+.aw-top-actions {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+}
+
+.aw-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(160px, 1.5fr)
+    repeat(2, minmax(128px, 1fr))
+    minmax(110px, 0.8fr)
+    minmax(144px, 1fr)
+    minmax(120px, 0.9fr)
+    120px;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.aw-toolbar > .at-input {
+  background: var(--a-field);
+}
+
+.aw-toolbar .at-select {
+  font-size: 12px;
+}
+
+.aw-toolbar .at-options {
+  font-size: 14px;
+}
+
+.aw-products .at-options {
+  min-width: 260px;
+}
+
+.aw-products label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.aw input[type="checkbox"] {
+  accent-color: var(--a-accent);
+}
+
+.aw-products .at-options > .primary {
+  display: block;
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+  text-align: center;
+  margin-top: 8px;
+}
+
+.aw .aw-calendar {
+  left: auto;
+  right: 0;
+  width: 720px;
+  max-width: min(720px, calc(100vw - 48px));
+  max-height: none;
+  overflow: visible;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 16px;
+}
+
+.aw-presets {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.aw-presets button {
+  border: 0;
+  border-radius: 6px;
+  padding: 8px;
+  background: transparent;
+  color: var(--a-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aw-presets button:hover {
+  background: var(--a-field);
+}
+
+.aw-months {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.aw-month-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.aw-month-title strong {
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.aw-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.aw-days small {
+  color: var(--a-muted);
+  margin: 8px 0;
+}
+
+.aw-days button {
+  height: 30px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--a-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.aw-days button.range {
+  background: var(--a-field);
+}
+
+.aw-days button.selected {
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+}
+
+.aw-calendar .at-form-actions {
+  grid-column: 1 / -1;
+}
+
+.aw-extra > .at-options {
+  right: 0;
+  left: auto;
+  width: 304px;
+  display: grid;
+  gap: 12px;
+  overflow: visible;
+  max-height: none;
+  padding: 16px;
+}
+
+.aw-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.aw-panel {
+  border: 1px solid var(--a-border);
+  border-radius: 12px;
+  background: var(--a-card);
+  transition:
+    background-color var(--theme-transition-duration, 240ms) ease,
+    border-color var(--theme-transition-duration, 240ms) ease;
+}
+
+.aw-stat {
+  height: 112px;
+  padding: 20px;
+}
+
+.aw-stat > div {
+  margin-top: 8px;
+}
+
+.aw-stat strong {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 500;
+}
+
+.aw-accent {
+  color: var(--a-accent);
+}
+
+.aw-purple {
+  color: var(--a-purple);
+}
+
+.aw-danger {
+  color: var(--a-error);
+}
+
+.aw-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 832fr) minmax(0, 424fr);
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.aw-chart,
+.aw-deadlines {
+  min-height: 288px;
+  padding: 20px;
+}
+
+.aw-chart {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.aw-chart-kam {
+  margin-top: 16px;
+  min-height: 280px;
+}
+
+.aw-chart-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.aw-chart-head h3 {
+  margin-right: auto;
+}
+
+.aw-chart-head > .at-select:not(.aw-export) {
+  width: 240px;
+}
+
+.aw-chart-head > .at-tabs {
+  flex: none;
+}
+
+.aw-chart-kam > .at-tabs {
+  margin-top: 12px;
+}
+
+.aw-unit {
+  display: block;
+  margin-top: 12px;
+}
+
+.aw-bars {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.aw-bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 40px;
+  gap: 16px;
+  align-items: center;
+  min-height: 20px;
+  font-size: 12px;
+}
+
+.aw-chart-kam .aw-bar {
+  grid-template-columns: 184px minmax(0, 1fr) 64px;
+}
+
+.aw-bar > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aw-bar > strong {
+  text-align: right;
+  font-weight: 500;
+}
+
+.aw-track {
+  display: block;
+  height: 6px;
+  background: var(--a-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.aw-track > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--a-purple);
+}
+
+.aw-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 30%;
+  z-index: 40;
+  min-width: 200px;
+  padding: 12px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  background: var(--a-card);
+  color: var(--a-text);
+  box-shadow: 0 8px 24px #0002;
+  pointer-events: none;
+}
+
+.aw-bar:hover .aw-tooltip,
+.aw-bar:focus-visible .aw-tooltip {
+  display: block;
+}
+
+.aw-chart-products {
+  margin-top: auto;
+  padding-top: 12px;
+  width: 180px;
+}
+
+.aw-chart-products summary {
+  height: 24px;
+  padding: 0;
+  border: 0;
+  font-size: 10px;
+  color: var(--a-muted);
+  background: transparent;
+}
+
+.aw-chart-products summary .at-chevron {
+  display: none;
+}
+
+.aw .aw-export > summary {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  padding: 7px;
+  background: transparent;
+}
+
+.aw .aw-export > .at-options {
+  right: 0;
+  left: auto;
+  min-width: 176px;
+}
+
+.aw-export button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.aw-box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.aw-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.aw-deadlines .at-tabs {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.aw-deadline {
+  position: relative;
+  display: grid;
+  padding-right: 92px;
+  margin-top: 16px;
+}
+
+.aw-deadline strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.aw-deadline > span {
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  background: var(--a-field);
+  color: var(--a-muted);
+}
+
+.aw-deadline > span[data-status="Просрочено"] {
+  background: var(--a-error-bg);
+  color: var(--a-error);
+}
+
+.aw-deadline > span[data-status="Горящий срок"] {
+  background: #ffd166;
+  color: #591c06;
+}
+
+.aw-incoming {
+  margin-top: 24px;
+}
+
+.aw-section-title {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 40px;
+  margin-bottom: 16px;
+}
+
+.aw-heading-button {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.aw-section-title > .at-select {
+  width: 208px;
+  margin-left: auto;
+}
+
+.aw-requests {
+  display: grid;
+  gap: 16px;
+}
+
+.aw-request {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 352fr)
+    minmax(0, 200fr)
+    minmax(0, 432fr)
+    184px;
+  align-items: center;
+  gap: 24px;
+  min-height: 160px;
+  padding: 20px 24px;
+}
+
+.aw-source {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+  background: var(--a-field);
+  color: var(--a-purple);
+  font-size: 10px;
+}
+
+.aw-request h3 {
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+.aw-request small {
+  display: block;
+  margin-top: 8px;
+}
+
+.aw-request dl {
+  display: grid;
+  gap: 8px;
+}
+
+.aw-request dl > div {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.aw-request dd {
+  overflow-wrap: anywhere;
+}
+
+.aw-request-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.aw-show-more {
+  width: 100%;
+  height: 40px;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.aw-registry-title {
+  margin-top: 24px;
+}
+
+.aw-registry-title > span {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.aw-interactions {
+  display: grid;
+  gap: 16px;
+}
+
+.aw-summary {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 448fr)
+    minmax(0, 344fr)
+    minmax(0, 336fr)
+    32px;
+  align-items: center;
+  gap: 24px;
+  min-height: 128px;
+  padding: 20px 24px;
+}
+
+.aw-org {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aw-org > span:last-child {
+  display: grid;
+  gap: 4px;
+}
+
+.aw-badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  background: var(--a-field);
+  color: var(--a-purple);
+  border-radius: 12px;
+  font-size: 10px;
+}
+
+.aw-progress,
+.aw-summary-owner {
+  display: grid;
+  gap: 6px;
+}
+
+.aw-segments {
+  display: flex;
+  gap: 3px;
+}
+
+.aw-segments i {
+  flex: 1;
+  height: 8px;
+  background: var(--a-border);
+  border-radius: 1px;
+}
+
+.aw-segments i.done {
+  background: var(--a-purple);
+}
+
+.aw-segments i.current {
+  background: var(--a-accent);
+}
+
+.aw-summary-owner > .at-select {
+  width: 100%;
+}
+
+.aw-detail {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  border-top: 1px solid var(--a-border);
+}
+
+.aw-workflow {
+  padding: 24px;
+  border-right: 1px solid var(--a-border);
+}
+
+.aw-workflow > small {
+  display: block;
+  margin-top: 4px;
+}
+
+.aw-workflow ol {
+  list-style: none;
+  padding: 0;
+  margin: 24px 0 0;
+}
+
+.aw-workflow li {
+  position: relative;
+}
+
+.aw-workflow li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 18px;
+  bottom: -4px;
+  width: 1px;
+  background: var(--a-border);
+}
+
+.aw-workflow button {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 0 4px 16px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: var(--a-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.aw-workflow .selected button {
+  color: var(--a-accent);
+}
+
+.aw-workflow small {
+  display: block;
+  color: var(--a-muted);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.aw-step-dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  border: 1px solid var(--a-border);
+  border-radius: 50%;
+  background: var(--a-card);
+  color: #ffffff;
+  font-size: 10px;
+}
+
+.aw-step-dot.done {
+  background: var(--a-purple);
+  border-color: var(--a-purple);
+}
+
+.aw-step-dot.current {
+  background: var(--a-accent);
+  border-color: var(--a-accent);
+}
+
+.aw-detail-main {
+  padding: 24px;
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.aw-stage-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+}
+
+.aw-stage-top > span {
+  margin-left: auto;
+}
+
+.aw-stage-top .aw-link {
+  color: var(--a-purple);
+}
+
+.aw-detail-main > h2 {
+  margin-top: -4px;
+}
+
+.aw-owner-field {
+  width: 400px;
+  max-width: 100%;
+  display: grid;
+  gap: 8px;
+}
+
+.aw-meta,
+.aw-contract {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.aw-meta {
+  margin: 8px 0 !important;
+}
+
+.aw-meta dd,
+.aw-contract dd,
+.aw-contact dd {
+  margin-top: 4px;
+}
+
+.aw-box {
+  padding: 16px;
+  border: 1px solid var(--a-border);
+  border-radius: 12px;
+}
+
+.aw-box .aw-contract {
+  margin-top: 16px;
+}
+
+.aw-box > p {
+  margin-top: 12px;
+}
+
+.aw-contact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 12px !important;
+}
+
+.aw-condition {
+  display: block;
+  padding: 0;
+  margin-top: 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aw-condition:disabled {
+  cursor: default;
+}
+
+.aw-comment {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  margin-top: 12px;
+  background: var(--a-field);
+  border-radius: 8px;
+}
+
+.aw-comment small {
+  margin-left: 16px;
+}
+
+.aw-comment p + p {
+  margin-top: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.aw-mini-avatar {
+  flex: none;
+  color: var(--a-avatar);
+  font-size: 10px;
+}
+
+.aw-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  border-radius: 8px;
+}
+
+.aw-file > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.aw-file strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.aw-file small {
+  display: block;
+}
+
+.aw-completion {
+  min-height: 18px;
+  font-size: 12px;
+}
+
+.aw-warning {
+  display: inline-grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--a-accent);
+}
+
+.aw-warning img {
+  width: 2px;
+  height: 7px;
+}
+
+.aw-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.aw-return {
+  margin-left: auto;
+}
+
+.aw-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px dashed var(--a-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.aw-dropzone small {
+  display: block;
+  margin-top: 4px;
+}
+
+.aw .at-dialog-wide > .aw-detail {
+  margin: 0 -24px -24px;
+}
+
+@media (max-width: 1279px) {
+  .aw-page {
+    width: calc(100% - 64px);
+  }
+
+  .aw-toolbar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .aw-toolbar > .at-input {
+    grid-column: span 2;
+  }
+
+  .aw-chart-head {
+    flex-wrap: wrap;
+  }
+
+  .aw-chart-head h3 {
+    flex: 1;
+  }
+
+  .aw-chart-head > .at-tabs {
+    order: 3;
+    width: 100%;
+  }
+
+  .aw-bar {
+    grid-template-columns:
+      minmax(120px, 190px)
+      minmax(0, 1fr)
+      32px;
+    gap: 8px;
+  }
+
+  .aw-summary {
+    gap: 16px;
+    padding-inline: 20px;
+  }
+
+  .aw-detail {
+    grid-template-columns: 264px minmax(0, 1fr);
+  }
+
+  .aw-request {
+    grid-template-columns:
+      minmax(0, 1.3fr)
+      minmax(0, 0.8fr)
+      minmax(0, 1.4fr)
+      160px;
+    gap: 16px;
+  }
+
+  .aw-request dl > div {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1024px) {
+  .aw-page {
+    width: calc(100% - 48px);
+  }
+
+  .aw-heading {
+    flex-wrap: wrap;
+  }
+
+  .aw-top-actions {
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .aw-stats {
+    gap: 16px;
+  }
+
+  .aw-stat {
+    padding: 16px;
+  }
+
+  .aw-stat strong {
+    font-size: 24px;
+  }
+
+  .aw-contract {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .aw-request {
+    grid-template-columns: 1fr 1fr 160px;
+  }
+
+  .aw-request > div:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .aw-request dl {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .aw-request-actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .aw .aw-calendar {
+    position: fixed;
+    left: 24px;
+    right: 24px;
+    top: 25vh;
+    width: auto;
+  }
+}

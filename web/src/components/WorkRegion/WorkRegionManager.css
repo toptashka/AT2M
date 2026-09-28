@@ -1,0 +1,486 @@
+.wm-performance {
+  height: 280px;
+  margin-top: 16px;
+  padding: 20px;
+}
+
+.wm-performance > .wu-panel-head {
+  height: 40px;
+}
+
+.wm-performance .wu-filter {
+  width: 240px;
+}
+
+.wm-tabs {
+  width: 680px;
+  margin-top: 12px;
+}
+
+.wm-chart-label {
+  margin-top: 16px !important;
+}
+
+.wm-performance .wu-bars {
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.wm-performance .wu-bar-row {
+  grid-template-columns: 184px minmax(0, 1fr) 64px;
+}
+
+.wm-incoming {
+  margin-top: 16px;
+}
+
+.wm-incoming-heading {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  height: 40px;
+}
+
+.wm-incoming-toggle {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--wr-text);
+  font-size: 20px !important;
+  font-weight: 500 !important;
+}
+
+.wm-incoming-toggle .wu-chevron {
+  width: 6px;
+  height: 6px;
+}
+
+.wm-incoming-toggle .is-closed {
+  transform: rotate(-45deg);
+}
+
+.wm-incoming-heading > .wu-filter {
+  width: 208px;
+  margin-left: auto;
+}
+
+.wm-request-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.wm-request {
+  display: grid;
+  grid-template-columns: minmax(0, 352fr) minmax(0, 200fr) minmax(0, 432fr) 184px;
+  align-items: center;
+  gap: 24px;
+  height: 160px;
+  padding: 20px 24px;
+}
+
+.wm-source {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 12px;
+  border-radius: 6px;
+  background: var(--wr-bg);
+  color: #7700ff;
+  font-size: 10px;
+}
+
+.wm-request-title h4 {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.wm-request-title > small {
+  display: block;
+  margin-top: 8px;
+}
+
+.wm-initiator > p + p {
+  margin-top: 4px;
+}
+
+.wm-request-details {
+  display: grid;
+  gap: 8px;
+}
+
+.wm-request-details > div {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.wm-request-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.wm-request-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.wm-show-more {
+  display: block;
+  width: 100%;
+  height: 40px;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--wr-text);
+}
+
+.wu-manager .wu-stage {
+  height: 244px;
+}
+
+.wu-owner-field {
+  display: grid;
+  gap: 8px;
+  width: 400px;
+  max-width: 100%;
+  margin-top: 20px;
+}
+
+.wu-owner-field select {
+  width: 100%;
+}
+
+@media (max-width: 1279px) {
+  .wm-request {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, .8fr) minmax(0, 1.4fr) 160px;
+    gap: 16px;
+    padding-inline: 20px;
+  }
+
+  .wm-request-details > div {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .wm-tabs {
+    width: 100%;
+  }
+
+  .wm-request {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 160px;
+    height: auto;
+    min-height: 192px;
+  }
+
+  .wm-initiator {
+    grid-column: 1;
+  }
+
+  .wm-request-details {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .wm-request-actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+
+  .wm-incoming-heading {
+    gap: 20px;
+  }
+
+  .wm-incoming-toggle {
+    font-size: 18px !important;
+  }
+
+  .wu-manager .wu-stage {
+    height: auto;
+    min-height: 244px;
+  }
+}
+
+
+.wu .wmm-dialog {
+  width: 536px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--wr-border);
+  border-radius: 12px;
+  background: var(--wr-surface);
+  color: var(--wr-text);
+  font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.wmm-dialog::backdrop {
+  background: rgb(16 24 40 / 40%);
+}
+
+.wu .wmm-dialog h2 {
+  margin: 0;
+  color: var(--wr-text);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 28px;
+}
+
+.wu .wmm-dialog h2:focus {
+  outline: none;
+}
+
+.wu .wmm-dialog form {
+  margin: 0;
+}
+
+.wu .wmm-description,
+.wu .wmm-note {
+  margin: 24px 0 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.wu .wmm-muted {
+  color: var(--wr-text-muted);
+}
+
+.wu .wmm-field {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  margin: 0;
+  color: var(--wr-text);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.wu .wmm-select-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.wu .wmm-select-wrap select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  margin: 0;
+  padding: 0 36px 0 12px;
+  appearance: none;
+  border: 1px solid var(--wr-border);
+  border-radius: 8px;
+  background: var(--wr-surface);
+  color: var(--wr-text);
+  font: inherit;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.wu .wmm-select-wrap select:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.wu .wmm-chevron {
+  position: absolute;
+  top: 15px;
+  right: 16px;
+  width: 6px;
+  height: 6px;
+  border-right: 1px solid var(--wr-text-muted);
+  border-bottom: 1px solid var(--wr-text-muted);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.wu .wmm-owner-field {
+  width: 400px;
+  max-width: 100%;
+  margin-top: 24px;
+  gap: 8px;
+}
+
+.wu .wmm-owner-field > span:first-child {
+  color: var(--wr-text-muted);
+  font-size: 12px;
+}
+
+.wu .wmm-create-fields {
+  display: grid;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.wu .wmm-comment-field {
+  margin-top: 24px;
+}
+
+.wu .wmm-comment-field textarea {
+  display: block;
+  width: 100%;
+  height: 120px;
+  min-height: 120px;
+  padding: 16px;
+  resize: vertical;
+  border: 1px solid var(--wr-border);
+  border-radius: 12px;
+  background: var(--wr-bg);
+  color: var(--wr-text);
+  font: inherit;
+  line-height: 20px;
+}
+
+.wu .wmm-comment-field textarea::placeholder {
+  color: var(--wr-text-muted);
+  opacity: 1;
+}
+
+.wu .wmm-modal-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.wu .wmm-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--wr-border);
+  border-radius: 8px;
+  background: var(--wr-surface);
+  color: var(--wr-text);
+  font: inherit;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.wu .wmm-cancel-button {
+  flex: 0 0 120px;
+}
+
+.wu .wmm-button--primary {
+  width: 240px;
+  max-width: 100%;
+  border-color: var(--wr-orange);
+  background: var(--wr-orange);
+  color: #fff;
+}
+
+.wu .wmm-button--primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.wu .wmm-cancel-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.wu .wmm-close-button {
+  width: 100%;
+}
+
+.wu .wmm-error {
+  margin: 16px 0 0;
+  color: var(--wu-danger, #ff2626);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.wu .wmm-filter-panel {
+  position: fixed;
+  inset: auto;
+  width: 304px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: 0;
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid var(--wr-border);
+  border-radius: 12px;
+  background: var(--wr-surface);
+  color: var(--wr-text);
+  font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+  box-shadow: 0 8px 24px rgb(16 24 40 / 12%);
+  box-sizing: border-box;
+}
+
+.wu .wmm-filter-panel:popover-open {
+  display: grid;
+  gap: 16px;
+}
+
+.wu .wmm-filter-panel .wmm-mobile-owner {
+  display: none;
+}
+
+.wu[data-theme="dark"] .wmm-filter-panel {
+  box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
+}
+
+.wu :is(
+  .wmm-dialog,
+  .wmm-filter-panel,
+  .wmm-button,
+  .wmm-select-wrap select,
+  .wmm-comment-field textarea
+) {
+  transition:
+    background-color var(--theme-transition-duration, 240ms) ease,
+    color var(--theme-transition-duration, 240ms) ease,
+    border-color var(--theme-transition-duration, 240ms) ease;
+}
+
+@media (max-width: 640px) {
+  .wu .wmm-filter-panel .wmm-mobile-owner {
+    display: grid;
+  }
+
+  .wu .wmm-modal-actions {
+    gap: 12px;
+  }
+
+  .wu .wmm-cancel-button {
+    flex-basis: 96px;
+  }
+
+  .wu .wmm-button--primary {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    min-height: 40px;
+    padding: 8px 12px;
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wu :is(
+    .wmm-dialog,
+    .wmm-filter-panel,
+    .wmm-button,
+    .wmm-select-wrap select,
+    .wmm-comment-field textarea
+  ) {
+    transition: none;
+  }
+}

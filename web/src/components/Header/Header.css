@@ -1,0 +1,240 @@
+.at-header {
+  position: relative;
+  z-index: 30;
+  width: 100%;
+  min-width: 768px;
+  background: var(--a-card);
+  border-bottom: 1px solid var(--a-border);
+  color: var(--a-text);
+  font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+}
+
+.at-header .at-header-inner {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  width: calc(100% - 160px);
+  max-width: 1600px;
+  height: 72px;
+  margin: auto;
+}
+
+.at-header .at-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 229px;
+  font-size: 20px;
+  font-weight: 500;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.at-header .at-logo img {
+  object-fit: contain;
+}
+
+.at-header .at-nav {
+  display: flex;
+  align-self: stretch;
+  align-items: stretch;
+  flex: 1;
+  gap: 40px;
+  min-width: 0;
+}
+
+.at-header .at-nav a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--a-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.at-header .at-nav a:hover,
+.at-header .at-nav a[aria-current="page"] {
+  color: var(--a-accent);
+}
+
+.at-header .at-nav a::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: calc(50% - 16px);
+  width: 32px;
+  height: 2px;
+  background: var(--a-accent);
+  opacity: 0;
+  transform: scaleX(0.6);
+}
+
+.at-header .at-nav a[aria-current="page"]::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.at-header .at-profile {
+  position: relative;
+  margin-left: auto;
+  flex: none;
+}
+
+.at-header .at-avatar-button {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.at-header .at-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--a-field);
+  color: var(--a-avatar);
+  font-size: 11px;
+  flex: none;
+}
+
+.at-header .at-profile-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 240px;
+  padding: 12px;
+  border: 1px solid var(--a-border);
+  border-radius: 12px;
+  background: var(--a-card);
+  box-shadow: 0 12px 32px #0002;
+}
+
+.at-header .at-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px 16px;
+}
+
+.at-header .at-identity strong {
+  display: block;
+  font-size: 14px;
+}
+
+.at-header .at-identity small {
+  display: block;
+  margin-top: 2px;
+  color: var(--a-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.at-header .at-profile-menu > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 40px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 8px;
+  background: none;
+  color: var(--a-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-header .at-profile-menu > button:hover {
+  background: var(--a-field);
+}
+
+.at-header .at-profile-menu svg {
+  width: 18px;
+  height: 18px;
+  color: var(--a-muted);
+  flex: none;
+}
+
+.at-header .at-profile-menu .at-logout,
+.at-header .at-logout svg {
+  color: var(--a-accent);
+}
+
+.at-header button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.at-header :is(button, a):focus-visible {
+  outline: 2px solid var(--a-accent);
+  outline-offset: 3px;
+}
+
+.at-header,
+.at-header .at-nav,
+.at-header .at-nav a,
+.at-header .at-nav a::after,
+.at-header .at-avatar,
+.at-header .at-profile-menu,
+.at-header .at-profile-menu > button,
+.at-header .at-profile-menu svg {
+  transition:
+    background-color var(--theme-transition-duration, 240ms) ease,
+    color var(--theme-transition-duration, 240ms) ease,
+    border-color var(--theme-transition-duration, 240ms) ease,
+    box-shadow var(--theme-transition-duration, 240ms) ease,
+    opacity var(--theme-transition-duration, 240ms) ease,
+    transform var(--theme-transition-duration, 240ms) ease;
+}
+
+@media (max-width: 1279px) {
+  .at-header .at-header-inner {
+    width: calc(100% - 64px);
+  }
+
+  .at-header .at-logo {
+    flex-basis: 180px;
+  }
+
+  .at-header .at-nav {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .at-header .at-header-inner {
+    width: calc(100% - 48px);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 24px;
+    height: auto;
+    padding-top: 16px;
+  }
+
+  .at-header .at-profile {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .at-header .at-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 28px;
+    height: 52px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .at-header,
+  .at-header *,
+  .at-header *::before,
+  .at-header *::after {
+    transition: none;
+  }
+}

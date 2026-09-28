@@ -1,0 +1,1351 @@
+:root {
+  --a-page: #f9f9fa;
+  --a-card: #ffffff;
+  --a-field: #f9f9fa;
+  --a-text: #101828;
+  --a-muted: #747984;
+  --a-border: #e6e7e9;
+  --a-accent: #ff4f12;
+  --a-on-accent: #ffffff;
+  --a-purple: #7700ff;
+  --a-error: #ff2626;
+  --a-error-bg: #fff0ef;
+  --a-backdrop: rgb(68 83 113 / 30%);
+  --a-chart: #7700ff;
+  --a-avatar: #7700ff;
+  --a-hover-border: #477cff;
+  --a-focus: #477cff;
+  --a-disabled-bg: #e8e9ed;
+  --a-disabled-text: #9da5b5;
+}
+
+:root[data-theme="dark"] {
+  --a-page: #151d2c;
+  --a-card: #1b2332;
+  --a-field: #212938;
+  --a-text: #e8e8ee;
+  --a-muted: #9da1ac;
+  --a-border: #323a4a;
+  --a-accent: #ffa789;
+  --a-on-accent: #591c06;
+  --a-error: #ff9393;
+  --a-error-bg: #482d38;
+  --a-backdrop: rgb(4 6 10 / 64%);
+  --a-chart: #b28aff;
+  --a-avatar: #9da1ac;
+  --a-hover-border: #858b96;
+  --a-focus: #b28aff;
+  --a-disabled-bg: #1b2332;
+  --a-disabled-text: #657084;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+.at-muted {
+  color: var(--a-muted);
+}
+
+.at-button,
+.at-icon,
+.at-select summary,
+.at-select-trigger,
+.at-input {
+  font: inherit;
+  color: var(--a-text);
+  background: var(--a-card);
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+}
+
+.at-button {
+  min-height: 40px;
+  padding: 8px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.at-button.primary {
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+  border-color: var(--a-accent);
+}
+
+.at-button.danger {
+  background: var(--a-error);
+  color: #ffffff;
+  border-color: var(--a-error);
+}
+
+.at-button:disabled,
+.at-icon:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.at-icon {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.at-icon img {
+  width: 18px;
+  height: 18px;
+}
+
+.at-icon:hover,
+.at-button:not(.primary):not(.danger):hover {
+  background: var(--a-field);
+}
+
+.at-input {
+  display: block;
+  width: 100%;
+  height: 40px;
+  min-width: 0;
+  padding: 8px 12px;
+  background: var(--a-field);
+}
+
+.at-input::placeholder {
+  color: var(--a-muted);
+}
+
+textarea.at-input {
+  height: 120px;
+  resize: vertical;
+}
+
+.at-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.at-field > span:first-child {
+  color: var(--a-muted);
+  font-size: 12px;
+}
+
+/* Подпись селекта не меняет цвет при раскрытии списка. */
+.at-field:has(> .at-input:focus) > span:first-child {
+  color: var(--a-focus);
+}
+
+.at-field:has(.at-input[aria-invalid="true"]) > span:first-child,
+.at-field:has(.at-input:user-invalid) > span:first-child {
+  color: var(--a-error);
+}
+
+.at-chevron,
+.at-chevron-image {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 0;
+  transform: none;
+}
+
+.at-chevron {
+  background:
+    url("../../assets/chevron-down.svg")
+    center / contain no-repeat;
+}
+
+.at-select[open] > summary > .at-chevron {
+  background-image: url("../../assets/chevron-right.svg");
+}
+
+.at-select {
+  position: relative;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.at-select summary,
+.at-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.at-select summary::-webkit-details-marker {
+  display: none;
+}
+
+.at-select summary > span,
+.at-select-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.at-select-trigger {
+  width: 100%;
+  text-align: left;
+  box-shadow: none;
+}
+
+.at-select-trigger > span {
+  color: var(--a-text);
+  text-shadow: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.at-select-trigger:disabled > span {
+  color: var(--a-disabled-text);
+}
+
+.at-dialog .at-select-trigger {
+  background: var(--a-field);
+}
+
+.at-select[open] > summary,
+.at-select-trigger[aria-expanded="true"] {
+  border-color: var(--a-focus);
+}
+
+.at-options {
+  position: absolute;
+  z-index: 45;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(320px, 80vw);
+  max-height: 280px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  background: var(--a-card);
+  box-shadow: 0 12px 32px #0002;
+}
+
+.at-options > button {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--a-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-options > button:hover,
+.at-options > button[aria-pressed="true"] {
+  background: var(--a-field);
+}
+
+.at-options .at-input {
+  margin-bottom: 8px;
+}
+
+.at-select-popup {
+  margin: 0;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+  color: var(--a-text);
+}
+
+.at-popup-content {
+  min-width: 0;
+  min-height: 0;
+}
+
+.at-multi-popup {
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.at-multi-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.at-multi-title {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--a-text);
+}
+
+.at-multi-menu > .at-input {
+  flex: none;
+  margin: 0;
+  background: var(--a-card);
+}
+
+.at-multi-list {
+  min-height: 36px;
+  max-height: 240px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  flex: 1 1 auto;
+}
+
+.at-multi-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  color: var(--a-text);
+  cursor: pointer;
+}
+
+.at-multi-option:hover {
+  background: var(--a-field);
+}
+
+.at-multi-option input {
+  appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 2px solid var(--a-border);
+  border-radius: 4px;
+  background: var(--a-card);
+  position: relative;
+  cursor: pointer;
+}
+
+.at-multi-option input:checked,
+.at-multi-option input:indeterminate {
+  border-color: var(--a-accent);
+  background: var(--a-accent);
+}
+
+.at-multi-option input:checked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 11px;
+  height: 7px;
+  border: 0;
+  transform: none;
+  background: var(--a-on-accent);
+  -webkit-mask:
+    url("../../assets/Union.svg")
+    center / contain no-repeat;
+  mask:
+    url("../../assets/Union.svg")
+    center / contain no-repeat;
+}
+
+.at-multi-option input:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 5px;
+  height: 2px;
+  background: var(--a-on-accent);
+}
+
+.at-multi-option input:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: 2px;
+}
+
+.at-multi-menu > .at-multi-apply {
+  display: block;
+  flex: none;
+  width: 100%;
+  min-height: 40px;
+  text-align: center;
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+}
+
+.at-multi-menu > .at-multi-apply:hover:not(:disabled) {
+  background: #e7430d;
+}
+
+:root[data-theme="dark"]
+  .at-multi-menu > .at-multi-apply:hover:not(:disabled) {
+  background: #ffbba3;
+}
+
+.at-single-menu {
+  display: grid;
+  gap: 4px;
+}
+
+.at-single-menu > button {
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--a-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-single-menu > button:hover,
+.at-single-menu > button[aria-pressed="true"] {
+  background: var(--a-field);
+}
+
+.at-single-menu > button:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: -2px;
+}
+
+.at-extra-content {
+  display: grid;
+  gap: 12px;
+}
+
+.at-extra-content > button {
+  min-height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--a-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-check-svg {
+  display: inline-block;
+  width: 11px;
+  height: 7px;
+  flex: none;
+  background: currentColor;
+  vertical-align: middle;
+  -webkit-mask: var(--check-image) center / contain no-repeat;
+  mask: var(--check-image) center / contain no-repeat;
+}
+
+.at-dialog {
+  width: 720px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+  margin: auto;
+  padding: 24px;
+  border: 1px solid var(--a-border);
+  border-radius: 12px;
+  background: var(--a-card);
+  color: var(--a-text);
+  font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+  overflow: auto;
+}
+
+.at-dialog-wide {
+  width: 1160px;
+}
+
+.at-dialog::backdrop {
+  background: var(--a-backdrop);
+  animation: aw-backdrop-open 180ms ease both;
+}
+
+.at-dialog[data-closing="true"]::backdrop {
+  animation: aw-backdrop-close 180ms ease both;
+}
+
+.at-dialog h2,
+.at-dialog h3,
+.at-dialog p {
+  margin: 0;
+}
+
+.at-dialog h2 {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+.at-dialog h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.at-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.at-dialog form {
+  display: grid;
+  gap: 24px;
+}
+
+.at-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.at-dialog-grid > .full {
+  grid-column: 1 / -1;
+}
+
+.at-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.at-form-actions .primary {
+  min-width: 220px;
+}
+
+.at-error {
+  color: var(--a-error);
+  background: var(--a-error-bg);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.at-toast {
+  position: fixed;
+  z-index: 100;
+  top: 88px;
+  right: max(24px, calc((100vw - 1600px) / 2));
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: min(460px, calc(100vw - 32px));
+  padding: 16px;
+  background: var(--a-card);
+  color: var(--a-text);
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px #0002;
+  font-size: 14px;
+}
+
+.at-toast.is-error {
+  color: var(--a-error);
+}
+
+.at-toast button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.at-empty {
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  text-align: center;
+  min-height: 180px;
+  padding: 24px;
+}
+
+.at-empty strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.at-empty p {
+  margin: 0;
+  color: var(--a-muted);
+}
+
+.at-tabs {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  background: var(--a-field);
+  border-radius: 6px;
+  padding: 3px;
+  overflow-x: auto;
+}
+
+.at-tabs button {
+  flex: 1;
+  min-height: 24px;
+  padding: 2px 14px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--a-muted);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.at-tabs button.is-active {
+  background: var(--a-card);
+  color: var(--a-accent);
+}
+
+.at-button:focus-visible,
+.at-icon:focus-visible,
+.at-options button:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: 2px;
+}
+
+.at-input:not(:disabled):hover,
+.at-select-trigger:not(:disabled):hover,
+.at-select summary:not([aria-disabled="true"]):hover {
+  border-color: var(--a-hover-border);
+}
+
+.at-input:not(:disabled):focus,
+.at-select-trigger:focus-visible,
+.at-select-trigger[aria-expanded="true"],
+.at-select summary:focus-visible,
+.at-select[open] > summary {
+  border-color: var(--a-focus);
+  outline: 1px solid var(--a-focus);
+  outline-offset: 0;
+}
+
+.at-select-trigger[aria-expanded="true"]:not(:focus-visible),
+.at-select-trigger:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+.at-select-trigger:focus-visible {
+  outline: 2px solid var(--a-focus);
+  outline-offset: 2px;
+}
+
+.at-input:user-invalid,
+.at-input[aria-invalid="true"],
+.at-input[aria-invalid="true"]:hover,
+.at-input:user-invalid:focus,
+.at-input[aria-invalid="true"]:focus {
+  border-color: var(--a-error);
+  outline-color: var(--a-error);
+}
+
+.at-input:disabled,
+.at-select-trigger:disabled {
+  background: var(--a-disabled-bg);
+  color: var(--a-disabled-text);
+  border-color: var(--a-border);
+  opacity: 1;
+  cursor: default;
+}
+
+.at-input:disabled::placeholder {
+  color: var(--a-disabled-text);
+}
+
+.at-input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.at-input[type="date"]::-webkit-inner-spin-button {
+  display: none;
+}
+
+.at-icon img.at-close-asset {
+  width: 17px;
+  height: 17px;
+}
+
+:root[data-theme="dark"] .at-close-asset {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+.at-dialog,
+.at-options {
+  scrollbar-color: auto;
+  scrollbar-width: auto;
+}
+
+.at-dialog::-webkit-scrollbar,
+.at-options::-webkit-scrollbar,
+.at-multi-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.at-dialog::-webkit-scrollbar-track,
+.at-options::-webkit-scrollbar-track,
+.at-multi-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.at-dialog::-webkit-scrollbar-thumb,
+.at-options::-webkit-scrollbar-thumb,
+.at-multi-list::-webkit-scrollbar-thumb {
+  background: #929292;
+  border: 2px solid var(--a-card);
+  border-radius: 8px;
+}
+
+.at-dialog::-webkit-scrollbar-button,
+.at-options::-webkit-scrollbar-button,
+.at-multi-list::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.at-dialog::-webkit-scrollbar-corner,
+.at-options::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@supports (-moz-appearance: none) {
+  .at-dialog,
+  .at-options,
+  .at-multi-list {
+    scrollbar-width: thin;
+    scrollbar-color: #929292 transparent;
+  }
+}
+
+.aw-summary > .at-icon[aria-expanded] {
+  font-size: 0;
+  line-height: 0;
+}
+
+.aw-summary > .at-icon[aria-expanded]::after {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 24px;
+  background:
+    url("../../assets/chevron-down.svg")
+    center / contain no-repeat;
+}
+
+.aw-summary > .at-icon[aria-expanded="true"]::after {
+  background-image: url("../../assets/chevron-right.svg");
+}
+
+/* Фильтры по скриншоту. */
+.aw .aw-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 248fr)
+    minmax(132px, 156fr)
+    minmax(132px, 156fr)
+    minmax(80px, 92fr)
+    minmax(154px, 176fr)
+    minmax(104px, 136fr)
+    minmax(110px, 128fr);
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.aw .aw-toolbar > .at-input {
+  grid-column: auto;
+}
+
+.aw .aw-toolbar > .at-input,
+.aw .aw-toolbar > .at-select > .at-select-trigger {
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  background: var(--a-card);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--a-text);
+}
+
+.aw[data-theme="dark"] .aw-toolbar > .at-input {
+  background: var(--a-field);
+}
+
+.aw .aw-toolbar .at-select-trigger {
+  gap: 8px;
+}
+
+.aw .aw-toolbar .at-chevron-image {
+  width: 16px;
+  height: 16px;
+}
+
+.aw .aw-toolbar > .at-input::placeholder {
+  color: var(--a-muted);
+  text-overflow: ellipsis;
+}
+
+.aw .aw-toolbar > .at-input:hover,
+.aw .aw-toolbar > .at-select > .at-select-trigger:hover {
+  border-color: var(--a-hover-border);
+}
+
+.aw .aw-toolbar > .at-input:focus,
+.aw .aw-toolbar > .at-select > .at-select-trigger:focus-visible {
+  border-color: var(--a-focus);
+}
+
+/* Календарь из ReportsPage. */
+.at-calendar-popup {
+  padding: 24px;
+  overflow: auto;
+}
+
+.aw-date-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.at-calendar-popup button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.at-calendar-popup button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.aw-date-calendar {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 32px;
+}
+
+.aw-date-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aw-date-presets button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--a-text);
+  padding: 8px;
+  text-align: center;
+}
+
+.aw-date-presets button:hover {
+  background: var(--a-field);
+}
+
+.aw-date-presets button:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-calendar-months {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+  row-gap: 12px;
+}
+
+.aw-date-calendar-month {
+  min-width: 0;
+}
+
+.aw-date-month-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.aw-date-calendar-arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 36px;
+  flex: 0 0 32px;
+  padding: 4px;
+  border: 1px solid var(--a-border);
+  border-radius: 4px;
+  color: var(--a-muted);
+  background: var(--a-card);
+}
+
+.aw-date-calendar-arrow:not(:disabled):hover {
+  border-color: var(--a-hover-border);
+}
+
+.aw-date-calendar-arrow:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-month-selects {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.aw-date-calendar-grid {
+  width: 100%;
+}
+
+.aw-date-calendar-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.aw-date-calendar-week > [role="columnheader"] {
+  color: var(--a-muted);
+  font-size: 12px;
+  line-height: 28px;
+  text-align: center;
+}
+
+.aw-date-calendar-week > button {
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  min-height: 36px;
+  padding: 0;
+  color: var(--a-text);
+  background: transparent;
+  font-size: 14px;
+}
+
+.aw-date-calendar-week > button[data-in-range="true"] {
+  border-radius: 0;
+  background: var(--a-field);
+}
+
+.aw-date-calendar-week > button[data-endpoint="true"] {
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+  border-radius: 4px;
+}
+
+.aw-date-calendar-week > button:hover,
+.aw-date-calendar-week > button:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-calendar-week > button[aria-current="date"] {
+  font-weight: 700;
+}
+
+.aw-date-calendar-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--a-muted);
+}
+
+.aw-date-text-button {
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--a-text);
+  background: transparent;
+}
+
+.aw-date-text-button:hover {
+  color: var(--a-accent);
+}
+
+.aw-date-text-button:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-month-select {
+  position: relative;
+  width: 86px;
+  min-width: 0;
+}
+
+.aw-date-month-select + .aw-date-month-select {
+  width: 56px;
+}
+
+.aw-date-month-select-trigger {
+  width: 100%;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--a-border);
+  border-radius: 4px;
+  color: var(--a-text);
+  background: var(--a-card);
+  text-align: center;
+}
+
+.aw-date-month-select-trigger:hover,
+.aw-date-month-select-trigger:focus-visible {
+  border-color: var(--a-focus);
+}
+
+.aw-date-month-options {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  min-width: 100%;
+  max-height: 192px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border: 1px solid var(--a-border);
+  border-radius: 6px;
+  background: var(--a-card);
+  box-shadow: 0 8px 24px rgb(16 24 40 / 12%);
+  scrollbar-width: none;
+}
+
+.aw-date-month-options::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.aw-date-month-options button {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--a-text);
+  background: transparent;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.aw-date-month-options button[aria-selected="true"] {
+  color: var(--a-on-accent);
+  background: var(--a-accent);
+}
+
+.aw-date-month-options button:hover,
+.aw-date-month-options button:focus-visible {
+  border-color: var(--a-focus);
+}
+
+/* Открытие и закрытие из ReportsPage. */
+.at-select-popup:popover-open,
+.at-dialog[open] {
+  animation: aw-open 180ms ease both;
+}
+
+.at-select-popup[data-closing="true"]:popover-open,
+.at-dialog[data-closing="true"] {
+  animation: aw-close 180ms ease both;
+  pointer-events: none;
+}
+
+@keyframes aw-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes aw-close {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes aw-backdrop-open {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes aw-backdrop-close {
+  to { opacity: 0; }
+}
+
+.at-button,
+.at-input,
+.at-select-trigger,
+.at-select summary,
+.at-options,
+.at-dialog,
+.at-tabs,
+.at-toast {
+  transition:
+    background-color var(--theme-transition-duration, 240ms) ease,
+    color var(--theme-transition-duration, 240ms) ease,
+    border-color var(--theme-transition-duration, 240ms) ease;
+}
+
+@media (max-width: 1100px) {
+  .aw .aw-toolbar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .aw .aw-toolbar > .at-input {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 850px) {
+  .at-calendar-popup {
+    padding: 16px;
+  }
+
+  .aw-date-calendar {
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .aw-date-calendar-months {
+    gap: 16px;
+  }
+
+  .aw-date-month-heading {
+    gap: 4px;
+  }
+
+  .aw-date-calendar-arrow {
+    width: 24px;
+    flex-basis: 24px;
+  }
+
+  .aw-date-month-select {
+    width: 70px;
+    font-size: 12px;
+  }
+
+  .aw-date-month-select + .aw-date-month-select {
+    width: 48px;
+  }
+}
+
+@media (max-width: 700px) {
+  .at-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .at-form-actions {
+    flex-wrap: wrap;
+  }
+
+  .at-form-actions .primary {
+    min-width: 0;
+  }
+
+  .aw .aw-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .aw-date-calendar {
+    grid-template-columns: 1fr;
+  }
+
+  .aw-date-presets {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .aw-date-calendar-months {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .at-button,
+  .at-input,
+  .at-select-trigger,
+  .at-select summary,
+  .at-options,
+  .at-dialog,
+  .at-tabs,
+  .at-toast {
+    transition: none;
+  }
+
+  .at-select-popup,
+  .at-dialog,
+  .at-dialog::backdrop {
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Календарь: цвета кнопок и стрелок как у фильтров. */
+.at-calendar-popup {
+  color: var(--a-text);
+  background: var(--a-card);
+}
+
+.at-calendar-popup .aw-date-calendar-arrow,
+.at-calendar-popup .aw-date-month-select-trigger {
+  background: var(--a-card);
+  border-color: var(--a-border);
+  box-shadow: none;
+}
+
+.at-calendar-popup .aw-date-month-select-trigger {
+  color: var(--a-text);
+}
+
+.at-calendar-popup .aw-date-calendar-arrow {
+  position: relative;
+  color: var(--a-muted);
+}
+
+.at-calendar-popup .aw-date-calendar-arrow:not(:disabled):hover,
+.at-calendar-popup .aw-date-month-select-trigger:not(:disabled):hover {
+  border-color: var(--a-hover-border);
+}
+
+.at-calendar-popup .aw-date-calendar-arrow:focus-visible,
+.at-calendar-popup .aw-date-month-select-trigger:focus-visible {
+  border-color: var(--a-focus);
+  outline: 1px solid var(--a-focus);
+  outline-offset: 0;
+}
+
+/* SVG получает цвет через currentColor в обеих темах. */
+.at-calendar-popup .aw-date-calendar-arrow .aw-date-icon {
+  visibility: hidden;
+}
+
+.at-calendar-popup .aw-date-calendar-arrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  background: currentColor;
+  -webkit-mask: var(--calendar-arrow) center / contain no-repeat;
+  mask: var(--calendar-arrow) center / contain no-repeat;
+}
+
+.at-calendar-popup .aw-date-month-heading > button:first-child {
+  --calendar-arrow: url("../../assets/ArrowLeft.svg");
+}
+
+.at-calendar-popup .aw-date-month-heading > button:last-child {
+  --calendar-arrow: url("../../assets/ArrowRight.svg");
+}
+
+.at-calendar-popup .aw-date-presets button,
+.at-calendar-popup .aw-date-text-button {
+  color: var(--a-text);
+  background: var(--a-card);
+}
+
+.at-calendar-popup .aw-date-presets button:hover,
+.at-calendar-popup .aw-date-text-button:hover {
+  background: var(--a-field);
+}
+
+/* Выбранные даты сохраняют акцентный цвет. */
+.at-calendar-popup .aw-date-calendar-week > button[data-endpoint="true"],
+.at-calendar-popup .aw-date-month-options button[aria-selected="true"] {
+  background: var(--a-accent);
+  color: var(--a-on-accent);
+}
+
+/* Прокрутка списка учреждений и остальных одиночных селектов. */
+.at-single-menu {
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* Прокрутка самого модального окна при нехватке высоты. */
+.at-dialog {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.at-single-menu,
+.at-dialog {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+
+.at-single-menu::-webkit-scrollbar,
+.at-dialog::-webkit-scrollbar {
+  width: 8px;
+}
+
+.at-single-menu::-webkit-scrollbar-track,
+.at-dialog::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.at-single-menu::-webkit-scrollbar-thumb,
+.at-dialog::-webkit-scrollbar-thumb {
+  background: #929292;
+  border: 2px solid var(--a-card);
+  border-radius: 8px;
+}
+
+.at-single-menu::-webkit-scrollbar-thumb:hover,
+.at-dialog::-webkit-scrollbar-thumb:hover {
+  background: #747984;
+}
+
+.at-single-menu::-webkit-scrollbar-button,
+.at-dialog::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@supports (-moz-appearance: none) {
+  .at-single-menu,
+  .at-dialog {
+    scrollbar-width: thin;
+    scrollbar-color: #929292 transparent;
+  }
+}
