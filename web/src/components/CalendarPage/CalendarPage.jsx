@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Header from "../Header/Header";
+import Footer from "../Footer/Footer";
 import { setAppTheme, useAppTheme } from "../../theme";
 import "./CalendarPage.css";
 
@@ -7,8 +8,9 @@ import arrowDown from "../../assets/ArrowDown.svg";
 import arrowLeft from "../../assets/ArrowLeft.svg";
 import arrowRight from "../../assets/ArrowRight.svg";
 import close from "../../assets/Close.svg";
+import checkIcon from "../../assets/Union.svg";
 
-const icons = { down: arrowDown, left: arrowLeft, right: arrowRight, close };
+const icons = { down: arrowDown, left: arrowLeft, right: arrowRight, close, check: checkIcon };
 
 function PageIcon({ name, className = "" }) {
   return (
@@ -64,10 +66,10 @@ function FilterChoices({ label, items, value, onApply }) {
       value={query} onChange={event => setQuery(event.target.value)} />
     <div className="calendar-filter-options" role="group" aria-label={label}>
       <label className="calendar-filter-check"><input type="checkbox" checked={all} disabled={!items.length}
-        onChange={() => setSelected(all ? [] : items.map(item => item.value))} /><span>Все</span></label>
+        onChange={() => setSelected(all ? [] : items.map(item => item.value))} /><PageIcon name="check" className="calendar-checkbox-mark" /><span>Все</span></label>
       {visible.map(item => <label className="calendar-filter-check" key={item.value}>
         <input type="checkbox" checked={selected.includes(item.value)} onChange={() => setSelected(previous => previous.includes(item.value)
-          ? previous.filter(value => value !== item.value) : [...previous, item.value])} /><span>{item.label}</span>
+          ? previous.filter(value => value !== item.value) : [...previous, item.value])} /><PageIcon name="check" className="calendar-checkbox-mark" /><span>{item.label}</span>
       </label>)}
       {!visible.length && <p className="calendar-filter-hint">Ничего не найдено</p>}
     </div>
@@ -77,7 +79,7 @@ function FilterChoices({ label, items, value, onApply }) {
   </>;
 }
 
-function SelectFilter({ label, value, options, onChange }) {
+function SelectFilter({ label, value, options, onChange, placeholder = label }) {
   const id = useId();
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -86,7 +88,7 @@ function SelectFilter({ label, value, options, onChange }) {
   const [session, setSession] = useState(0);
   const open = Boolean(present) && !closing;
   const items = options.map(option => typeof option === "string" ? { value: option, label: option } : option);
-  const summary = value.length ? `${items.find(item => item.value === value[0])?.label ?? value[0]}${value.length > 1 ? ` + ещё ${value.length - 1}` : ""}` : label;
+  const summary = value.length ? `${items.find(item => item.value === value[0])?.label ?? value[0]}${value.length > 1 ? ` + ещё ${value.length - 1}` : ""}` : placeholder;
 
   useEffect(() => {
     if (listRef.current) listRef.current.inert = closing;
@@ -367,15 +369,109 @@ function TimeView({ days, today, events, view, onOpen, onDay }) {
   );
 }
 
-/**
- * events: id, date (YYYY-MM-DD, МСК), type (deadline/license/training), title,
- * institution, shortInstitution, program, product, manager, city,
- * startTime/endTime (HH:mm, МСК; без startTime — весь день), interactionId.
- * События через полночь передаются отдельными записями для каждого дня.
- * onOpenInteraction(event) подключается к существующей главной странице.
- */
+const mobileQuery = "(max-width: 767px)";
+function subscribeMobile(callback) {
+  const media = window.matchMedia(mobileQuery);
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+}
+function useMobile() {
+  return useSyncExternalStore(subscribeMobile, () => window.matchMedia(mobileQuery).matches, () => false);
+}
+
+function MobileSheet({ title, children, onClose, closing, className = "" }) {
+  const ref = useRef(null);
+  const titleId = useId();
+  useEffect(() => {
+    const dialog = ref.current;
+    const previous = document.activeElement;
+    const html = document.documentElement;
+    const bodyPadding = document.body.style.paddingRight;
+    const scrollbar = window.innerWidth - html.clientWidth;
+    if (scrollbar > 0) document.body.style.paddingRight = `${parseFloat(getComputedStyle(document.body).paddingRight) + scrollbar}px`;
+    const before = { overflow: html.style.overflow, scrollbarGutter: html.style.scrollbarGutter };
+    html.style.scrollbarGutter = "auto";
+    html.style.overflow = "hidden";
+    dialog.showModal();
+    return () => {
+      dialog.close();
+      Object.assign(html.style, before);
+      document.body.style.paddingRight = bodyPadding;
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
+    };
+  }, []);
+  return <dialog ref={ref} className={`calendar-mobile-sheet ${className}`} aria-labelledby={titleId} data-closing={closing}
+    onCancel={event => { event.preventDefault(); onClose(); }}
+    onClick={event => {
+      if (event.target !== event.currentTarget) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (event.clientY < rect.top || event.clientY > rect.bottom || event.clientX < rect.left || event.clientX > rect.right) onClose();
+    }}>
+    <div className="calendar-popover-heading"><h2 id={titleId}>{title}</h2><button type="button" className="calendar-close" aria-label="Закрыть" onClick={() => onClose()}><PageIcon name="close" /></button></div>
+    {children}
+  </dialog>;
+}
+
+function MobileEventCard({ event, today, onOpen }) {
+  const status = urgency(event, today);
+  return <button type="button" className="calendar-mobile-event" data-type={event.type}
+    aria-label={`${event.institution}, ${event.title}, ${fullDate(event.date)}, ${eventTime(event)}`} aria-haspopup="dialog"
+    onClick={click => onOpen(event, click.currentTarget)}>
+    <span className="calendar-mobile-event-top"><span>{eventTime(event)}</span><span className="calendar-status" data-status={status}>{statuses[status]}</span></span>
+    <span className="calendar-mobile-event-type"><span className="calendar-mobile-dot" aria-hidden="true" />{event.title}</span>
+    <strong>{event.institution}</strong>
+    <span className="calendar-mobile-event-meta">Направление: {event.program || "Не указано"}</span>
+    <span className="calendar-mobile-event-meta">ИТ-продукт: {event.product || "Не указан"}</span>
+    <span className="calendar-mobile-event-meta">КАМ: {event.manager || "Не назначен"}</span>
+  </button>;
+}
+
+function MobileMonth({ date, today, days, events, selectedDay, onSelect, onOpen }) {
+  const [expandedDay, setExpandedDay] = useState(null);
+  const selectedEvents = events.filter(event => event.date === selectedDay);
+  const expanded = expandedDay === selectedDay;
+  return <div className="calendar-mobile-month-view">
+    <div className="calendar-mobile-month" role="group" aria-label="Календарь на месяц">
+      {weekdays.map(day => <span className="calendar-mobile-weekday" key={day}>{day}</span>)}
+      {days.map(day => {
+        const items = events.filter(event => event.date === day);
+        const indicators = Object.keys(types).filter(type => items.some(event => event.type === type));
+        return <button type="button" key={day} className="calendar-mobile-date" data-outside={day.slice(0, 7) !== date.slice(0, 7)}
+          data-today={day === today} aria-current={day === today ? "date" : undefined} aria-pressed={day === selectedDay}
+          aria-label={`${fullDate(day)}, ${eventCount(items.length)}`} onClick={() => onSelect(day)}>
+          <span className="calendar-mobile-date-number">{Number(day.slice(-2))}</span>
+          <span className="calendar-mobile-indicators" aria-hidden="true">{indicators.map(type => <span key={type} className="calendar-mobile-dot" data-type={type} />)}</span>
+        </button>;
+      })}
+    </div>
+    {!selectedDay ? <p className="calendar-mobile-hint">Выберите день, чтобы посмотреть события</p> : <section className="calendar-mobile-day-events" aria-label={`События: ${fullDate(selectedDay)}`}>
+      <div className="calendar-mobile-day-heading"><h2>{formatDate(selectedDay, { day: "numeric", month: "long" })}</h2><span>{eventCount(selectedEvents.length)}</span></div>
+      {selectedEvents.slice(0, expanded ? undefined : 2).map(event => <MobileEventCard key={event.id} event={event} today={today} onOpen={onOpen} />)}
+      {!selectedEvents.length && <p className="calendar-mobile-hint">Нет событий</p>}
+      {selectedEvents.length > 2 && <button type="button" className="calendar-button" aria-expanded={expanded} onClick={() => setExpandedDay(expanded ? null : selectedDay)}>{expanded ? "Свернуть" : `+${eventCount(selectedEvents.length - 2)}`}</button>}
+    </section>}
+  </div>;
+}
+
+function MobileAgenda({ days, events, today, view, onOpen }) {
+  return <div className={`calendar-mobile-agenda calendar-mobile-agenda-${view}`}>
+    {days.map(day => {
+      const items = events.filter(event => event.date === day).sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+      return <section className="calendar-mobile-agenda-day" key={day} aria-label={fullDate(day)}>
+        <h2>{formatDate(day, { weekday: "long", day: "numeric", month: "long" })}</h2>
+        {!items.length && <p className="calendar-mobile-hint">Нет событий</p>}
+        {items.map(event => view === "day" ? <div className="calendar-mobile-time-row" key={event.id}>
+          <span className="calendar-mobile-time-label">{event.startTime || "Весь день"}</span><MobileEventCard event={event} today={today} onOpen={onOpen} />
+        </div> : <MobileEventCard key={event.id} event={event} today={today} onOpen={onOpen} />)}
+      </section>;
+    })}
+  </div>;
+}
+
 export default function CalendarPage({ events = emptyEvents, initialDate, filterOptions = {}, onOpenInteraction, loading = false, error = "" }) {
   const { theme } = useAppTheme();
+  const mobile = useMobile();
+  const [selectedDay, setSelectedDay] = useState(null);
   const today = useToday();
   const [date, setDate] = useState(() => initialDate || moscowToday());
   const [view, setView] = useState("month");
@@ -418,6 +514,7 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
   function openDay(day) { setDate(day); setView("day"); setPopup(null); }
   function resetFilters() { setFilters(emptyFilters); setPopup(null); }
   function move(direction) {
+    setSelectedDay(null);
     if (view === "month") {
       const current = toDate(firstOfMonth);
       current.setUTCMonth(current.getUTCMonth() + direction);
@@ -428,22 +525,25 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
 
   return (
     <div className="calendar-page" data-theme={theme}>
-      <Header activePage="Календарь" profileOpen={profileOpen} setProfileOpen={setProfileOpen} dark={theme === "dark"} setDark={(value) => setAppTheme((typeof value === "function" ? value(theme === "dark") : value) ? "dark" : "light")} />
+      <Header mobileNavigation activePage="Календарь" profileOpen={profileOpen} setProfileOpen={setProfileOpen} dark={theme === "dark"} setDark={(value) => setAppTheme((typeof value === "function" ? value(theme === "dark") : value) ? "dark" : "light")} />
       <main className="calendar-main">
         <h1>Календарь</h1>
-        <p className="calendar-subtitle">Сроки, события и активности по взаимодействиям с учебными заведениями</p>
+        <p className="calendar-subtitle">{mobile ? "Сроки и события по взаимодействиям" : "Сроки, события и активности по взаимодействиям с учебными заведениями"}</p>
         <div className="calendar-toolbar">
           <div className="calendar-segments" role="group" aria-label="Вид календаря">
-            {[["month", "Месяц"], ["week", "Неделя"], ["day", "День"]].map(([key, label]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); setPopup(null); }}>{label}</button>)}
+            {[["month", "Месяц"], ["week", "Неделя"], ["day", "День"]].map(([key, label]) => <button key={key} type="button" aria-pressed={view === key} onClick={() => { setView(key); setSelectedDay(null); setPopup(null); }}>{label}</button>)}
           </div>
           <div className="calendar-navigation">
             <button className="calendar-button calendar-arrow" type="button" aria-label="Предыдущий период" onClick={() => move(-1)}><PageIcon name="left" /></button>
             <span className="calendar-period" aria-live="polite">{title}</span>
             <button className="calendar-button calendar-arrow" type="button" aria-label="Следующий период" onClick={() => move(1)}><PageIcon name="right" /></button>
-            <button className="calendar-button" type="button" onClick={() => { setDate(today); setPopup(null); }}>{view === "month" ? "Текущий месяц" : view === "week" ? "Текущая неделя" : "Текущий день"}</button>
+            <button className="calendar-button" type="button" onClick={() => { setDate(today); setSelectedDay(null); setPopup(null); }}>{view === "month" ? "Текущий месяц" : view === "week" ? "Текущая неделя" : "Текущий день"}</button>
           </div>
         </div>
-        <div className="calendar-filters">
+        {mobile ? <div className="calendar-mobile-filter-bar">
+          <button className="calendar-button" type="button" aria-haspopup="dialog" aria-expanded={popup?.kind === "filters" && !closing} onClick={event => { setDraft(filters); setPopup({ kind: "filters", anchor: event.currentTarget }); }}>Фильтры{hasFilters ? ` · ${Object.values(filters).filter(value => value.length).length}` : ""}</button>
+          <span>Время МСК</span>
+        </div> : <><div className="calendar-filters">
           {[["program", "ИТ-направление"], ["product", "ИТ-продукт"], ["manager", "Ответственный КАМ"]].map(([key, label]) => <SelectFilter key={key} label={label} options={filterOptions[key] ?? options[key]} value={filters[key]} onChange={(value) => changeFilter(key, value)} />)}
           <SelectFilter label="Тип события" options={Object.entries(types).map(([value, label]) => ({ value, label }))} value={filters.type} onChange={(value) => changeFilter("type", value)} />
           <button className="calendar-button" type="button" aria-haspopup="dialog" aria-expanded={popup?.kind === "filters" && !closing} onClick={(event) => { setDraft(filters); setPopup({ kind: "filters", anchor: event.currentTarget }); }}>Ещё фильтры{extraCount ? ` · ${extraCount}` : ""}</button>
@@ -452,18 +552,38 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
         <div className="calendar-legend">
           {Object.entries(types).map(([key, label]) => <span className="calendar-legend-item" data-type={key} key={key}>{label}</span>)}
           <span className="calendar-timezone">Время московское</span>
-        </div>
+        </div></>}
         <div aria-busy={loading}>
           {loading ? <div className="calendar-empty" role="status">Загружаем события…</div>
             : error ? <div className="calendar-empty" role="alert"><h2>Не удалось загрузить календарь</h2><p>{error}</p></div>
-              : !hasEvents ? <div className="calendar-empty"><h2>На выбранный период событий нет</h2><p>Измените период или параметры фильтрации</p><button className="calendar-button" type="button" onClick={resetFilters}>Сбросить фильтры</button></div>
+              : !hasEvents ? <div className="calendar-empty"><h2>{mobile ? "Событий за выбранный период нет" : "На выбранный период событий нет"}</h2><p>Измените период или параметры фильтрации</p><button className="calendar-button" type="button" onClick={resetFilters}>Сбросить фильтры</button></div>
+                : mobile ? view === "month" ? <MobileMonth date={date} today={today} days={days} events={visible} selectedDay={selectedDay} onOpen={openEvent} onSelect={day => { setSelectedDay(day); if (day.slice(0, 7) !== date.slice(0, 7)) setDate(day); }} />
+                  : <MobileAgenda days={days} events={visible} today={today} view={view} onOpen={openEvent} />
                 : <div className="calendar-scroll" role="region" aria-label="События календаря" tabIndex={0}>
                   {view === "month" ? <MonthView date={date} today={today} days={days} events={visible} onOpen={openEvent} onDay={openDay} onMore={(day, anchor) => setPopup({ kind: "list", day, anchor })} />
                     : <TimeView days={days} today={today} events={visible} view={view} onOpen={openEvent} onDay={openDay} />}
                 </div>}
         </div>
+        {mobile && <Footer />}
       </main>
-      {popup && <FloatingPanel closing={closing} key={popup.kind} anchor={popup.anchor} onClose={closePopup} title={popup.kind === "filters" ? "Ещё фильтры" : popup.kind === "list" ? fullDate(popup.day) : popup.event.title}>
+      {popup && (mobile ? <MobileSheet closing={closing} key={popup.kind} onClose={closePopup} title={popup.kind === "filters" ? "Фильтры" : popup.kind === "list" ? fullDate(popup.day) : popup.event.title} className={popup.kind === "filters" ? "calendar-mobile-filters-sheet" : "calendar-mobile-event-sheet"}>
+        {popup.kind === "filters" ? <form className="calendar-extra-filters calendar-mobile-filter-form" onSubmit={event => { event.preventDefault(); setFilters(draft); closePopup(); }}>
+          {[["program", "ИТ-направление"], ["product", "ИТ-продукт"], ["manager", "Ответственный КАМ"], ["type", "Тип события"], ["institution", "Учреждение"], ["city", "Город"], ["urgency", "Срочность"]].map(([key, label]) => <div className="calendar-mobile-filter-field" key={key}>
+            <span>{label}</span><SelectFilter label={label} placeholder={key === "urgency" ? "Любая срочность" : "Все"} value={draft[key]}
+              options={key === "type" || key === "urgency" ? Object.entries(key === "type" ? types : statuses).map(([value, text]) => ({ value, label: text })) : filterOptions[key] ?? options[key]}
+              onChange={value => setDraft(previous => ({ ...previous, [key]: value }))} />
+          </div>)}
+          <div className="calendar-filter-actions"><button type="button" className="calendar-button" onClick={() => setDraft(emptyFilters)}>Сбросить</button><button type="submit" className="calendar-button calendar-primary">Применить</button></div>
+        </form> : popup.kind === "list" ? <div className="calendar-mobile-day-events">{visible.filter(event => event.date === popup.day).map(event => <MobileEventCard key={event.id} event={event} today={today} onOpen={item => openEvent(item, popup.anchor)} />)}</div>
+          : <div className="calendar-details">
+            <div><span className="calendar-detail-label">Учреждение</span><p><strong>{popup.event.institution}</strong></p><p className="calendar-muted">Направление: {popup.event.program || "Не указано"} · ИТ-продукт: {popup.event.product || "Не указан"}</p></div>
+            <div><span className="calendar-detail-label">Ответственный КАМ</span><p>{popup.event.manager || "Не назначен"}</p></div>
+            <div><p>{fullDate(popup.event.date)}</p><p className="calendar-muted">{eventTime(popup.event)}{popup.event.startTime ? " · МСК" : ""}</p></div>
+            <span className="calendar-status" data-status={urgency(popup.event, today)}>{statuses[urgency(popup.event, today)]}</span>
+            <button className="calendar-button calendar-primary" type="button" disabled={!onOpenInteraction} title={!onOpenInteraction ? "Переход к взаимодействию пока не подключён" : undefined} onClick={() => { onOpenInteraction(popup.event); closePopup(false); }}>Открыть взаимодействие</button>
+          </div>}
+
+      </MobileSheet> : <FloatingPanel closing={closing} key={popup.kind} anchor={popup.anchor} onClose={closePopup} title={popup.kind === "filters" ? "Ещё фильтры" : popup.kind === "list" ? fullDate(popup.day) : popup.event.title}>
         {popup.kind === "filters" ? <form className="calendar-extra-filters" onSubmit={(event) => { event.preventDefault(); setFilters(draft); closePopup(); }}>
           {[["institution", "Учреждение"], ["city", "Город"], ["urgency", "Статус срочности"]].map(([key, label]) => <SelectFilter key={key} label={label} value={draft[key]} options={key === "urgency" ? Object.entries(statuses).map(([value, text]) => ({ value, label: text })) : filterOptions[key] ?? options[key]} onChange={(value) => setDraft((previous) => ({ ...previous, [key]: value }))} />)}
           <div className="calendar-filter-actions"><button type="button" className="calendar-button" onClick={() => setDraft((previous) => ({ ...previous, institution: [], city: [], urgency: [] }))}>Сбросить</button><button className="calendar-button calendar-primary" type="submit">Применить</button></div>
@@ -476,7 +596,7 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
           <span className="calendar-status" data-status={urgency(popup.event, today)}>{statuses[urgency(popup.event, today)]}</span>
           <button className="calendar-button calendar-primary" type="button" disabled={!onOpenInteraction} title={!onOpenInteraction ? "Переход к взаимодействию пока не подключён" : undefined} onClick={() => { onOpenInteraction(popup.event); closePopup(false); }}>Открыть взаимодействие</button>
         </div>}
-      </FloatingPanel>}
+      </FloatingPanel>)}
     </div>
   );
 }

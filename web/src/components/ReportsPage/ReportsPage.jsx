@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { setAppTheme, useAppTheme } from "../../theme";
 import Header from "../Header/Header";
+import Footer from "../Footer/Footer";
+import checkIcon from "../../assets/Union.svg";
 import arrowDown from "../../assets/ArrowDown.svg";
 import arrowLeft from "../../assets/ArrowLeft.svg";
 import arrowRight from "../../assets/ArrowRight.svg";
@@ -22,7 +24,7 @@ const columns = [
 ];
 const defaultColumns = columns.slice(0, 5).map(column => column.key);
 const emptyFilters = { from: "", to: "", institutions: [], directions: [], products: [], managers: [] };
-const pageSize = 5;
+
 const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const years = Array.from({ length: 201 }, (_, i) => 1900 + i);
 const pad = number => String(number).padStart(2, "0");
@@ -141,8 +143,8 @@ function FilterMenu({ label, placeholder, searchLabel, options, selected, onAppl
   return <div className="reports-filter-menu">
     <input className="reports-search" type="search" aria-label={searchLabel} placeholder={searchLabel} value={query} disabled={disabled} onChange={event => setQuery(event.target.value)} />
     <div className="reports-options" role="group" aria-label={label}>
-      <label className="reports-check"><input type="checkbox" checked={allChecked} disabled={disabled || !options.length} onChange={() => setDraft(allChecked ? [] : [...options])} /><span>{placeholder}</span></label>
-      {visible.map(option => <label className="reports-check" key={option}><input type="checkbox" checked={draft.includes(option)} disabled={disabled} onChange={() => setDraft(value => value.includes(option) ? value.filter(item => item !== option) : [...value, option])} /><span>{option}</span></label>)}
+      <ReportCheckbox checked={allChecked} disabled={disabled || !options.length} onChange={() => setDraft(allChecked ? [] : [...options])}>{placeholder}</ReportCheckbox>
+      {visible.map(option => <ReportCheckbox key={option} checked={draft.includes(option)} disabled={disabled} onChange={() => setDraft(value => value.includes(option) ? value.filter(item => item !== option) : [...value, option])}>{option}</ReportCheckbox>)}
       {!visible.length && <p className="reports-menu-empty">{query ? "Ничего не найдено" : "Нет доступных вариантов"}</p>}
     </div>
     {!draft.length && options.length > 0 && <p className="reports-menu-hint">Выберите хотя бы один вариант</p>}
@@ -230,7 +232,7 @@ function MonthSelect({ label, value, options, disabled, onChange }) {
 }
 
 
-function DateCalendar({ from, to, onApply, onReset, disabled }) {
+function DateCalendar({ from, to, onApply, onReset, disabled, mobile = false }) {
   const id = useId();
   const seed = parseDate(from) ?? new Date();
   const [baseMonth, setBaseMonth] = useState(() => new Date(seed.getFullYear(), seed.getMonth(), 1, 12));
@@ -249,8 +251,14 @@ function DateCalendar({ from, to, onApply, onReset, disabled }) {
   function moveMonth(delta) { changeMonth(new Date(baseMonth.getFullYear(), baseMonth.getMonth() + delta, 1, 12)); }
   function selectDate(value) {
     if (disabled) return;
-    if (!choosingEnd) { setDraft({ from: value, to: "" }); setChoosingEnd(true); setHovered(""); return; }
-    onApply({ from: value < draft.from ? value : draft.from, to: value < draft.from ? draft.from : value });
+    if (!choosingEnd) {
+      const next = { from: value, to: "" };
+      setDraft(next); setChoosingEnd(true); setHovered("");
+      if (mobile) onApply(next);
+      return;
+    }
+    const next = { from: value < draft.from ? value : draft.from, to: value < draft.from ? draft.from : value };
+    setDraft(next); setChoosingEnd(false); setHovered(""); onApply(next);
   }
   function preset(type) {
     const now = new Date(), year = now.getFullYear(), month = now.getMonth();
@@ -259,7 +267,10 @@ function DateCalendar({ from, to, onApply, onReset, disabled }) {
     if (type === "previous") { start = new Date(year, month - 1, 1, 12); end = new Date(year, month, 0, 12); }
     if (type === "quarter") { const first = Math.floor(month / 3) * 3; start = new Date(year, first, 1, 12); end = new Date(year, first + 3, 0, 12); }
     if (type === "academic") { const first = month >= 8 ? year : year - 1; start = new Date(first, 8, 1, 12); end = new Date(first + 1, 8, 0, 12); }
-    onApply({ from: isoDate(start), to: isoDate(end) });
+    const next = { from: isoDate(start), to: isoDate(end) };
+    setDraft(next); setChoosingEnd(false); setHovered("");
+    if (mobile) changeMonth(new Date(start.getFullYear(), start.getMonth(), 1, 12));
+    onApply(next);
   }
   function dayKey(event, value) {
     const date = parseDate(value);
@@ -271,7 +282,8 @@ function DateCalendar({ from, to, onApply, onReset, disabled }) {
     else { const day = date.getDate(); date.setDate(1); date.setMonth(date.getMonth() + (event.key === "PageUp" ? -1 : 1)); date.setDate(Math.min(day, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate())); }
     if (date.getFullYear() < 1900 || date.getFullYear() > 2100) return;
     const monthOffset = (date.getFullYear() - baseMonth.getFullYear()) * 12 + date.getMonth() - baseMonth.getMonth();
-    if (monthOffset < 0 || monthOffset > 1) setBaseMonth(new Date(date.getFullYear(), date.getMonth() - (monthOffset > 1 ? 1 : 0), 1, 12));
+    const lastOffset = 1;
+    if (monthOffset < 0 || monthOffset > lastOffset) setBaseMonth(new Date(date.getFullYear(), date.getMonth() - (monthOffset > lastOffset ? lastOffset : 0), 1, 12));
     setFocused(isoDate(date));
   }
   const previewEnd = choosingEnd ? hovered || draft.from : draft.to;
@@ -309,7 +321,7 @@ function DateCalendar({ from, to, onApply, onReset, disabled }) {
         </div>
       </section>;
     })}
-    <div className="reports-calendar-footer"><span role="status">{choosingEnd ? "Выберите дату окончания" : "Выберите начало и конец периода"}</span><button type="button" className="reports-text-button" disabled={disabled} onClick={() => { setDraft({ from: "", to: "" }); setChoosingEnd(false); setHovered(""); setFocused(""); onReset(); }}>Сбросить период</button></div>
+    <div className="reports-calendar-footer"><span role="status">{choosingEnd ? "Выберите дату окончания" : "Выберите начало и конец периода"}</span>{!mobile && <button type="button" className="reports-text-button" disabled={disabled} onClick={() => { setDraft({ from: "", to: "" }); setChoosingEnd(false); setHovered(""); setFocused(""); onReset(); }}>Сбросить период</button>}</div>
   </div></div>;
 }
 
@@ -335,8 +347,155 @@ function TableCell({ row, column }) {
   return cellValue(row[column.key]);
 }
 
+function ReportCheckbox({ children, ...props }) {
+  return <label className="reports-check">
+    <span className="reports-checkbox">
+      <input type="checkbox" {...props} />
+      <span className="reports-check-icon" style={{ maskImage: `url("${checkIcon}")`, WebkitMaskImage: `url("${checkIcon}")` }} aria-hidden="true" />
+    </span>
+    <span>{children}</span>
+  </label>;
+}
+
+const mobileQuery = "(max-width: 767px)";
+function subscribeMobile(callback) {
+  const query = window.matchMedia(mobileQuery);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+function useMobileReports() {
+  return useSyncExternalStore(subscribeMobile, () => window.matchMedia(mobileQuery).matches, () => false);
+}
+
+function ReportSheet({ title, screen, closing, onClose, returnFocusRef, children }) {
+  const id = useId();
+  const panel = useRef(null);
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; }, [onClose]);
+  useEffect(() => {
+    const previous = returnFocusRef.current;
+    const overflow = document.body.style.overflow;
+    const rootOverflow = document.documentElement.style.overflow;
+    const gutter = document.documentElement.style.scrollbarGutter;
+    const paddingRight = document.body.style.paddingRight;
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbar > 0) document.body.style.paddingRight = `${parseFloat(getComputedStyle(document.body).paddingRight) + scrollbar}px`;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.scrollbarGutter = "auto";
+    panel.current?.focus({ preventScroll: true });
+    return () => {
+      document.body.style.overflow = overflow;
+      document.documentElement.style.overflow = rootOverflow;
+      document.documentElement.style.scrollbarGutter = gutter;
+      document.body.style.paddingRight = paddingRight;
+      window.requestAnimationFrame(() => { if (previous?.isConnected) previous.focus({ preventScroll: true }); });
+    };
+  }, [returnFocusRef]);
+  useEffect(() => { panel.current?.focus({ preventScroll: true }); }, [title]);
+  function handleKey(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeRef.current();
+    }
+    if (event.key !== "Tab") return;
+    const focusable = [...panel.current.querySelectorAll('button:not(:disabled), input:not(:disabled), [tabindex="0"]')]
+      .filter(element => element.tabIndex >= 0 && element.getClientRects().length && !element.closest('[inert]'));
+    const first = focusable[0], last = focusable.at(-1);
+    if (!first) { event.preventDefault(); return; }
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) {
+      event.preventDefault(); last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === panel.current)) {
+      event.preventDefault(); first.focus();
+    }
+  }
+  return <div className="reports-sheet-backdrop" data-closing={closing} onPointerDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="reports-sheet" data-screen={screen} ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={id} onKeyDown={handleKey} inert={closing || undefined}>
+      <div className="reports-sheet-heading"><h2 id={id}>{title}</h2><button type="button" className="reports-icon-button" aria-label="Закрыть панель" onClick={onClose}><PageIcon name="close" /></button></div>
+      {children}
+    </section>
+  </div>;
+}
+
+const mobileFilterFields = [
+  { key: "institutions", label: "Учреждения", placeholder: "Все учреждения", search: "Поиск учреждений" },
+  { key: "directions", label: "ИТ-направления", placeholder: "Все направления", search: "Поиск направлений" },
+  { key: "products", label: "ИТ-продукты", placeholder: "Все продукты", search: "Поиск продуктов" },
+  { key: "managers", label: "Ответственные КАМы", placeholder: "Все ответственные", search: "Поиск сотрудников" },
+];
+function filterSummary(values, fallback) {
+  return values.length ? `${values[0]}${values.length > 1 ? ` + ещё ${values.length - 1}` : ""}` : fallback;
+}
+function MobileReportControls({ filters, selectedColumns, options, lockedManager, disabled, onFilters, onColumns, onModalChange }) {
+  const returnFocusRef = useRef(null);
+  const [present, setPresent, closing] = useAnimatedState();
+  const [kind, setKind] = useState("filters");
+  const [screen, setScreen] = useState("");
+  const [draftFilters, setDraftFilters] = useState(filters);
+  const [draftColumns, setDraftColumns] = useState(selectedColumns);
+  const [dateDraft, setDateDraft] = useState({ from: "", to: "" });
+  const [dateSession, setDateSession] = useState(0);
+  const activeField = mobileFilterFields.find(field => field.key === screen);
+  const validPeriod = (!dateDraft.from && !dateDraft.to) || (parseDate(dateDraft.from) && parseDate(dateDraft.to) && dateDraft.from <= dateDraft.to);
+  useEffect(() => { onModalChange(present); return () => onModalChange(false); }, [present, onModalChange]);
+  function open(next, trigger) {
+    returnFocusRef.current = trigger;
+    setKind(next); setScreen(""); setDraftFilters(normalizeFilters(filters)); setDraftColumns([...selectedColumns]); setPresent(true);
+  }
+  function close() { setPresent(false); }
+  function changeDraft(patch) { setDraftFilters(previous => ({ ...previous, ...patch })); }
+  function openPeriod() { setDateDraft({ from: draftFilters.from, to: draftFilters.to }); setScreen("period"); }
+  function apply() {
+    if (screen === "period") { changeDraft(dateDraft); setScreen(""); return; }
+    if (kind === "columns") onColumns(draftColumns);
+    else onFilters(draftFilters);
+    close();
+  }
+  function reset() {
+    if (kind === "columns") setDraftColumns([...defaultColumns]);
+    else setDraftFilters(normalizeFilters(emptyFilters));
+  }
+  return <>
+    <div className="reports-mobile-controls" inert={present || undefined}>
+      <section className="reports-mobile-summary"><h2>Параметры отчёта</h2>
+        <p>{filters.from || filters.to ? `${formatDate(filters.from)} — ${formatDate(filters.to)}` : "Период не выбран"}</p>
+        <div className="reports-mobile-summary-details"><p>{filters.institutions.length > 1 ? `${filters.institutions.length} ${filters.institutions.length % 10 >= 2 && filters.institutions.length % 10 <= 4 && (filters.institutions.length % 100 < 12 || filters.institutions.length % 100 > 14) ? "учреждения" : "учреждений"}` : filterSummary(filters.institutions, "Все учреждения")} · {filterSummary(filters.directions, "Все направления")}</p><p>{filterSummary(filters.products, "Все продукты")} · {lockedManager || filterSummary(filters.managers, "Все ответственные")}</p></div>
+        <button type="button" className="reports-button" disabled={disabled} onClick={event => open("filters", event.currentTarget)}>Фильтры</button>
+      </section>
+      <div className="reports-mobile-column-control"><p>Колонки отчёта · {selectedColumns.length} из {columns.length}</p><button type="button" className="reports-button" disabled={disabled} onClick={event => open("columns", event.currentTarget)}>Настроить колонки</button></div>
+    </div>
+    {present && <ReportSheet screen={screen || kind} title={screen === "period" ? "Период" : activeField?.label || (kind === "columns" ? "Колонки отчёта" : "Фильтры")} closing={closing} onClose={screen ? () => setScreen("") : close} returnFocusRef={returnFocusRef}>
+      {activeField ? <FilterMenu key={screen} label={activeField.label} placeholder={activeField.placeholder} searchLabel={activeField.search}
+        options={[...new Set([...options[screen], ...draftFilters[screen]])]} selected={draftFilters[screen]}
+        onApply={value => { changeDraft({ [screen]: value }); setScreen(""); }} /> : <>
+        <div className="reports-sheet-body">
+          {screen === "period" ? <>
+            <div className="reports-field"><span className="reports-label">Период</span><div className="reports-mobile-dates"><span>С</span><span className="reports-date-value">{formatDate(dateDraft.from)}<PageIcon name="down" /></span><span>По</span><span className="reports-date-value">{formatDate(dateDraft.to)}<PageIcon name="down" /></span></div></div>
+            <DateCalendar key={dateSession} from={dateDraft.from} to={dateDraft.to} mobile onApply={setDateDraft} onReset={() => setDateDraft({ from: "", to: "" })} />
+          </> : kind === "columns" ? <>
+            <div className="reports-options">{columns.map(column => <ReportCheckbox key={column.key} checked={draftColumns.includes(column.key)} onChange={() => setDraftColumns(previous => previous.includes(column.key) ? previous.filter(key => key !== column.key) : [...previous, column.key])}>{column.label}</ReportCheckbox>)}</div>
+            <div className="reports-popover-footer"><button type="button" className="reports-button" onClick={() => setDraftColumns(columns.map(column => column.key))}>Выбрать все</button><button type="button" className="reports-button" onClick={() => setDraftColumns([...defaultColumns])}>Сбросить</button></div>
+          </> : <div className="reports-mobile-filter-fields">
+            <div className="reports-field"><span className="reports-label">Период</span><button type="button" className="reports-mobile-period-trigger" aria-label="Выбрать период" onClick={openPeriod}><span>С</span><span className="reports-date-value">{formatDate(draftFilters.from)}<PageIcon name="down" /></span><span>По</span><span className="reports-date-value">{formatDate(draftFilters.to)}<PageIcon name="down" /></span></button></div>
+            {mobileFilterFields.map(field => <div className="reports-field" key={field.key}><span className="reports-label">{field.label}</span>
+              <button type="button" className="reports-popover-trigger" aria-label={field.label} disabled={field.key === "managers" && Boolean(lockedManager)} onClick={() => setScreen(field.key)}><span className="reports-select-summary">{field.key === "managers" && lockedManager ? lockedManager : filterSummary(draftFilters[field.key], field.placeholder)}</span><PageIcon name="down" /></button>
+            </div>)}
+          </div>}
+        </div>
+        <div className="reports-sheet-actions"><button type="button" className="reports-button reports-button-primary" disabled={screen === "period" && !validPeriod} onClick={apply}>Применить</button>
+          <button type="button" className="reports-button" onClick={screen === "period" ? () => { setDateDraft({ from: "", to: "" }); setDateSession(value => value + 1); } : reset}>Сбросить</button>
+        </div>
+      </>}
+    </ReportSheet>}
+  </>;
+}
+
 export default function ReportsPage({ records = demoRecords, initialFilters = records === demoRecords ? demoFilters : emptyFilters, filterOptions = {}, loading = false, error = "", onExport, lockedManager = "" }) {
   const { theme } = useAppTheme();
+  const mobile = useMobileReports();
+  const pageSize = 5;
+  const [mobileModal, setMobileModal] = useState(false);
   const id = useId();
   const [profileOpen, setProfileOpen] = useState(false);
   const [filters, setFilters] = useState(() => normalizeFilters(initialFilters));
@@ -408,9 +567,14 @@ export default function ReportsPage({ records = demoRecords, initialFilters = re
     } finally { exportLock.current = false; if (!controller.signal.aborted) setExporting(""); }
   }
 
+  const exportActions = <div className="reports-export-actions" aria-label="Экспорт отчёта" aria-busy={Boolean(exporting)}>
+          {["xlsx", "xls", "pdf"].map(format => <button type="button" key={format} className={`reports-button${format === "xlsx" ? " reports-button-primary" : ""}`} data-exporting={exporting === format} disabled={!canExport} title={!onExport ? "Экспорт пока не подключён" : undefined} onClick={() => exportReport(format)}>{exporting === format ? <><span className="reports-spinner" aria-hidden="true" />Генерация…</> : `Экспортировать ${format.toUpperCase()}`}</button>)}
+        </div>;
+
   return <div className="reports-page" data-theme={theme}>
-    <Header activePage="Отчёты" profileOpen={profileOpen} setProfileOpen={setProfileOpen} dark={theme === "dark"} setDark={changeTheme} />
-    <main className="reports-main"><div className="reports-heading"><h1>Отчёты</h1><p>Формирование и выгрузка данных по взаимодействиям с учебными заведениями</p></div>
+    <div inert={mobileModal || undefined}><Header mobileNavigation activePage="Отчёты" profileOpen={profileOpen} setProfileOpen={setProfileOpen} dark={theme === "dark"} setDark={changeTheme} /></div>
+    <main className="reports-main"><div className="reports-heading" inert={mobileModal || undefined}><h1>Отчёты</h1><p>Формирование и выгрузка данных по взаимодействиям с учебными заведениями</p></div>
+      {mobile ? <MobileReportControls filters={filters} selectedColumns={selectedColumns} options={{ institutions: filterOptions.institutions ?? options.institutions, products: filterOptions.products ?? options.products, managers: filterOptions.managers ?? options.managers, directions: filterOptions.directions ?? filterOptions.programs ?? options.directions }} lockedManager={lockedManager} disabled={Boolean(exporting)} onFilters={changeFilters} onColumns={changeColumns} onModalChange={setMobileModal} /> : <>
       <section className="reports-filter-panel" aria-labelledby={`${id}-filters`}><h2 id={`${id}-filters`}>Параметры отчёта</h2><div className="reports-filter-grid">
         <DateRange from={filters.from} to={filters.to} onChange={changeFilters} disabled={Boolean(exporting)} />
         <MultiSelect className="reports-institutions" label="Учреждения" placeholder="Все учреждения" searchLabel="Поиск учреждений" options={filterOptions.institutions ?? options.institutions} selected={filters.institutions} onChange={value => changeFilters({ institutions: value })} disabled={Boolean(exporting)} />
@@ -421,21 +585,24 @@ export default function ReportsPage({ records = demoRecords, initialFilters = re
       <section className="reports-column-bar" aria-label="Настройка колонок"><div className="reports-section-heading"><h2>Колонки отчёта</h2><span>Выбрано {selectedColumns.length} из {columns.length}</span></div>
         <Popover label="Настроить колонки" trigger="Настроить колонки" className="reports-column-picker" disabled={Boolean(exporting)}>{close => <>
           <div className="reports-popover-heading"><h3>Колонки отчёта</h3><button type="button" className="reports-icon-button" aria-label="Закрыть настройку колонок" onClick={close}><PageIcon name="close" /></button></div>
-          <div className="reports-options">{columns.map(column => <label className="reports-check" key={column.key}><input type="checkbox" checked={selectedColumns.includes(column.key)} disabled={Boolean(exporting)} onChange={() => changeColumns(selectedColumns.includes(column.key) ? selectedColumns.filter(key => key !== column.key) : [...selectedColumns, column.key])} /><span>{column.label}</span></label>)}</div>
+          <div className="reports-options">{columns.map(column => <ReportCheckbox key={column.key} checked={selectedColumns.includes(column.key)} disabled={Boolean(exporting)} onChange={() => changeColumns(selectedColumns.includes(column.key) ? selectedColumns.filter(key => key !== column.key) : [...selectedColumns, column.key])}>{column.label}</ReportCheckbox>)}</div>
           <div className="reports-popover-footer"><button type="button" className="reports-button" disabled={Boolean(exporting)} onClick={() => changeColumns(columns.map(column => column.key))}>Выбрать все</button><button type="button" className="reports-button" disabled={Boolean(exporting)} onClick={() => changeColumns(defaultColumns)}>Сбросить</button></div>
         </>}</Popover>
       </section>
-      <section className="reports-preview" aria-labelledby={`${id}-preview`} aria-busy={loading}>
-        <div className="reports-preview-bar"><div className="reports-section-heading"><h2 id={`${id}-preview`}>Предпросмотр</h2><span aria-live="polite">{loading ? "Загрузка…" : recordCount(filtered.length)}</span></div><div className="reports-export-actions" aria-label="Экспорт отчёта" aria-busy={Boolean(exporting)}>
-          {["xlsx", "xls", "pdf"].map(format => <button type="button" key={format} className={`reports-button${format === "xlsx" ? " reports-button-primary" : ""}`} data-exporting={exporting === format} disabled={!canExport} title={!onExport ? "Экспорт пока не подключён" : undefined} onClick={() => exportReport(format)}>{exporting === format ? <><span className="reports-spinner" aria-hidden="true" />Генерация…</> : `Экспортировать ${format.toUpperCase()}`}</button>)}
-        </div></div>
+      </>}
+      <section className="reports-preview" inert={mobileModal || undefined} aria-labelledby={`${id}-preview`} aria-busy={loading}>
+        <div className="reports-preview-bar"><div className="reports-section-heading"><h2 id={`${id}-preview`}>Предпросмотр</h2><span aria-live="polite">{loading ? "Загрузка…" : recordCount(filtered.length)}</span></div>{!mobile && exportActions}</div>
         {loading ? <div className="reports-empty" role="status"><span className="reports-spinner" /><h3>Загружаем данные отчёта…</h3></div> : error ? <div className="reports-empty" role="alert"><h3>Не удалось загрузить отчёт</h3><p>{error}</p></div> : !ready || invalidPeriod ? <div className="reports-empty"><h3>Настройте параметры отчёта, чтобы увидеть данные</h3><p>Укажите период и выберите нужные фильтры</p></div> : !filtered.length ? <div className="reports-empty"><h3>По выбранным параметрам данные не найдены</h3><p>Измените период или параметры фильтрации</p><button type="button" className="reports-button" onClick={resetFilters}>Сбросить фильтры</button></div> : !visibleColumns.length ? <div className="reports-empty"><h3>Выберите колонки отчёта</h3><p>Для предпросмотра нужна хотя бы одна колонка</p></div> : <div className="reports-table-card">
-          <div className="reports-table-scroll" role="region" aria-label="Таблица отчёта" tabIndex={0}><table className="reports-table" style={{ minWidth: selectedColumns.length <= 5 ? 920 : visibleColumns.reduce((sum, column) => sum + column.width, 0) }}>
+          <div className="reports-table-scroll" role="region" aria-label="Таблица отчёта" tabIndex={0}><table className="reports-table" style={{ minWidth: !mobile && selectedColumns.length <= 5 ? 920 : visibleColumns.reduce((sum, column) => sum + column.width, 0) }}>
             <caption className="reports-visually-hidden">Взаимодействия с учебными заведениями</caption><colgroup>{visibleColumns.map(column => <col key={column.key} style={{ width: `${column.width / visibleColumns.reduce((sum, item) => sum + item.width, 0) * 100}%` }} />)}</colgroup>
             <thead><tr>{visibleColumns.map(column => <th scope="col" key={column.key}>{column.label}</th>)}</tr></thead><tbody>{filtered.slice(first, first + pageSize).map(row => <tr key={row.id}>{visibleColumns.map(column => <td key={column.key} data-column={column.key}><TableCell row={row} column={column} /></td>)}</tr>)}</tbody>
-          </table></div><footer className="reports-table-footer"><span>{first + 1}–{Math.min(first + pageSize, filtered.length)} из {filtered.length}</span><Pagination page={activePage} count={pageCount} onChange={setPage} /></footer>
+          </table></div>{!mobile && <footer className="reports-table-footer"><span>{first + 1}–{Math.min(first + pageSize, filtered.length)} из {filtered.length}</span><Pagination page={activePage} count={pageCount} onChange={setPage} /></footer>}
         </div>}
+        {mobile && <>
+          <nav className="reports-mobile-pagination" aria-label="Страницы отчёта"><p>{filtered.length ? `${first + 1}–${Math.min(first + pageSize, filtered.length)} из ${filtered.length} · Страница ${activePage} из ${pageCount}` : "0 записей"}</p><div><button type="button" className="reports-button" disabled={loading || activePage === 1} onClick={() => setPage(activePage - 1)}>Назад</button><button type="button" className="reports-button" disabled={loading || activePage >= pageCount} onClick={() => setPage(activePage + 1)}>Вперёд</button></div></nav>
+          <div className="reports-mobile-export"><h2>Экспорт отчёта</h2>{exportActions}{exporting && <p role="status">Формируем файл. Другие форматы временно недоступны.</p>}</div>
+        </>}
       </section>
-    </main>{notification && <div className="reports-notification" data-type={notification.type} role={notification.type === "error" ? "alert" : "status"}><button type="button" className="reports-icon-button" aria-label="Скрыть уведомление" onClick={() => setNotification(null)}><PageIcon name="close" /></button><h3>{notification.title}</h3>{notification.code && <p>Код: {notification.code}</p>}<p>{notification.message}</p></div>}
+    </main>{mobile && <div className="reports-mobile-footer" inert={mobileModal || undefined}><Footer /></div>}{notification && <div className="reports-notification" data-type={notification.type} role={notification.type === "error" ? "alert" : "status"}><button type="button" className="reports-icon-button" aria-label="Скрыть уведомление" onClick={() => setNotification(null)}><PageIcon name="close" /></button><h3>{notification.title}</h3>{notification.code && <p>Код: {notification.code}</p>}<p>{notification.message}</p></div>}
   </div>;
 }

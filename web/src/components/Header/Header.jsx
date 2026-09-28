@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import logo from "../../assets/Logo.svg";
 import "./Header.css";
 import ProfileModal from "../Profile/ProfileModal";
@@ -89,6 +89,9 @@ function ProfileMenu({ dark, setDark, onOpenProfile, onOpenSettings, onLogout })
 
 export default function Header({
   activePage = "Главная",
+  mobileNavigation = false,
+  mobileMenuIcon,
+  mobileCloseIcon,
   profileOpen,
   setProfileOpen,
   dark,
@@ -101,6 +104,28 @@ export default function Header({
   notificationStorageKey,
   onLogout
 }) {
+  const navigationId = useId();
+  const navigationRef = useRef(null);
+  const menuButtonRef = useRef(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    function outside(event) {
+      if (!navigationRef.current?.contains(event.target) && !menuButtonRef.current?.contains(event.target)) setMobileMenuOpen(false);
+    }
+    function escape(event) {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    }
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [mobileMenuOpen]);
   const profileRef = useRef(null);
   const avatarRef = useRef(null);
   const [accountView, setAccountView] = useState(null);
@@ -145,11 +170,12 @@ export default function Header({
             <span>ИТ Школа</span>
           </a>
 
-          <nav className="wr-nav" aria-label="Основная навигация">
+          <nav className="wr-nav" id={navigationId} ref={navigationRef} data-mobile-open={mobileNavigation && mobileMenuOpen} aria-label="Основная навигация">
             {navigation.map(({ label, href }) => (
               <a
                 key={label}
                 href={href ?? undefined}
+                onClick={() => setMobileMenuOpen(false)}
                 className={activePage === label ? "is-active" : undefined}
               >
                 {label}
@@ -180,6 +206,9 @@ export default function Header({
                 />
               )}
             </div>
+            {mobileNavigation && <button type="button" className="wr-reports-menu-toggle" ref={menuButtonRef} aria-label={mobileMenuOpen ? "Закрыть навигацию" : "Открыть навигацию"} aria-expanded={mobileMenuOpen} aria-controls={navigationId} onClick={() => { setMobileMenuOpen(previous => !previous); setProfileOpen(false); }}>
+              {mobileMenuIcon && mobileCloseIcon ? <span aria-hidden="true" style={{ width: 24, height: 24, display: "block", backgroundColor: "currentColor", mask: `url("${mobileMenuOpen ? mobileCloseIcon : mobileMenuIcon}") center / contain no-repeat` }} /> : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d={mobileMenuOpen ? "M6 6l12 12M18 6 6 18" : "M4 6h16M4 12h16M4 18h16"} /></svg>}
+            </button>}
           </div>
         </div>
       </header>

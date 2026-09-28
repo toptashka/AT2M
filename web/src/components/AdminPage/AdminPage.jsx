@@ -1,15 +1,28 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import Header from "../Header/Header";
 import { setAppTheme, useAppTheme } from "../../theme";
 import arrowDown from "../../assets/ArrowDown.svg";
 import arrowLeft from "../../assets/ArrowLeft.svg";
 import arrowRight from "../../assets/ArrowRight.svg";
 import closeIcon from "../../assets/Close.svg";
+import moreIcon from "../../assets/More.svg";
 import { applyWorkflowChange, catalogs, conditions, createDemoData, createSample, migrationTargets, numberStage, pageNumbers, studentCatalog, validateImport } from "./adminModel";
 import "./AdminPage.css";
 
 const tabs = ["Справочники", "Списки студентов", "Workflow", "Журнал аудита"];
 const scopeNotice = "Изменение будет применено ко всем текущим и будущим взаимодействиям.";
+
+const mobileQuery = "(max-width: 767px)";
+
+function subscribeMobile(callback) {
+  const media = window.matchMedia(mobileQuery);
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+}
+
+function useMobile() {
+  return useSyncExternalStore(subscribeMobile, () => window.matchMedia(mobileQuery).matches, () => false);
+}
 
 function Icon({ src }) {
   return <span className="admin-icon" style={{ "--admin-icon-url": `url("${src}")` }} aria-hidden="true" />;
@@ -68,7 +81,7 @@ function Select({ label, value, options, onChange, placeholder = "Выберит
   </div>;
 }
 
-function Modal({ title, children, onClose, busy = false, wide = false }) {
+function Modal({ title, children, onClose, busy = false, wide = false, className = "" }) {
   const dialog = useRef(null);
   const titleId = useId();
   const [closing, setClosing] = useState(false);
@@ -82,7 +95,8 @@ function Modal({ title, children, onClose, busy = false, wide = false }) {
     const html = document.documentElement;
     const before = { overflow: html.style.overflow, scrollbarGutter: html.style.scrollbarGutter, paddingRight: html.style.paddingRight };
     const gap = window.innerWidth - html.clientWidth;
-    if (window.CSS?.supports("scrollbar-gutter", "stable")) html.style.scrollbarGutter = "stable";
+    if (window.matchMedia(mobileQuery).matches) html.style.scrollbarGutter = "auto";
+    else if (window.CSS?.supports("scrollbar-gutter", "stable")) html.style.scrollbarGutter = "stable";
     else if (gap > 0) html.style.paddingRight = `${parseFloat(getComputedStyle(html).paddingRight) + gap}px`;
     html.style.overflow = "hidden";
     const previousFocus = document.activeElement;
@@ -97,7 +111,8 @@ function Modal({ title, children, onClose, busy = false, wide = false }) {
     if (busy || closing) return;
     setClosing(true);
   }, [busy, closing]);
-  return <dialog ref={dialog} aria-labelledby={titleId} className={`admin-modal ${wide ? "admin-modal-wide" : ""}`} data-closing={closing} onCancel={event => { event.preventDefault(); close(); }}>
+  return <dialog ref={dialog} aria-labelledby={titleId} className={`admin-modal ${wide ? "admin-modal-wide" : ""} ${className}`} data-closing={closing} onCancel={event => { event.preventDefault(); close(); }}>
+    <Button variant="plain" className="admin-mobile-close" disabled={busy} onClick={close}>Закрыть</Button>
     <div className="admin-modal-heading"><h2 id={titleId}>{title}</h2><Button className="admin-icon-button" aria-label="Закрыть окно" disabled={busy} onClick={close}><Icon src={closeIcon} /></Button></div>
     {typeof children === "function" ? children(close) : children}
   </dialog>;
@@ -119,7 +134,11 @@ function Pagination({ page, total, onChange, count, size = 10 }) {
 }
 
 function ImportPanel({ students = false, partnerships, api, demo, onImported }) {
-  const [catalogId, setCatalogId] = useState("institutions");
+  const mobile = useMobile();
+  const [step, setStep] = useState("mapping");
+  const [contextOpen, setContextOpen] = useState(false);
+  const stepHeading = useRef(null);
+  const [catalogId, setCatalogId] = useState(() => typeof window !== "undefined" && window.matchMedia(mobileQuery).matches ? "interactions" : "institutions");
   const [partnership, setPartnership] = useState("");
   const catalog = students ? studentCatalog : catalogs.find(item => item.id === catalogId);
   const [data, setData] = useState(null);
@@ -143,6 +162,7 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
   function reset() {
     request.current?.abort();
     setData(null); setMapping({}); setExcluded(new Set()); setStatus("idle"); setError(null); setResult(null); setConfirm(false); setPage(1);
+    setStep("mapping"); setContextOpen(false);
     lastAttempt.current = null;
     if (input.current) input.current.value = "";
   }
@@ -152,6 +172,7 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
     request.current?.abort();
     const controller = new AbortController(); request.current = controller;
     lastAttempt.current = { file, sampleScenario };
+    setStep("mapping");
     setResult(null); setData(null); setExcluded(new Set()); setPage(1); setError(null); setConfirm(false);
     if (file && !/\.(xlsx|xls)$/i.test(file.name)) {
       setError({ title: "Неверный формат файла", message: "Поддерживаются файлы XLS и XLSX." }); setStatus("idle"); return;
@@ -160,7 +181,6 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
       setError({ title: "Импорт временно недоступен", message: "Не удалось обработать файл. Повторите попытку позже." }); setStatus("idle"); return;
     }
     setStatus("checking");
-    // Filename metadata is shown during server validation, never substituted for parsed rows.
     setData({ filename: file?.name ?? catalog.filename, size: file?.size ?? 84 * 1024, rows: [], columns: [] });
     try {
       let inspected;
@@ -205,6 +225,108 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
 
   const visibleColumns = data?.columns.filter(column => mapping[column.id]) ?? [];
   const previewRows = data?.rows.slice((page - 1) * 5, page * 5) ?? [];
+  if (mobile) {
+    const titleId = students ? "admin-students-title" : "admin-import-title";
+    const contextLabel = students ? "Партнёрство" : "Тип справочника";
+    const contextItems = students ? partnerships : catalogs;
+    const contextValue = students ? partnership : catalogId;
+    const currentPage = Math.min(page, Math.max(1, Math.ceil((data?.rows.length ?? 0) / 3)));
+    const changeContext = value => { reset(); if (students) setPartnership(value); else setCatalogId(value); };
+    const goToStep = next => {
+      setStep(next); setPage(1);
+      requestAnimationFrame(() => { stepHeading.current?.focus({ preventScroll: true }); stepHeading.current?.scrollIntoView({ block: "start" }); });
+    };
+    const toggleRow = id => setExcluded(current => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+    const mappingReady = validation && !validation.missing.length && !validation.duplicates.length && visibleColumns.length > 0;
+    return <section className="admin-card admin-mobile-import" aria-labelledby={titleId}>
+      {contextOpen ? <>
+        <h2 id={titleId} tabIndex={-1}>{contextLabel}</h2>
+        <div className="admin-context-options" role="group" aria-label={contextLabel}>
+          {contextItems.map(item => <Button variant="plain" key={item.id} aria-pressed={item.id === contextValue} onClick={() => changeContext(item.id)}>{item.label}</Button>)}
+          {!contextItems.length && <p className="admin-muted">Нет доступных вариантов</p>}
+        </div>
+        <Button variant="plain" onClick={() => setContextOpen(false)}>Назад</Button>
+      </> : <>
+        <h2 id={titleId} className={!students && (data || result) ? "admin-sr-only" : undefined}>{students ? "Списки студентов" : "Импорт каталогов"}</h2>
+        {(!result || students) && <div className="admin-mobile-context">
+          <span>{contextLabel}</span>
+          <button type="button" className="admin-select-trigger" aria-label={contextLabel} disabled={busy} onClick={() => setContextOpen(true)}>
+            <span>{contextItems.find(item => item.id === contextValue)?.label ?? "Выберите партнёрство"}</span><Icon src={arrowDown} />
+          </button>
+        </div>}
+        <input ref={input} className="admin-file-input" type="file" accept=".xls,.xlsx" tabIndex={-1} aria-label="Файл для импорта" onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) inspect(file); }} />
+        {error && <Alert title={error.title}>{error.message}{error.retry && <Button onClick={() => { const attempt = lastAttempt.current; if (attempt) inspect(attempt.file, attempt.sampleScenario); }}>Повторить загрузку</Button>}</Alert>}
+        {!data && !result && <>
+          <div className="admin-dropzone" aria-disabled={!canUpload}>
+            <strong>Перетащите файл сюда или выберите на компьютере</strong>
+            <p className="admin-hint">XLS / XLSX · Файл ещё не выбран</p>
+            <Button disabled={!canUpload} onClick={() => input.current.click()}>Выбрать файл</Button>
+          </div>
+          <p>{canUpload ? "Файл ещё не выбран" : "Выберите партнёрство и загрузите список студентов."}</p>
+        </>}
+        {data && !result && (students || step === "mapping" || status === "checking") && <div className="admin-file-row">
+          <div><strong>{data.filename}</strong><p className="admin-hint">{status === "checking" ? "Проверка содержимого файла…" : `Проверен · ${data.rows.length} записей`}</p></div>
+          <Button variant="plain" disabled={busy} onClick={() => input.current.click()}>Заменить</Button>
+          <Button variant="plain" disabled={status === "importing"} onClick={reset}>Удалить</Button>
+        </div>}
+        {status === "checking" && <p role="status"><span className="admin-spinner" />Проверка файла…</p>}
+        {data && status !== "checking" && !result && (step === "mapping" ? <>
+          <h3 ref={stepHeading} tabIndex={-1}>Сопоставление колонок</h3>
+          {(validation.missing.length > 0 || validation.duplicates.length > 0) && <Alert title="Проверьте сопоставление колонок">
+            {validation.missing.length ? `Сопоставьте поля: ${validation.missing.map(field => field.label).join(", ")}.` : "Одно поле системы нельзя назначить нескольким колонкам."}
+          </Alert>}
+          <div className="admin-mobile-mapping">{data.columns.map(column => <div className="admin-mobile-field" key={column.id}>
+            <span>{column.label}</span>
+            <Select label={`Поле для колонки «${column.label}»`} value={mapping[column.id] ?? ""} disabled={busy}
+              error={validation.duplicates.includes(mapping[column.id])}
+              options={[{ value: "", label: "Не импортировать" }, ...catalog.fields.map(field => ({ value: field.id, label: field.label }))]}
+              onChange={value => setMapping(current => ({ ...current, [column.id]: value }))} />
+          </div>)}</div>
+          <Button variant="primary" disabled={busy || !mappingReady || error?.blocking} onClick={() => goToStep("preview")}>Предпросмотр данных</Button>
+        </> : <>
+          <h3 ref={stepHeading} tabIndex={-1}>Предпросмотр данных</h3>
+          <p>Всего {data.rows.length} записей</p>
+          <div className="admin-preview-cards">{data.rows.slice((currentPage - 1) * 3, currentPage * 3).map(row => {
+            const rowErrors = validation.errors.get(row.id);
+            const isExcluded = excluded.has(row.id);
+            return <article key={row.id} className={`admin-preview-card ${isExcluded ? "admin-row-excluded" : rowErrors ? "admin-row-error" : ""}`} aria-label={`Строка ${row.line}`}>
+              <dl>{visibleColumns.map(column => <div key={column.id}>
+                <dt>{catalog.fields.find(field => field.id === mapping[column.id])?.label}</dt>
+                <dd className={!isExcluded && rowErrors?.[column.id] ? "admin-error-text" : undefined}>{String(row.values[column.id] ?? "") || "—"}
+                  {!isExcluded && rowErrors?.[column.id] && <small>{rowErrors[column.id]}</small>}
+                </dd>
+              </div>)}</dl>
+              {!isExcluded && rowErrors?._row && <p className="admin-error-text">{rowErrors._row}</p>}
+              {(rowErrors || isExcluded) && <Button variant="plain" disabled={busy} aria-label={`${isExcluded ? "Вернуть" : "Исключить"} строку ${row.line}`} onClick={() => toggleRow(row.id)}>{isExcluded ? "Вернуть" : "Исключить"}</Button>}
+            </article>;
+          })}</div>
+          {!data.rows.length && <p>В файле нет записей</p>}
+          {data.rows.length > 3 && <div className="admin-mobile-pagination">
+            <span>{(currentPage - 1) * 3 + 1}–{Math.min(currentPage * 3, data.rows.length)} из {data.rows.length}</span>
+            <Button className="admin-icon-button" aria-label="Предыдущая страница" disabled={currentPage === 1 || busy} onClick={() => setPage(currentPage - 1)}><Icon src={arrowLeft} /></Button>
+            <Button className="admin-icon-button" aria-label="Следующая страница" disabled={currentPage * 3 >= data.rows.length || busy} onClick={() => setPage(currentPage + 1)}><Icon src={arrowRight} /></Button>
+          </div>}
+          {validation.invalid.length > 0 && <div className="admin-mobile-validation" role="status"><p className="admin-error-text">Исправьте или исключите ошибочные строки</p>
+            <Button variant="plain" disabled={busy} onClick={() => { const first = data.rows.findIndex(row => validation.invalid.includes(row.id)); setPage(Math.floor(first / 3) + 1); }}>К первой ошибке</Button>
+          </div>}
+          {excluded.size > 0 && <p aria-live="polite">К импорту: {validation.count} записей · Исключено: {excluded.size}</p>}
+          <Button variant="primary" disabled={busy || !validation.valid || error?.blocking} onClick={() => setConfirm(true)}>{busy ? "Импорт…" : "Импортировать данные"}</Button>
+          <Button variant="plain" disabled={busy} onClick={() => goToStep("mapping")}>К сопоставлению</Button>
+        </>)}
+        {result && <div className="admin-mobile-result" role="status">
+          <h3>{students ? "Импорт завершён" : "Справочник обновлён"}</h3>
+          <p>{result.processed} записей обработано</p>
+          <Button variant="primary" onClick={reset}>Загрузить другой файл</Button>
+        </div>}
+        {confirm && <Modal title="Подтвердить импорт?" busy={busy} onClose={() => setConfirm(false)}>{close => <>
+          <p>Будет обработано записей: <strong>{validation.count}</strong>. Исключено: {excluded.size}.</p>
+          <p className="admin-description">{students ? partnerships.find(item => item.id === partnership)?.label : catalog.label}</p>
+          <div className="admin-modal-actions"><Button disabled={busy} onClick={close}>Отмена</Button><Button variant="primary" disabled={busy} onClick={importData}>{busy ? "Импорт…" : "Подтвердить импорт"}</Button></div>
+        </>}</Modal>}
+      </>}
+    </section>;
+  }
+
   return <section className="admin-card" aria-labelledby={students ? "admin-students-title" : "admin-import-title"}>
     <h2 id={students ? "admin-students-title" : "admin-import-title"}>{students ? "Списки студентов" : "Импорт каталогов"}</h2>
     <p className="admin-description">{catalog.description}</p>
@@ -271,16 +393,23 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
   </section>;
 }
 
-function StageMenu({ stage, onAction }) {
+function StageMenu({ stage, index, onAction }) {
+  const mobile = useMobile();
   const root = useRef(null);
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    if (!open) return;
+    if (!open || mobile) return;
     function outside(event) { if (!root.current?.contains(event.target)) setOpen(false); }
     document.addEventListener("pointerdown", outside);
     root.current?.querySelector('[role="menuitem"]')?.focus();
     return () => document.removeEventListener("pointerdown", outside);
-  }, [open]);
+  }, [open, mobile]);
+  if (mobile) return <div className="admin-stage-menu">
+    <Button className="admin-icon-button" aria-label={`Действия: ${stage.name}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><Icon src={moreIcon} /></Button>
+    {open && <Modal title={`${numberStage(index)} · ${stage.name}`} className="admin-stage-sheet" onClose={() => setOpen(false)}>
+      <div className="admin-stage-sheet-actions">{[["edit", "Редактировать"], ["move", "Переместить"], ["delete", "Удалить"]].map(([action, label]) => <Button variant="plain" key={action} onClick={() => { setOpen(false); onAction(action, stage); }}>{label}</Button>)}</div>
+    </Modal>}
+  </div>;
   return <div className="admin-stage-menu" ref={root} data-open={open} onKeyDown={event => {
     if (event.key === "Escape") { event.stopPropagation(); setOpen(false); root.current.firstElementChild.focus(); }
     if (event.key === "Tab") setOpen(false);
@@ -291,7 +420,7 @@ function StageMenu({ stage, onAction }) {
       items[event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
     }
   }}>
-    <Button className="admin-icon-button" aria-label={`Действия: ${stage.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>···</Button>
+    <Button className="admin-icon-button" aria-label={`Действия: ${stage.name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}><Icon src={moreIcon} /></Button>
     <div role="menu" aria-label={stage.name} className="admin-stage-popup" inert={!open ? true : undefined} aria-hidden={!open}>
       {[["add", "Добавить этап здесь"], ["edit", "Редактировать"], ["move", "Переместить"], ["delete", "Удалить"]].map(([action, label]) => <button type="button" role="menuitem" tabIndex={-1} key={action} className={action === "delete" ? "admin-error-text" : ""} onClick={() => { setOpen(false); root.current.firstElementChild.focus(); onAction(action, stage); }}>{label}</button>)}
     </div>
@@ -299,6 +428,7 @@ function StageMenu({ stage, onAction }) {
 }
 
 function WorkflowEditor({ action, stage, stages, onClose, onApply }) {
+  const mobile = useMobile();
   const [name, setName] = useState(action === "add" ? "" : stage.name);
   const [after, setAfter] = useState(action === "add" && stage ? stage.id : "");
   const [target, setTarget] = useState("");
@@ -338,7 +468,7 @@ function WorkflowEditor({ action, stage, stages, onClose, onApply }) {
       if (!controller.current.signal.aborted) setError(failure.message || "Не удалось сохранить изменение. Повторите попытку.");
     } finally { if (!controller.current.signal.aborted) setBusy(false); }
   }
-  return <Modal title={title} busy={busy} onClose={onClose} wide={!confirm && !result}>{close => <>
+  return <Modal title={title} className="admin-workflow-editor" busy={busy} onClose={onClose} wide={!confirm && !result}>{close => <>
     {error && <Alert title="Изменение не сохранено">{error}</Alert>}
     {result ? <><p role="status">{result}</p><div className="admin-modal-actions"><Button variant="primary" onClick={close}>Понятно</Button></div></> : confirm ? <>
       <p>{scopeNotice}</p><p className="admin-description">{action === "delete" ? `Будет удалён этап «${stage.name}».` : `Этап «${name || stage?.name}». Проверьте название, порядок этапов и условия завершения перед применением.`}</p>
@@ -346,23 +476,24 @@ function WorkflowEditor({ action, stage, stages, onClose, onApply }) {
       <div className="admin-modal-actions"><Button disabled={busy} onClick={() => setConfirm(false)}>Назад</Button><Button variant={action === "delete" ? "danger" : "primary"} disabled={busy} onClick={apply}>{busy ? "Сохранение…" : "Применить изменение"}</Button></div>
     </> : <>
       {action === "add" && <p className="admin-description">Новый этап будет добавлен в единый Workflow и станет доступен для всех взаимодействий.</p>}
-      {(action === "move" || action === "delete") && <p><strong>{numberStage(index)} — {stage.name}</strong></p>}
+      {(action === "delete" || (action === "move" && !mobile)) && <p><strong>{numberStage(index)} — {stage.name}</strong></p>}
       {needsName && <div className="admin-form-field"><label htmlFor={inputId}>Название этапа *</label><input id={inputId} className="admin-input" value={name} maxLength={160} placeholder="Введите название этапа" aria-invalid={touched.name && Boolean(nameError)} aria-describedby={touched.name && nameError ? `${inputId}-error` : undefined} onBlur={() => setTouched(current => ({ ...current, name: true }))} onChange={event => setName(event.target.value)} />
         {touched.name && nameError && <span id={`${inputId}-error`} className="admin-error-text">{nameError}</span>}</div>}
       {needsPosition && <div className="admin-form-field"><span>{action === "move" ? "Новое положение" : "Расположение *"}</span><Select label="Расположение этапа" value={after} options={positions} placeholder="Выберите расположение этапа" error={touched.position && !after} onChange={value => { setAfter(value); setTouched(current => ({ ...current, position: true })); }} />
         {touched.position && !after && <span className="admin-error-text">Выберите расположение этапа</span>}</div>}
-      {action === "add" && <div className="admin-stage-preview"><h3>Предпросмотр</h3>{after ? <>
+      {action === "add" && (!mobile || after) && <div className="admin-stage-preview"><h3>Предпросмотр</h3>{after ? <>
         {position >= 0 && <p><span>{numberStage(position)}</span>{stages[position].name}</p>}<p className="admin-new-stage"><span>{numberStage(position + 1)}</span>{name.trim() || "Новый этап"}</p>
         {stages[position + 1] && <p><span>{numberStage(position + 2)}</span>{stages[position + 1].name}</p>}
       </> : <p className="admin-hint">Выберите расположение, чтобы увидеть новый этап в маршруте.</p>}<small className="admin-hint">Нумерация последующих этапов будет обновлена автоматически.</small></div>}
-      {action === "edit" && <><fieldset className="admin-conditions"><legend>Условия завершения</legend>{conditions.map((condition, i) => <label key={condition}><input type="checkbox" checked={required[i]} onChange={event => setRequired(current => current.map((item, j) => j === i ? event.target.checked : item))} /><span>Обязательно</span>{condition}</label>)}</fieldset><p className="admin-hint">Условия завершения из текущего проекта. Переходы и возвраты сохраняют действующую логику.</p></>}
+      {action === "add" && mobile && !after && <p className="admin-hint">Нумерация последующих этапов будет обновлена автоматически.</p>}
+      {action === "edit" && !mobile && <><fieldset className="admin-conditions"><legend>Условия завершения</legend>{conditions.map((condition, i) => <label key={condition}><input type="checkbox" checked={required[i]} onChange={event => setRequired(current => current.map((item, j) => j === i ? event.target.checked : item))} /><span>Обязательно</span>{condition}</label>)}</fieldset><p className="admin-hint">Условия завершения из текущего проекта. Переходы и возвраты сохраняют действующую логику.</p></>}
       {action === "delete" && (stage.count > 0 ? <><p className="admin-description">В этом этапе находятся активные взаимодействия. Перед удалением выберите этап, в который они будут перенесены.</p>
         <p className="admin-notice">В этапе сейчас: <strong>{stage.count} взаимодействий</strong></p>
         <div className="admin-form-field"><span>Перенести взаимодействия в</span><Select label="Этап для переноса" value={target} placeholder="Выберите этап" options={neighbours.map(s => ({ value: s.id, label: `${stages.indexOf(s) < index ? "Предыдущий" : "Следующий"} · ${numberStage(stages.indexOf(s))} — ${s.name}` }))} onChange={setTarget} /></div>
         {!neighbours.length && <Alert title="Нет допустимого соседнего этапа">Удаление недоступно. Сначала измените маршрут.</Alert>}
       </> : <p className="admin-description">Этап не используется. Его можно удалить без переноса взаимодействий.</p>)}
       <p className="admin-notice">{scopeNotice}</p>
-      <div className="admin-modal-actions"><Button onClick={close}>Отмена</Button><Button variant={action === "delete" ? "danger" : "primary"} disabled={!valid} onClick={prepare}>{({ add: "Добавить этап", edit: "Сохранить", move: "Продолжить", delete: stage?.count > 0 ? "Удалить и перенести" : "Удалить этап" })[action]}</Button></div>
+      <div className="admin-modal-actions"><Button className="admin-editor-cancel" onClick={close}>Отмена</Button><Button variant={action === "delete" ? "danger" : "primary"} disabled={!valid} onClick={prepare}>{({ add: "Добавить этап", edit: "Сохранить", move: mobile ? "Сохранить" : "Продолжить", delete: stage?.count > 0 ? "Удалить и перенести" : "Удалить этап" })[action]}</Button></div>
     </>}
   </>}</Modal>;
 }
@@ -371,7 +502,7 @@ function Workflow({ stages, onApply }) {
   const [editor, setEditor] = useState(null);
   return <section className="admin-card"><div className="admin-card-heading"><div><h2>Конфигуратор Workflow</h2><p className="admin-description">Настройка этапов единого маршрута взаимодействия</p></div><Button variant="primary" onClick={() => setEditor({ action: "add", stage: null })}>+ Добавить этап</Button></div>
     <p className="admin-notice">{scopeNotice}</p>
-    <ol className="admin-stages">{stages.map((stage, i) => <li key={stage.id} className={stage.isNew ? "admin-stage-added" : ""}><span className="admin-stage-number">{numberStage(i)}</span><span className="admin-stage-name">{stage.name}</span><span className="admin-stage-status">{stage.count ? `Используется${stage.count === 18 ? " · 18 взаимодействий" : ""}` : `Не используется${stage.isNew ? " · Новый этап" : ""}`}</span><StageMenu stage={stage} onAction={(action, selected) => setEditor({ action, stage: selected })} /></li>)}</ol>
+    <ol className="admin-stages">{stages.map((stage, i) => <Fragment key={stage.id}><li className={stage.isNew ? "admin-stage-added" : ""}><span className="admin-stage-number">{numberStage(i)}</span><span className="admin-stage-name">{stage.name}</span><span className="admin-stage-status">{stage.count ? `Используется${stage.count === 18 ? " · 18 взаимодействий" : ""}` : `Не используется${stage.isNew ? " · Новый этап" : ""}`}</span><StageMenu stage={stage} index={i} onAction={(action, selected) => setEditor({ action, stage: selected })} /></li>{i === 5 && <li className="admin-stage-insert"><Button variant="plain" onClick={() => setEditor({ action: "add", stage })}>+ Добавить этап здесь</Button></li>}</Fragment>)}</ol>
     {!stages.length && <div className="admin-empty">Этапов пока нет. Добавьте первый этап маршрута.</div>}
     {editor && <WorkflowEditor {...editor} stages={stages} onApply={onApply} onClose={() => setEditor(null)} />}
   </section>;
@@ -457,7 +588,7 @@ export default function AdminPage({ api = null, demo = false }) {
   }
 
   return <div className="admin-page" data-theme={theme}>
-    <Header activePage="Администрирование" dark={theme === "dark"} setDark={value => { const dark = typeof value === "function" ? value(theme === "dark") : value; setAppTheme(dark ? "dark" : "light"); }} profileOpen={profileOpen} setProfileOpen={setProfileOpen} />
+    <Header mobileNavigation activePage="Администрирование" dark={theme === "dark"} setDark={value => { const dark = typeof value === "function" ? value(theme === "dark") : value; setAppTheme(dark ? "dark" : "light"); }} profileOpen={profileOpen} setProfileOpen={setProfileOpen} />
     <main className="admin-main"><h1>Администрирование</h1><p className="admin-page-description">Управление справочниками, данными обучения, Workflow и журналом аудита</p>
       {error && <Alert title="Не удалось выполнить действие">{error}{!data && <Button disabled={loading} onClick={load}>Повторить</Button>}</Alert>}
       {!data && loading && <p className="admin-notice" role="status"><span className="admin-spinner" />Загрузка администрирования…</p>}
@@ -467,7 +598,7 @@ export default function AdminPage({ api = null, demo = false }) {
           if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
           event.preventDefault(); const next = event.key === "Home" ? 0 : event.key === "End" ? 3 : (tab + (event.key === "ArrowRight" ? 1 : -1) + 4) % 4;
           setTab(next); document.getElementById(`admin-tab-${next}`).focus();
-        }}>{tabs.map((label, i) => <button type="button" role="tab" id={`admin-tab-${i}`} aria-selected={tab === i} aria-controls={`admin-panel-${i}`} tabIndex={tab === i ? 0 : -1} key={label} onClick={() => setTab(i)}>{label}</button>)}</div>
+        }}>{tabs.map((label, i) => <button type="button" role="tab" id={`admin-tab-${i}`} aria-selected={tab === i} aria-controls={`admin-panel-${i}`} tabIndex={tab === i ? 0 : -1} key={label} onClick={event => { setTab(i); event.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" }); }}>{label}</button>)}</div>
         {tabs.map((label, i) => <div key={label} role="tabpanel" id={`admin-panel-${i}`} aria-labelledby={`admin-tab-${i}`} hidden={tab !== i} tabIndex={0} className="admin-tab-panel">
           {i < 2 ? <ImportPanel students={i === 1} partnerships={data.partnerships} api={api} demo={demo} onImported={object => { if (demo) addDemoAudit("Импорт данных", object); }} /> : i === 2 ? <Workflow stages={data.stages} onApply={apply} /> : <Audit entries={data.audit} demo={demo} refreshing={loading} onRefresh={refreshAudit} />}
         </div>)}
