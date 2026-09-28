@@ -2,11 +2,14 @@
   --footer-border: #e6e7e9;
   --footer-background: #ffffff;
   --footer-text: #747984;
+  box-sizing: border-box;
   flex: none;
+  width: 100%;
+  min-width: 0;
   border-top: 1px solid var(--footer-border);
   background: var(--footer-background);
   color: var(--footer-text);
-  font-size: 12px;
+  font: 12px/18px "Rostelecom Basis", Arial, sans-serif;
   transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease;
 }
 
@@ -21,21 +24,62 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
+  gap: 16px 24px;
   width: calc(100% - 160px);
   max-width: 1600px;
+  min-width: 0;
   min-height: 48px;
   margin-inline: auto;
-  padding-block: 12px;
+  padding-block: 14px;
 }
 
-.site-footer p { margin: 0; }
-.site-footer p:last-child { flex: none; }
+.site-footer p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 
-@media (max-width: 1199px) {
-  .site-footer-inner { width: calc(100% - 64px); }
+.site-footer p:first-child {
+  flex: 1 1 auto;
+}
+
+.site-footer p:last-child {
+  flex: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 1279px) {
+  .site-footer-inner {
+    width: calc(100% - 64px);
+  }
+}
+
+@media (max-width: 1024px) {
+  .site-footer-inner {
+    width: calc(100% - 48px);
+  }
+}
+
+@media (max-width: 767px) {
+  .site-footer-inner {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - 32px);
+    padding-block: 20px;
+    text-align: center;
+  }
+
+  .site-footer p:first-child {
+    flex: none;
+    max-width: 48ch;
+    text-wrap: balance;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-footer { transition: none; }
+  .site-footer {
+    transition: none;
+  }
 }

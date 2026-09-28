@@ -1461,82 +1461,6 @@ textarea.at-input {
   color: var(--a-error);
 }
 
-.aw-single-date-calendar {
-  display: grid;
-  gap: 12px;
-}
-
-.aw-single-date-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.aw-single-date-icon {
-  width: 18px;
-  height: 18px;
-  background: currentColor;
-  -webkit-mask: var(--date-icon) center / contain no-repeat;
-  mask: var(--date-icon) center / contain no-repeat;
-}
-
-.aw-single-date-selectors {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: start;
-  gap: 8px;
-}
-
-.aw-single-date-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 2px;
-  text-align: center;
-}
-
-.aw-single-date-grid > span {
-  padding-block: 4px;
-  color: var(--a-muted);
-  font-size: 12px;
-}
-
-.aw-single-date-grid > button {
-  min-width: 0;
-  height: 32px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--a-text);
-  font: inherit;
-  cursor: pointer;
-}
-
-.aw-single-date-grid > button:hover {
-  background: var(--a-field);
-}
-
-.aw-single-date-grid > button[aria-current="date"] {
-  border-color: var(--a-accent);
-}
-
-.aw-single-date-grid > button[aria-pressed="true"] {
-  background: var(--a-accent);
-  color: var(--a-on-accent);
-}
-
-.aw-single-date-grid > button:focus-visible {
-  outline: 2px solid var(--a-focus);
-  outline-offset: -2px;
-}
-
-.aw-single-date-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 @keyframes aw-filter-enter {
   from { opacity: 0; transform: translateY(-8px) scale(.995); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -1567,5 +1491,70 @@ textarea.at-input {
 
   .at-select > .at-select-trigger > .at-chevron-image {
     transition: none;
+  }
+}
+
+.at-floating-popup:popover-open {
+  display: grid;
+  grid-template-rows: 1fr;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  transform: none;
+  animation: aw-popup-expand 280ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.at-floating-popup[data-closing="true"]:popover-open {
+  animation: aw-popup-collapse 220ms ease both;
+}
+
+.at-floating-popup > .at-popup-content {
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.at-popup-surface {
+  box-sizing: border-box;
+  max-height: var(--popup-max-height, 560px);
+  padding: 8px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--a-border);
+  border-radius: 8px;
+  background: var(--a-card);
+  color: var(--a-text);
+}
+
+.at-multi-popup > .at-popup-content > .at-popup-surface {
+  padding: 16px;
+}
+
+.at-calendar-popup > .at-popup-content > .at-popup-surface {
+  padding: 24px;
+}
+
+@keyframes aw-popup-expand {
+  from { grid-template-rows: 0fr; opacity: 0; }
+  to { grid-template-rows: 1fr; opacity: 1; }
+}
+
+@keyframes aw-popup-collapse {
+  from { grid-template-rows: 1fr; opacity: 1; }
+  to { grid-template-rows: 0fr; opacity: 0; }
+}
+
+@media (max-width: 600px) {
+  .at-calendar-popup > .at-popup-content > .at-popup-surface {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .at-floating-popup:popover-open,
+  .at-floating-popup[data-closing="true"]:popover-open {
+    animation: none;
   }
 }

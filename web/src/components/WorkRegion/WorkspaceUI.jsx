@@ -101,6 +101,7 @@ export function Popover({
       const up = side === "up";
       node.dataset.side = side;
       Object.assign(node.style, {
+        "--popup-max-height": `${Math.min(560, up ? above : below)}px`,
         position: "fixed",
         inset: "auto",
         left: `${Math.max(left + 12, Math.min(rect.left, left + vw - panelWidth - 12))}px`,
@@ -159,14 +160,16 @@ export function Popover({
       ref={panel}
       id={id}
       popover={inline ? undefined : "manual"}
-      className={`at-options ${inline ? "at-inline-popup" : "at-select-popup"} ${panelClassName}`}
+      className={`at-options ${inline ? "at-inline-popup" : "at-select-popup at-floating-popup"} ${panelClassName}`}
       data-closing={closing}
       inert={closing || undefined}
       role="group"
       aria-label={label}
     >
       <div className="at-popup-content" key={session}>
-        {children(close)}
+        {inline ? children(close) : (
+          <div className="at-popup-surface">{children(close)}</div>
+        )}
       </div>
     </div>
   ) : null;
