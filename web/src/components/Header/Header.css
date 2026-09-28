@@ -9,6 +9,30 @@
   border-bottom: 1px solid var(--a-border);
   color: var(--a-text);
   font: 14px/20px "Rostelecom Basis", Arial, sans-serif;
+
+  --profile-background: #ffffff;
+  --profile-text: #0f172a;
+  --profile-muted: #64748b;
+  --profile-border: #e2e8f0;
+  --profile-hover: #f8fafc;
+  --profile-avatar-background: #f8f9fb;
+  --profile-avatar-text: #7700ff;
+  --profile-logout: #ff4044;
+  --profile-logout-hover: #fff1f2;
+  --profile-shadow: 0 4px 12px rgb(15 23 42 / 8%);
+}
+
+.at-header[data-theme="dark"] {
+  --profile-background: #1b2533;
+  --profile-text: #f8fafc;
+  --profile-muted: #94a3b8;
+  --profile-border: #334155;
+  --profile-hover: #253142;
+  --profile-avatar-background: #212c3b;
+  --profile-avatar-text: #f8fafc;
+  --profile-logout: #ff4044;
+  --profile-logout-hover: rgb(255 64 68 / 10%);
+  --profile-shadow: 0 12px 20px rgb(0 0 0 / 32%);
 }
 
 .at-header .at-header-inner {
@@ -38,6 +62,7 @@
 }
 
 .at-header .at-nav {
+  position: relative;
   display: flex;
   align-self: stretch;
   align-items: stretch;
@@ -60,22 +85,26 @@
   color: var(--a-accent);
 }
 
+/* Отключаем отдельные полоски у ссылок. */
 .at-header .at-nav a::after {
-  content: "";
-  position: absolute;
-  bottom: -1px;
-  left: calc(50% - 16px);
-  width: 32px;
-  height: 2px;
-  background: var(--a-accent);
-  opacity: 0;
-  transform: scaleX(0.6);
+  content: none;
 }
 
-.at-header .at-nav a[aria-current="page"]::after {
-  opacity: 1;
-  transform: scaleX(1);
+.at-header .at-nav-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 32px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--a-accent);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    background-color var(--theme-transition-duration, 240ms) ease;
 }
+
+/* Кнопка профиля */
 
 .at-header .at-profile {
   position: relative;
@@ -95,77 +124,149 @@
 .at-header .at-avatar {
   display: grid;
   place-items: center;
+  flex: none;
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--a-field);
-  color: var(--a-avatar);
+  background: var(--profile-avatar-background);
+  color: var(--profile-avatar-text);
   font-size: 11px;
-  flex: none;
+  line-height: 16px;
+  font-weight: 500;
 }
+
+/* Меню пользователя */
 
 .at-header .at-profile-menu {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
+  z-index: 1;
+  box-sizing: border-box;
   width: 240px;
-  padding: 12px;
-  border: 1px solid var(--a-border);
+  padding: 7px;
+  border: 1px solid var(--profile-border);
   border-radius: 12px;
-  background: var(--a-card);
-  box-shadow: 0 12px 32px #0002;
+  background: var(--profile-background);
+  color: var(--profile-text);
+  box-shadow: var(--profile-shadow);
+}
+
+.at-header .at-profile-menu *,
+.at-header .at-profile-menu *::before,
+.at-header .at-profile-menu *::after {
+  box-sizing: border-box;
 }
 
 .at-header .at-identity {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 4px 16px;
+  gap: 12px;
+  min-height: 58px;
+  padding: 8px 8px 16px;
+}
+
+.at-header .at-identity .at-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.at-header .at-identity-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .at-header .at-identity strong {
   display: block;
+  margin: 0;
+  color: var(--profile-text);
   font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .at-header .at-identity small {
   display: block;
-  margin-top: 2px;
-  color: var(--a-muted);
+  margin-top: 0;
+  color: var(--profile-muted);
   font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
   overflow-wrap: anywhere;
 }
 
-.at-header .at-profile-menu > button {
+.at-header .at-profile-divider {
+  height: 1px;
+  margin: 0;
+  background: var(--profile-border);
+}
+
+.at-header .at-profile-actions {
+  display: grid;
+  gap: 0;
+  padding: 6px 0;
+}
+
+.at-header .at-profile-footer {
+  padding-top: 6px;
+}
+
+.at-header .at-profile-action {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  height: 40px;
+  min-height: 40px;
+  margin: 0;
+  padding: 10px 12px;
   border: 0;
   border-radius: 6px;
-  padding: 0 8px;
-  background: none;
-  color: var(--a-text);
+  background: transparent;
+  color: var(--profile-text);
   text-align: left;
   font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
   cursor: pointer;
 }
 
-.at-header .at-profile-menu > button:hover {
-  background: var(--a-field);
+.at-header .at-profile-action > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.at-header .at-profile-menu svg {
-  width: 18px;
-  height: 18px;
-  color: var(--a-muted);
-  flex: none;
+.at-header .at-profile-action:hover:not(:disabled) {
+  background: var(--profile-hover);
 }
 
-.at-header .at-profile-menu .at-logout,
-.at-header .at-logout svg {
-  color: var(--a-accent);
+.at-header .at-profile-icon {
+  display: block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  background-color: var(--profile-muted);
+  -webkit-mask-image: var(--at-profile-icon);
+  mask-image: var(--at-profile-icon);
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.at-header .at-profile-action.at-logout {
+  color: var(--profile-logout);
+}
+
+.at-header .at-logout .at-profile-icon {
+  background-color: currentColor;
+}
+
+.at-header .at-profile-action.at-logout:hover:not(:disabled) {
+  background: var(--profile-logout-hover);
 }
 
 .at-header button:disabled {
@@ -178,21 +279,26 @@
   outline-offset: 3px;
 }
 
+.at-header .at-profile-action:focus-visible {
+  outline-offset: -2px;
+}
+
 .at-header,
 .at-header .at-nav,
 .at-header .at-nav a,
-.at-header .at-nav a::after,
 .at-header .at-avatar,
 .at-header .at-profile-menu,
-.at-header .at-profile-menu > button,
-.at-header .at-profile-menu svg {
+.at-header .at-profile-action,
+.at-header .at-profile-icon,
+.at-header .at-profile-divider,
+.at-header .at-identity strong,
+.at-header .at-identity small {
   transition:
     background-color var(--theme-transition-duration, 240ms) ease,
     color var(--theme-transition-duration, 240ms) ease,
     border-color var(--theme-transition-duration, 240ms) ease,
     box-shadow var(--theme-transition-duration, 240ms) ease,
-    opacity var(--theme-transition-duration, 240ms) ease,
-    transform var(--theme-transition-duration, 240ms) ease;
+    opacity var(--theme-transition-duration, 240ms) ease;
 }
 
 .at-header .at-mobile-toggle {
@@ -215,10 +321,10 @@
 
 @media (max-width: 1024px) {
   .at-header .at-header-inner {
-    width: calc(100% - 48px);
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 0 24px;
+    width: calc(100% - 48px);
     height: auto;
     padding-top: 16px;
   }
@@ -258,9 +364,9 @@
   }
 
   .at-header .at-logo img {
+    flex: none;
     width: 33px;
     height: 33px;
-    flex: none;
   }
 
   .at-header .at-profile {
@@ -352,24 +458,19 @@
     background: var(--a-field);
   }
 
-  .at-header .at-nav a::after {
+  .at-header .at-nav-indicator {
     display: none;
   }
 
   .at-header .at-profile-menu {
     right: -52px;
-    width: min(280px, calc(100vw - 32px));
+    width: min(240px, calc(100vw - 32px));
     max-height: calc(100dvh - 88px);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
 
-  .at-header .at-identity > div {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .at-header .at-profile-menu > button {
+  .at-header .at-profile-action {
     min-height: 44px;
   }
 }
