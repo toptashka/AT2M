@@ -1,27 +1,81 @@
-import { useState } from "react";
-import { useAppTheme, setAppTheme } from "../../theme";
-import Header from "../Header/Header";
-import { WorkspaceChart } from "./WorkRegionUpdates";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
-import pdfIcon from "../../assets/pdf.svg";
-import downloadIcon from "../../assets/download.svg";
+import Header from "../Header/Header";
+import { useAppTheme } from "../../theme";
+
+import {
+  Dialog,
+  Empty,
+  Select,
+  Tabs,
+  Toast,
+  usePreference,
+} from "./WorkspaceUI";
+
+import WorkspaceFilters from "./WorkspaceFilters";
+
+import {
+  INCOMING_DEMO,
+  IncomingRequests,
+  WorkspaceChart,
+} from "./WorkRegionUpdates";
+
+import InteractionDetail from "./InteractionDetail";
+import WorkspaceModal from "./WorkspaceModal";
+
+import {
+  OWNERS,
+  STEPS,
+  INITIAL_FILTERS,
+  createInteractions,
+  newInteraction,
+  stageData,
+  matches,
+  hasFilters,
+  moveStage,
+  dateLabel,
+  now,
+  uid,
+  readMemory,
+  writeMemory,
+  recordLabel,
+} from "./workspaceModel";
 
 import "./WorkRegionUser.css";
 
+const INSTITUTIONS = [
+  "МГТУ им. Н. Э. Баумана",
+  "Университет ИТМО",
+  "НИЯУ МИФИ",
+  "Университет Иннополис",
+  "СПбПУ Петра Великого",
+  "НИУ ВШЭ",
+  "Томский политехнический университет",
+  "Казанский федеральный университет",
+];
+
 const DEADLINES = [
   [
+    "mephi",
     "18 сентября · 16:00",
     "НИЯУ МИФИ",
     "Подписание документов",
     "Просрочено",
   ],
   [
+    "bmstu",
     "Сегодня · 17:00",
     "МГТУ им. Н. Э. Баумана",
     "Передача материалов",
     "Горящий срок",
   ],
   [
+    "itmo",
     "25 сентября",
     "ИТМО",
     "Обучение преподавателей",
@@ -29,684 +83,851 @@ const DEADLINES = [
   ],
 ];
 
-const INTERACTIONS = [
-  {
-    id: "bmstu",
-    badge: "МГТУ",
-    name: "МГТУ им. Н. Э. Баумана",
-    program: "DevOps",
-    partner: "Solar",
-    city: "Москва",
-    initials: "АИ",
-    owner: "Александр Иванов",
-    updated: "Сегодня, 12:45",
-    segments: 8,
-  },
-  {
-    id: "mephi",
-    badge: "МИФИ",
-    name: "НИЯУ МИФИ",
-    program: "Информационная безопасность",
-    partner: "Solar",
-    city: "Москва",
-    initials: "МС",
-    owner: "Мария Смирнова",
-    updated: "Сегодня, 11:20",
-    segments: 6,
-  },
-  {
-    id: "itmo",
-    badge: "ИТМО",
-    name: "ИТМО",
-    program: "Облачные технологии",
-    partner: "Облако",
-    city: "Санкт-Петербург",
-    initials: "ДС",
-    owner: "Дмитрий Соколов",
-    updated: "Вчера, 17:30",
-    segments: 9,
-  },
-];
-
-const STEPS = [
-  "Поиск контактов",
-  "Коммуникация с вузом",
-  "Встреча с представителями",
-  "Обмен документами",
-  "Корректировка документов",
-  "Подписание документов",
-  "Материалы, лицензия и документы",
-  "Сопровождение внедрения",
-  "Обучение преподавателей",
-  "Актуализация учебной программы",
-  "Ведение занятий",
-  "Актуализация документации",
-  "Повышение квалификации",
-  "Контроль исполнения этапов",
-];
-
-const FILTERS = [
-  "ИТ-направление",
-  "ИТ-продукт",
-  "Статус",
-  "Ответственный КАМ",
-  "Ещё фильтры",
-];
-
-const DEADLINE_STATUSES = {
-  Просрочено: "Просрочено",
-  Горящие: "Горящий срок",
-  Плановые: "Планово",
-};
-
-function Detail({
-  manager,
-  onAction,
-  canCompleteStage = false,
-}) {
-  return (
-    <div className="wu-detail">
-      <aside className="wu-workflow">
-        <h3>Этапы взаимодействия</h3>
-
-        <p className="wu-muted wu-small">
-          Текущий этап: 08
-        </p>
-
-        <ol className="wu-steps">
-          {STEPS.map((step, index) => (
-            <li
-              key={step}
-              className={
-                index < 7
-                  ? "is-done"
-                  : index === 7
-                    ? "is-current"
-                    : ""
-              }
-            >
-              <span className="wu-step-dot">
-                {index < 7 ? "✓" : ""}
-              </span>
-
-              <div>
-                <p>
-                  {String(index + 1).padStart(2, "0")}. {step}
-                </p>
-
-                {index < 7 && (
-                  <small>
-                    Завершено{" "}
-                    {String(index + 2).padStart(2, "0")}.09.2026
-                  </small>
-                )}
-
-                {index === 7 && (
-                  <small>
-                    Текущий этап
-                    <br />
-                    До 20 сентября
-                  </small>
-                )}
-              </div>
-            </li>
-          ))}
-        </ol>
-      </aside>
-
-      <div className="wu-detail-main">
-        <section className="wu-stage">
-          <div className="wu-stage-top">
-            <span className="wu-muted wu-small">
-              Этап 08
-            </span>
-
-            <span className="wu-status">
-              ● В работе
-            </span>
-          </div>
-
-          <h2>Сопровождение внедрения</h2>
-
-          <p className="wu-muted wu-stage-deadline">
-            до 20 сентября 2026
-          </p>
-
-          {manager ? (
-            <label className="wu-owner-field">
-              <span className="wu-muted wu-small">
-                Ответственный КАМ
-              </span>
-
-              <select
-                defaultValue="Александр Иванов"
-                onChange={(event) =>
-                  onAction?.("change-owner", {
-                    id: "bmstu",
-                    owner: event.target.value,
-                  })
-                }
-              >
-                {INTERACTIONS.map(({ owner }) => (
-                  <option key={owner} value={owner}>
-                    {owner}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <p className="wu-responsible">
-              Ответственный — Александр Иванов
-            </p>
-          )}
-
-          <dl className="wu-meta">
-            {[
-              ["Начало", "12 сентября 2026"],
-              ["Срок", "20 сентября 2026"],
-              ["Последнее изменение", "Сегодня, 12:45"],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <section className="wu-contact wu-box">
-          <h3>Контакты вуза</h3>
-
-          <p>
-            {manager ? "Мария Сергеева" : "М*** С***"}
-          </p>
-
-          <dl>
-            <div>
-              <dt>Телефон</dt>
-              <dd>
-                {manager
-                  ? "+7 999 123-45-41"
-                  : "+7 *** ***-**-41"}
-              </dd>
-            </div>
-
-            <div>
-              <dt>Почта</dt>
-              <dd>
-                {manager
-                  ? "m.sergeeva@bmstu.ru"
-                  : "m***@bmstu.ru"}
-              </dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="wu-conditions wu-box">
-          <h3>Условия завершения</h3>
-
-          <p>✓ Получены необходимые материалы</p>
-          <p>✓ Прикреплён обязательный документ</p>
-
-          <p>
-            {canCompleteStage ? "✓" : "○"} Подтверждено
-            целевое действие
-          </p>
-        </section>
-
-        <section className="wu-comments">
-          <h3>Комментарии</h3>
-
-          <div className="wu-comment">
-            <span className="wr-avatar">АИ</span>
-
-            <div>
-              <p>
-                Александр Иванов
-                <small className="wu-muted">
-                  Сегодня, 12:45
-                </small>
-              </p>
-
-              <p>
-                Получены технические материалы от вуза.
-                Необходимо подтвердить дату начала внедрения.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="wu-files">
-          <h3>Файлы</h3>
-
-          <div className="wu-file wu-box">
-            <img
-              src={pdfIcon}
-              alt=""
-              width="15"
-              height="23"
-            />
-
-            <div>
-              <p>Документация_внедрения.pdf</p>
-
-              <small className="wu-muted">
-                PDF • 2,4 МБ • сегодня, 11:20
-              </small>
-            </div>
-
-            <button
-              type="button"
-              className="wu-download"
-              aria-label="Скачать Документация_внедрения.pdf"
-              onClick={() => onAction?.("download", "bmstu")}
-            >
-              <img src={downloadIcon} alt="" />
-            </button>
-          </div>
-        </section>
-
-        <p
-          className="wu-completion-note wu-muted wu-small"
-          style={{
-            visibility: canCompleteStage ? "hidden" : "visible",
-          }}
-          aria-hidden={canCompleteStage}
-        >
-          Выполните все обязательные условия этапа
-        </p>
-
-        <div className="wu-detail-actions">
-          <button
-            type="button"
-            className="wu-button"
-            onClick={() => onAction?.("comment", "bmstu")}
-          >
-            + Комментарий
-          </button>
-
-          <button
-            type="button"
-            className="wu-button"
-            onClick={() => onAction?.("file", "bmstu")}
-          >
-            + Файл
-          </button>
-
-          <button
-            type="button"
-            className="wu-button wu-primary"
-            disabled={!canCompleteStage}
-            onClick={() =>
-              onAction?.("complete-stage", "bmstu")
-            }
-            style={{
-              opacity: canCompleteStage ? 1 : 0.4,
-            }}
-          >
-            Завершить этап
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function WorkRegionUser({
   manager = false,
-  children,
-  onAction,
+  empty = false,
+  onLogout,
   canCompleteStage = false,
 }) {
   const { theme } = useAppTheme();
 
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState(true);
-  const [deadlineTab, setDeadlineTab] = useState("Все");
-
-  function changeTheme(value) {
-    const dark =
-      typeof value === "function"
-        ? value(theme === "dark")
-        : value;
-
-    setAppTheme(dark ? "dark" : "light");
-  }
-
-  const normalizedSearch = search
-    .trim()
-    .toLocaleLowerCase("ru");
-
-  const filteredInteractions = INTERACTIONS.filter((item) =>
-    [
-      item.name,
-      item.program,
-      item.partner,
-      item.city,
-      item.owner,
-    ]
-      .join(" ")
-      .toLocaleLowerCase("ru")
-      .includes(normalizedSearch),
+  const [data, setData] = useState(() =>
+    empty
+      ? { interactions: [], incoming: [], total: 0 }
+      : readMemory() || {
+          interactions: createInteractions(),
+          incoming: INCOMING_DEMO,
+          total: 24,
+        },
   );
 
-  const visibleDeadlines = DEADLINES.filter(
-    (item) =>
-      deadlineTab === "Все" ||
-      item[3] === DEADLINE_STATUSES[deadlineTab],
+  const [storedFilters, setFilters] = usePreference(
+    "workspace:filters:v2",
+    INITIAL_FILTERS,
+  );
+
+  const filters = {
+    ...INITIAL_FILTERS,
+    ...storedFilters,
+  };
+
+  const [tab, setTab] = usePreference(
+    "workspace:tab",
+    "process",
+  );
+
+  const [openId, setOpenId] = useState("bmstu");
+  const [deadlineTab, setDeadlineTab] = useState("Все");
+  const [modal, setModal] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const [topBusy, setTopBusy] = useState("");
+
+  const topLock = useRef(false);
+  const timer = useRef(null);
+
+  const closeNotice = useCallback(() => setNotice(null), []);
+
+  const notify = useCallback(
+    (text, error = false) =>
+      setNotice({ id: uid(), text, error }),
+    [],
+  );
+
+  useEffect(() => {
+    if (!empty) writeMemory(data);
+  }, [data, empty]);
+
+  useEffect(
+    () => () => clearTimeout(timer.current),
+    [],
+  );
+
+  useEffect(() => {
+    function outside(event) {
+      document
+        .querySelectorAll(".aw details[open]")
+        .forEach((node) => {
+          if (!node.contains(event.target)) {
+            node.removeAttribute("open");
+          }
+        });
+    }
+
+    function escape(event) {
+      if (event.key !== "Escape") return;
+
+      document
+        .querySelectorAll(".aw details[open]")
+        .forEach((node) => {
+          node.removeAttribute("open");
+          node.querySelector("summary")?.focus();
+        });
+    }
+
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, []);
+
+  const visible = data.interactions.filter((item) =>
+    matches(item, filters),
+  );
+
+  const filtered = hasFilters(filters);
+
+  const currentItem = modal?.id
+    ? data.interactions.find((item) => item.id === modal.id)
+    : null;
+
+  function patch(id, update) {
+    setData((current) => ({
+      ...current,
+      interactions: current.interactions.map((item) =>
+        item.id === id ? update(item) : item,
+      ),
+    }));
+  }
+
+  function owner(id, value) {
+    patch(id, (item) => ({
+      ...item,
+      owner: value,
+      changed: now(),
+    }));
+
+    notify("Ответственный КАМ изменён.");
+  }
+
+  function condition(id, index, value) {
+    patch(id, (item) => {
+      const current = item.stages[item.stage] || stageData();
+
+      return {
+        ...item,
+        stages: {
+          ...item.stages,
+          [item.stage]: {
+            ...current,
+            conditions: current.conditions.map(
+              (conditionValue, conditionIndex) =>
+                conditionIndex === index
+                  ? value
+                  : conditionValue,
+            ),
+          },
+        },
+      };
+    });
+  }
+
+  function open(kind, payload = {}) {
+    setModal({
+      kind,
+      ...payload,
+      key: uid(),
+    });
+  }
+
+  function download(file) {
+    if (!file.blob) {
+      notify(
+        "В макете нет содержимого этого файла. " +
+          "Для скачивания прикрепите файл с компьютера.",
+        true,
+      );
+      return;
+    }
+
+    const url = URL.createObjectURL(file.blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = file.name;
+
+    document.body.append(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function topAction(kind) {
+    if (topLock.current) return;
+
+    topLock.current = true;
+    setTopBusy(kind);
+
+    timer.current = setTimeout(() => {
+      topLock.current = false;
+      setTopBusy("");
+
+      notify(
+        kind === "site"
+          ? "В демонстрационном наборе новых заявок нет."
+          : "В демонстрационном режиме подключение к LMS не выполняется.",
+      );
+    }, 450);
+  }
+
+  function submit(form) {
+    const currentModal = modal;
+    const time = now();
+    const author = OWNERS[0];
+
+    if (
+      currentModal.kind === "accept" ||
+      currentModal.kind === "reject"
+    ) {
+      const accepted = currentModal.kind === "accept";
+
+      setData((current) => ({
+        ...current,
+        incoming: current.incoming.filter(
+          (request) =>
+            request.id !== currentModal.request.id,
+        ),
+        total: current.total + (accepted ? 1 : 0),
+        interactions: accepted
+          ? [
+              ...current.interactions,
+              newInteraction(
+                currentModal.request.name,
+                currentModal.request.program,
+                form.owner,
+                currentModal.request.source === "CMS" ? 2 : 1,
+              ),
+            ]
+          : current.interactions,
+      }));
+    } else if (currentModal.kind === "create") {
+      if (manager) {
+        setData((current) => ({
+          ...current,
+          total: current.total + 1,
+          interactions: [
+            ...current.interactions,
+            newInteraction(
+              form.institution,
+              form.direction,
+              author,
+            ),
+          ],
+        }));
+      } else {
+        setData((current) => ({
+          ...current,
+          incoming: [
+            ...current.incoming,
+            {
+              id: uid(),
+              source: "КАМ",
+              name: form.institution,
+              program: form.direction,
+              initiator: author,
+              createdAt: time,
+              time: "Только что",
+              details: [],
+            },
+          ],
+        }));
+      }
+    } else {
+      patch(currentModal.id, (item) => {
+        const current =
+          item.stages[item.stage] || stageData();
+
+        if (currentModal.kind === "edit") {
+          return {
+            ...item,
+            owner: manager ? form.owner : item.owner,
+            changed: time,
+            contract: {
+              vendor: form.vendor || "",
+              software: form.software || "",
+              number: form.number || "",
+              licenseEnd: form.licenseEnd || "",
+              signed: form.signed,
+              transfer: form.transfer,
+            },
+            contact: manager ? form.contact : item.contact,
+          };
+        }
+
+        if (currentModal.kind === "rollback") {
+          return moveStage(
+            item,
+            item.stage - 1,
+            "Возврат на доработку: " + form.comment.trim(),
+            author,
+          );
+        }
+
+        if (currentModal.kind === "complete") {
+          if (
+            (!canCompleteStage &&
+              !current.conditions.every(Boolean)) ||
+            !current.files.length
+          ) {
+            return item;
+          }
+
+          if (item.stage < 14) {
+            return moveStage(
+              item,
+              item.stage + 1,
+              form.comment.trim(),
+              author,
+            );
+          }
+
+          const finished = {
+            ...current,
+            completedAt: time,
+            comments: [
+              ...current.comments,
+              {
+                id: uid(),
+                author,
+                text: form.comment.trim(),
+                at: time,
+              },
+            ],
+          };
+
+          return {
+            ...item,
+            done: true,
+            changed: time,
+            stages: {
+              ...item.stages,
+              14: finished,
+            },
+            history: [
+              ...item.history,
+              {
+                ...finished,
+                stage: 14,
+                contract: { ...item.contract },
+                owner: item.owner,
+                at: time,
+                outcome: "completed",
+              },
+            ],
+          };
+        }
+
+        let next = current;
+        let contract = item.contract;
+
+        if (currentModal.kind === "comment") {
+          next = {
+            ...current,
+            comments: [
+              ...current.comments,
+              {
+                id: uid(),
+                author,
+                text: form.comment.trim(),
+                at: time,
+              },
+            ],
+          };
+        }
+
+        if (currentModal.kind === "file") {
+          next = {
+            ...current,
+            files: [
+              ...current.files,
+              {
+                id: uid(),
+                name: form.file.name,
+                size: form.file.size,
+                blob: form.file,
+                at: time,
+                type: form.documentType,
+              },
+            ],
+            conditions: current.conditions.map(
+              (value, index) => (index === 1 ? true : value),
+            ),
+          };
+
+          if (form.documentType === "license") {
+            contract = {
+              ...contract,
+              number: form.number || "",
+              licenseEnd: form.licenseEnd || "",
+              signed: form.signed,
+              transfer: form.transfer,
+            };
+          }
+
+          if (form.comment.trim()) {
+            next.comments = [
+              ...next.comments,
+              {
+                id: uid(),
+                author,
+                text: form.comment.trim(),
+                at: time,
+              },
+            ];
+          }
+        }
+
+        if (currentModal.kind === "delete") {
+          const files = current.files.filter(
+            (file) => file.id !== currentModal.file.id,
+          );
+
+          next = {
+            ...current,
+            files,
+            conditions: current.conditions.map(
+              (value, index) =>
+                index === 1 ? files.length > 0 : value,
+            ),
+          };
+        }
+
+        return {
+          ...item,
+          changed: time,
+          contract,
+          stages: {
+            ...item.stages,
+            [item.stage]: next,
+          },
+        };
+      });
+    }
+
+    setModal(null);
+
+    notify(
+      {
+        edit: "Параметры обновлены.",
+        rollback: "Взаимодействие возвращено на предыдущий этап.",
+        complete: "Этап завершён.",
+        comment: "Комментарий добавлен.",
+        file: "Документ прикреплён.",
+        delete: "Файл удалён из этапа.",
+        accept: "Заявка принята в работу.",
+        reject: "Заявка отклонена.",
+        create: manager
+          ? "Партнёрство создано."
+          : "Заявка отправлена руководителю.",
+      }[currentModal.kind],
+    );
+  }
+
+  const baseline = empty
+    ? [0, 0, 0, 0]
+    : manager
+      ? [24, 6, 2, 8]
+      : [8, 2, 1, 3];
+
+  const completedCount = data.interactions.filter(
+    (item) => item.done,
+  ).length;
+
+  const processValues = !data.interactions.length
+    ? [0, 0, 0, 0]
+    : filtered
+      ? [
+          visible.filter((item) => !item.done).length,
+          visible.filter(
+            (item) => item.status === "Требует внимания",
+          ).length,
+          visible.filter(
+            (item) => item.status === "Просрочено",
+          ).length,
+          visible.filter((item) => item.done).length,
+        ]
+      : [
+          baseline[0] +
+            data.interactions.length -
+            (empty ? 0 : 3) -
+            completedCount,
+          baseline[1],
+          baseline[2],
+          baseline[3] + completedCount,
+        ];
+
+  const learningValues = !data.interactions.length
+    ? [0, 0, 0, "0 / 0"]
+    : filtered
+      ? ["—", "—", "—", "—"]
+      : manager
+        ? [1284, 376, 18, "42 / 50"]
+        : [320, 96, 4, "8 / 12"];
+
+  const cards =
+    tab === "process"
+      ? [
+          ["В работе", "взаимодействия"],
+          ["Требуют внимания", "взаимодействий"],
+          ["Просрочено", "взаимодействия"],
+          ["Завершено за месяц", "взаимодействий"],
+        ]
+      : [
+          ["Студентов на обучении", "студента"],
+          ["Заявок с сайта", "заявок"],
+          ["Параллельных потоков", "потоков"],
+          ["Активные лицензии ПО", ""],
+        ];
+
+  const values =
+    tab === "process" ? processValues : learningValues;
+
+  function detail(item, stage) {
+    const displayItem = canCompleteStage
+      ? {
+          ...item,
+          stages: {
+            ...item.stages,
+            [item.stage]: {
+              ...(item.stages[item.stage] || stageData()),
+              conditions: [true, true, true],
+            },
+          },
+        }
+      : item;
+
+    return (
+      <InteractionDetail
+        key={item.id + ":" + item.stage}
+        item={displayItem}
+        initialStage={stage}
+        manager={manager}
+        onAction={open}
+        onOwner={owner}
+        onCondition={condition}
+        onDownload={download}
+      />
+    );
+  }
+
+  const deadlines = DEADLINES.filter(
+    ([id, , , , status]) =>
+      visible.some((item) => item.id === id && !item.done) &&
+      (deadlineTab === "Все" ||
+        status ===
+          {
+            Просрочено: "Просрочено",
+            Горящие: "Горящий срок",
+            Плановые: "Планово",
+          }[deadlineTab]),
   );
 
   return (
-    <div
-      className={`work-region wu${
-        manager ? " wu-manager" : ""
-      }`}
-      data-theme={theme}
-    >
-      <Header
-        activePage="Главная"
-        profileOpen={profileOpen}
-        setProfileOpen={setProfileOpen}
-        dark={theme === "dark"}
-        setDark={changeTheme}
-      />
+    <div className="aw" data-theme={theme}>
+      <Header activePage="Главная" onLogout={onLogout} />
 
-      <main className="wu-page">
-        <div className="wu-heading">
-          <h1>Рабочая область</h1>
+      <main className="aw-page">
+        <div className="aw-heading">
+          <div>
+            <h1>Рабочая область</h1>
+            <p className="at-muted">
+              Контроль взаимодействий и текущих этапов работы
+            </p>
+          </div>
 
-          <p className="wu-muted">
-            Контроль взаимодействий и текущих этапов работы
-          </p>
-        </div>
-
-        <div className="wu-top-actions">
-          <button
-            type="button"
-            className="wu-button"
-            onClick={() => onAction?.("site-request")}
-          >
-            Получить заявку с сайта
-          </button>
-
-          <button
-            type="button"
-            className="wu-button"
-            onClick={() => onAction?.("sync-lms")}
-          >
-            Синхронизировать с LMS
-          </button>
-        </div>
-
-        <div className="wu-toolbar">
-          <input
-            type="text"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Найти учреждение, направление или ИТ-продукт..."
-            aria-label="Поиск взаимодействий"
-          />
-
-          {FILTERS.map((label) => (
+          <div className="aw-top-actions">
             <button
               type="button"
-              className="wu-button wu-filter"
-              key={label}
-              onClick={(event) =>
-                onAction?.(
-                  "filter",
-                  label,
-                  event.currentTarget,
-                )
-              }
+              className="at-button"
+              disabled={Boolean(topBusy)}
+              onClick={() => topAction("site")}
             >
-              {label}
-              <span
-                className="wu-chevron"
-                aria-hidden="true"
-              />
+              {topBusy === "site"
+                ? "Получение заявки…"
+                : "Получить заявку с сайта"}
             </button>
-          ))}
-        </div>
 
-        <div className="wu-tabs wu-main-tabs">
-          <button
-            type="button"
-            className="is-active"
-            aria-pressed={true}
-          >
-            Процессы
-          </button>
-
-          <button
-            type="button"
-            aria-pressed={false}
-            onClick={() => onAction?.("learning-products")}
-          >
-            Обучение и продукты
-          </button>
-        </div>
-
-        <div className="wu-stats">
-          {[
-            ["В работе", 24, "взаимодействия", ""],
-            [
-              "Требуют внимания",
-              6,
-              "взаимодействий",
-              "attention",
-            ],
-            ["Просрочено", 2, "взаимодействия", "overdue"],
-            ["Завершено за месяц", 8, "взаимодействий", ""],
-          ].map(([title, count, label, status]) => (
-            <section
-              className="wu-panel wu-stat"
-              key={title}
+            <button
+              type="button"
+              className="at-button"
+              disabled={Boolean(topBusy)}
+              onClick={() => topAction("lms")}
             >
-              <p className="wu-muted">{title}</p>
+              {topBusy === "lms"
+                ? "Синхронизация…"
+                : "Синхронизировать с LMS"}
+            </button>
+          </div>
+        </div>
+
+        <WorkspaceFilters
+          value={filters}
+          onChange={setFilters}
+          interactions={data.interactions}
+        />
+
+        <Tabs
+          value={tab}
+          options={[
+            ["process", "Процессы"],
+            ["learning", "Обучение и продукты"],
+          ]}
+          onChange={setTab}
+        />
+
+        <div className="aw-stats">
+          {cards.map(([label, unit], index) => (
+            <section className="aw-panel aw-stat" key={label}>
+              <p className="at-muted">{label}</p>
 
               <div>
-                <strong className={status}>
-                  {count}
-                </strong>
-                <small className="wu-muted">
-                  {label}
-                </small>
+                <strong
+                  className={
+                    tab === "process" && index === 1
+                      ? "aw-accent"
+                      : tab === "process" && index === 2
+                        ? "aw-danger"
+                        : ""
+                  }
+                >
+                  {typeof values[index] === "number"
+                    ? values[index].toLocaleString("ru-RU")
+                    : values[index]}
+                </strong>{" "}
+                <small className="at-muted">{unit}</small>
               </div>
+
+              {tab === "learning" && index === 3 && !filtered && (
+                <div className="aw-track">
+                  <i
+                    style={{
+                      width: data.interactions.length
+                        ? manager
+                          ? "84%"
+                          : "66.67%"
+                        : "0%",
+                    }}
+                  />
+                </div>
+              )}
             </section>
           ))}
         </div>
 
-        <div className="wu-dashboard">
-          <WorkspaceChart />
+        <div className="aw-dashboard">
+          <WorkspaceChart
+            filters={filters}
+            manager={manager}
+            empty={!data.interactions.length}
+            notify={notify}
+          />
 
-          <section className="wu-panel wu-deadlines">
-            <div className="wu-panel-head">
+          <section className="aw-panel aw-deadlines">
+            <div className="aw-box-head">
               <h3>Ближайшие сроки</h3>
-
-              <button
-                type="button"
-                className="wu-link"
-                onClick={() => onAction?.("deadlines")}
+              <a
+                className="aw-link aw-accent"
+                href="#/calendar"
               >
                 Все →
-              </button>
+              </a>
             </div>
 
-            <div className="wu-tabs">
-              {[
+            <Tabs
+              value={deadlineTab}
+              options={[
                 "Все",
                 "Просрочено",
                 "Горящие",
                 "Плановые",
-              ].map((label) => (
-                <button
-                  type="button"
-                  key={label}
-                  className={
-                    deadlineTab === label ? "is-active" : ""
-                  }
-                  aria-pressed={deadlineTab === label}
-                  onClick={() => setDeadlineTab(label)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+              ].map((label) => [label, label])}
+              onChange={setDeadlineTab}
+            />
 
-            <div className="wu-deadline-list">
-              {visibleDeadlines.map(
-                ([date, name, stage, status]) => (
-                  <div className="wu-deadline" key={name}>
-                    <p className="wu-muted">{date}</p>
-                    <p>{name}</p>
-                    <p className="wu-muted">{stage}</p>
-
-                    <span
-                      className="wu-deadline-status"
-                      data-status={status}
-                    >
-                      {status}
-                    </span>
-                  </div>
-                ),
-              )}
-            </div>
+            {deadlines.length ? (
+              deadlines.map(([id, date, name, stage, status]) => (
+                <div className="aw-deadline" key={id}>
+                  <small className="at-muted">{date}</small>
+                  <strong>{name}</strong>
+                  <small className="at-muted">{stage}</small>
+                  <span data-status={status}>{status}</span>
+                </div>
+              ))
+            ) : (
+              <Empty title="Ближайших сроков пока нет">
+                События появятся после создания взаимодействий.
+              </Empty>
+            )}
           </section>
         </div>
 
-        {children}
+        <WorkspaceChart
+          kind="kam"
+          filters={filters}
+          manager={manager}
+          empty={!data.interactions.length}
+          notify={notify}
+        />
 
-        <div className="wu-list-heading">
+        {manager && (
+          <IncomingRequests
+            requests={data.incoming}
+            onAccept={(request) => open("accept", { request })}
+            onReject={(request) => open("reject", { request })}
+          />
+        )}
+
+        <div className="aw-section-title aw-registry-title">
           <h2>Взаимодействия</h2>
 
-          <span className="wu-muted wu-small">
-            24 записи
+          <span className="at-muted">
+            {recordLabel(filtered ? visible.length : data.total)}
           </span>
 
           <button
             type="button"
-            className="wu-button"
-            onClick={() => onAction?.("create-partnership")}
+            className="at-button"
+            onClick={() => open("create")}
           >
             + Создать партнёрство
           </button>
         </div>
 
-        <div className="wu-interactions">
-          {filteredInteractions.map((item) => {
-            const open = item.id === "bmstu" && expanded;
-
-            return (
-              <article
-                className={`wu-card${
-                  open ? " is-expanded" : ""
-                }`}
-                key={item.id}
-              >
+        <div className="aw-interactions">
+          {visible.map((item) => (
+            <article
+              className="aw-panel aw-interaction"
+              key={item.id}
+            >
+              <div className="aw-summary">
                 <button
                   type="button"
-                  className="wu-summary"
-                  aria-expanded={open}
-                  onClick={() => {
-                    if (item.id === "bmstu") {
-                      setExpanded((value) => !value);
-                    } else {
-                      onAction?.("open-interaction", item.id);
-                    }
-                  }}
+                  className="aw-org"
+                  onClick={() =>
+                    setOpenId(openId === item.id ? null : item.id)
+                  }
+                  aria-expanded={openId === item.id}
                 >
-                  <span className="wu-organisation">
-                    <span className="wu-badge">
-                      {item.badge}
-                    </span>
+                  <span className="aw-badge">{item.badge}</span>
 
-                    <span>
-                      <strong>{item.name}</strong>
-                      <span>{item.program}</span>
-
-                      <small className="wu-muted">
-                        {item.partner} • {item.city}
-                      </small>
-                    </span>
+                  <span>
+                    <strong>{item.name}</strong>
+                    <span>{item.direction}</span>
+                    <small className="at-muted">{item.city}</small>
                   </span>
-
-                  <span className="wu-progress">
-                    <span
-                      className="wu-segments"
-                      aria-hidden="true"
-                    >
-                      {Array.from(
-                        { length: STEPS.length },
-                        (_, index) => (
-                          <i
-                            key={index}
-                            className={
-                              index < item.segments - 1
-                                ? "is-done"
-                                : index === item.segments - 1
-                                  ? "is-current"
-                                  : ""
-                            }
-                          />
-                        ),
-                      )}
-                    </span>
-
-                    <small className="wu-muted">
-                      Текущий этап:{" "}
-                      {String(item.segments).padStart(2, "0")}
-                    </small>
-
-                    <span>
-                      {STEPS[item.segments - 1]}
-                    </span>
-                  </span>
-
-                  <span className="wu-summary-owner">
-                    <small className="wu-muted">
-                      Ответственный
-                    </small>
-
-                    <span>
-                      <span className="wr-avatar">
-                        {item.initials}
-                      </span>
-                      {item.owner}
-                    </span>
-
-                    <small className="wu-muted">
-                      {item.updated}
-                    </small>
-                  </span>
-
-                  <span
-                    className={`wu-chevron${
-                      open ? " is-up" : ""
-                    }`}
-                    aria-hidden="true"
-                  />
                 </button>
 
-                {open && (
-                  <Detail
-                    manager={manager}
-                    onAction={onAction}
-                    canCompleteStage={canCompleteStage}
-                  />
-                )}
-              </article>
-            );
-          })}
+                <div className="aw-progress">
+                  <div className="aw-segments">
+                    {STEPS.map((step, index) => (
+                      <i
+                        key={step}
+                        className={
+                          item.done || index < item.stage - 1
+                            ? "done"
+                            : index === item.stage - 1
+                              ? "current"
+                              : ""
+                        }
+                      />
+                    ))}
+                  </div>
 
-          {!filteredInteractions.length && (
-            <p className="wu-muted">
-              По вашему запросу взаимодействий не найдено.
-            </p>
-          )}
+                  <small className="at-muted">
+                    Текущий этап:{" "}
+                    {String(item.stage).padStart(2, "0")}
+                  </small>
+
+                  <span>{STEPS[item.stage - 1]}</span>
+                </div>
+
+                <div className="aw-summary-owner">
+                  <small className="at-muted">
+                    Ответственный{manager ? " КАМ" : ""}
+                  </small>
+
+                  {manager ? (
+                    <Select
+                      label="Ответственный КАМ"
+                      value={item.owner}
+                      options={[
+                        ...OWNERS,
+                        { value: "", label: "Не назначен" },
+                      ]}
+                      onChange={(value) => owner(item.id, value)}
+                    />
+                  ) : (
+                    <strong>{item.owner || "Не назначен"}</strong>
+                  )}
+
+                  <small className="at-muted">
+                    {dateLabel(item.changed)}
+                  </small>
+                </div>
+
+                <button
+                  type="button"
+                  className="at-icon"
+                  aria-label={
+                    openId === item.id
+                      ? "Свернуть взаимодействие"
+                      : "Раскрыть взаимодействие"
+                  }
+                  aria-expanded={openId === item.id}
+                  onClick={() =>
+                    setOpenId(openId === item.id ? null : item.id)
+                  }
+                >
+                  {openId === item.id ? "⌃" : "⌄"}
+                </button>
+              </div>
+
+              {openId === item.id && detail(item)}
+            </article>
+          ))}
         </div>
+
+        {!visible.length && (
+          <Empty
+            title={
+              data.interactions.length
+                ? "Взаимодействия не найдены"
+                : "Взаимодействий пока нет"
+            }
+          >
+            {data.interactions.length
+              ? "Измените параметры фильтрации."
+              : "Создайте партнёрство или получите данные из внешней системы, чтобы начать работу."}
+          </Empty>
+        )}
       </main>
+
+      {modal?.kind === "detail" && currentItem && (
+        <Dialog
+          title={currentItem.name + " · " + currentItem.direction}
+          wide
+          onClose={() => setModal(null)}
+        >
+          {detail(currentItem, modal.stage)}
+        </Dialog>
+      )}
+
+      {modal && modal.kind !== "detail" && (
+        <WorkspaceModal
+          key={modal.key}
+          modal={modal}
+          item={currentItem}
+          manager={manager}
+          institutions={INSTITUTIONS}
+          onClose={() => setModal(null)}
+          onSubmit={submit}
+        />
+      )}
+
+      <Toast notice={notice} onClose={closeNotice} />
     </div>
   );
 }
