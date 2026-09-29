@@ -16,121 +16,7 @@ import {
 import { downloadChart } from "./chartExport";
 import downloadIcon from "../../assets/download.svg";
 
-export const INCOMING_DEMO = [
-  {
-    id: "bmstu-request",
-    source: "CMS",
-    name: "МГТУ им. Н. Э. Баумана",
-    program: "DevOps",
-    createdAt: "2026-09-27T14:32:00+03:00",
-    time: "Сегодня, 14:32",
-    initiator: "Мария Сергеева",
-    details: [
-      ["Телефон", "+7 999 123-45-67"],
-      ["Почта", "m.sergeeva@bmstu.ru"],
-      ["Студентов", "120"],
-    ],
-  },
-  {
-    id: "itmo-request",
-    source: "КАМ",
-    name: "Университет ИТМО",
-    program: "Облачные технологии",
-    createdAt: "2026-09-27T13:10:00+03:00",
-    time: "Сегодня, 13:10",
-    initiator: "Александр Иванов",
-    details: [
-      ["Контакт вуза", "Елена Петрова"],
-      ["Телефон", "+7 921 555-20-14"],
-      ["Почта", "e.petrova@itmo.ru"],
-      ["Студентов", "80"],
-    ],
-  },
-  {
-    id: "mephi-request",
-    source: "CMS",
-    name: "НИЯУ МИФИ",
-    program: "Информационная безопасность",
-    createdAt: "2026-09-27T12:45:00+03:00",
-    time: "Сегодня, 12:45",
-    initiator: "Анна Кузнецова",
-    details: [
-      ["Телефон", "+7 916 234-18-52"],
-      ["Почта", "a.kuznetsova@mephi.ru"],
-    ],
-  },
-  {
-    id: "innopolis-request",
-    source: "CMS",
-    name: "Университет Иннополис",
-    program: "Data Science",
-    createdAt: "2026-09-27T11:20:00+03:00",
-    time: "Сегодня, 11:20",
-    initiator: "Сергей Орлов",
-    details: [
-      ["Телефон", "+7 917 456-30-21"],
-      ["Почта", "s.orlov@innopolis.ru"],
-      ["Студентов", "60"],
-    ],
-  },
-  {
-    id: "spbstu-request",
-    source: "CMS",
-    name: "СПбПУ Петра Великого",
-    program: "QA",
-    createdAt: "2026-09-26T16:40:00+03:00",
-    time: "Вчера, 16:40",
-    initiator: "Ольга Васильева",
-    details: [
-      ["Телефон", "+7 921 456-70-22"],
-      ["Почта", "o.vasileva@spbstu.ru"],
-      ["Студентов", "45"],
-    ],
-  },
-  {
-    id: "hse-request",
-    source: "КАМ",
-    name: "НИУ ВШЭ",
-    program: "DevOps",
-    createdAt: "2026-09-26T15:15:00+03:00",
-    time: "Вчера, 15:15",
-    initiator: "Дмитрий Соколов",
-    details: [
-      ["Контакт вуза", "Наталья Соколова"],
-      ["Телефон", "+7 916 678-40-35"],
-      ["Почта", "n.sokolova@hse.ru"],
-      ["Студентов", "90"],
-    ],
-  },
-  {
-    id: "tpu-request",
-    source: "CMS",
-    name: "Томский политехнический университет",
-    program: "Облачные технологии",
-    createdAt: "2026-09-26T10:05:00+03:00",
-    time: "Вчера, 10:05",
-    initiator: "Ирина Михайлова",
-    details: [
-      ["Телефон", "+7 913 789-12-30"],
-      ["Почта", "i.mihailova@tpu.ru"],
-    ],
-  },
-  {
-    id: "kpfu-request",
-    source: "КАМ",
-    name: "Казанский федеральный университет",
-    program: "Информационная безопасность",
-    createdAt: "2026-09-22T17:25:00+03:00",
-    time: "22 сентября, 17:25",
-    initiator: "Александр Иванов",
-    details: [
-      ["Контакт вуза", "Елена Волкова"],
-      ["Телефон", "+7 917 123-80-40"],
-      ["Почта", "e.volkova@kpfu.ru"],
-      ["Студентов", "100"],
-    ],
-  },
-];
+export const INCOMING_DEMO = [];
 
 const DEMAND = [
   {
@@ -171,47 +57,11 @@ const DEMAND = [
   },
 ];
 
-const KAM = [
-  {
-    id: "launches",
-    tab: "Запуски",
-    unit: "Запуски программ · количество",
-    rows: [
-      ["Иванов А.А.", 14],
-      ["Смирнова М.С.", 11],
-      ["Соколов Д.В.", 9],
-    ],
-  },
-  {
-    id: "active",
-    tab: "В активной работе",
-    unit: "Взаимодействия в активной работе",
-    rows: [
-      ["Соколов Д.В.", 28],
-      ["Иванов А.А.", 24],
-      ["Смирнова М.С.", 19],
-    ],
-  },
-  {
-    id: "overdue",
-    tab: "SLA / просрочки",
-    unit: "Просрочки · меньше — лучше",
-    rows: [
-      ["Смирнова М.С.", 1],
-      ["Иванов А.А.", 2],
-      ["Соколов Д.В.", 4],
-    ],
-  },
-  {
-    id: "speed",
-    tab: "Скорость прохождения",
-    unit: "Медиана прохождения этапа, дни · меньше — лучше",
-    rows: [
-      ["Соколов Д.В.", 4.8],
-      ["Смирнова М.С.", 5.6],
-      ["Иванов А.А.", 6.2],
-    ],
-  },
+const KAM_TABS = [
+  { id: "launches", tab: "Запуски", unit: "Запуски программ · количество" },
+  { id: "active", tab: "В активной работе", unit: "Взаимодействия в активной работе" },
+  { id: "overdue", tab: "SLA / просрочки", unit: "Просрочки · меньше — лучше" },
+  { id: "speed", tab: "Скорость прохождения", unit: "Медиана прохождения этапа, дни · меньше — лучше" },
 ];
 
 const SORTS = [
@@ -222,16 +72,14 @@ const SORTS = [
 ];
 
 export function sortRequests(requests, mode) {
-  return requests
+  return (requests || [])
     .map((item, index) => ({ item, index }))
     .sort((a, b) => {
       if (mode === "kam" || mode === "cms") {
         const source = mode === "kam" ? "КАМ" : "CMS";
-
         const group =
           Number(b.item.source === source) -
           Number(a.item.source === source);
-
         if (group) return group;
       }
 
@@ -361,8 +209,9 @@ export function WorkspaceChart({
   manager = true,
   empty = false,
   notify,
+  interactions = [],
 }) {
-  const metrics = kind === "kam" ? KAM : DEMAND;
+  const metrics = kind === "kam" ? KAM_TABS : DEMAND;
 
   const [metricId, setMetricId] = usePreference(
     "workspace:metric:" + kind,
@@ -407,34 +256,49 @@ export function WorkspaceChart({
     (kind === "kam" && selection(filters.direction).length) ||
     (kind === "demand" && selection(filters.owner).length);
 
-  const names = [
-    "Иванов А.А.",
-    "Смирнова М.С.",
-    "Соколов Д.В.",
+  // Динамический список ответственных КАМов только из реальных данных
+  const kamOptions = [
+    ...new Set((interactions || []).map((item) => item.owner).filter(Boolean)),
   ];
 
-  const rows =
-    empty || unsupported
-      ? []
-      : metric.rows.filter(([name]) => {
-          if (kind === "demand") {
-            return includesSelection(filters.direction, name);
-          }
+  let rows = [];
 
+  if (kind === "demand") {
+    rows = (empty || unsupported)
+      ? []
+      : metric.rows.filter(([name]) => includesSelection(filters.direction, name));
+  } else {
+    if (empty || unsupported || !kamOptions.length) {
+      rows = [];
+    } else {
+      rows = kamOptions
+        .map((kamName) => {
+          const list = (interactions || []).filter((item) => item.owner === kamName);
+          let value = 0;
+          if (metric.id === "launches") {
+            value = list.filter((item) => item.stage >= 11 || item.done).length;
+          } else if (metric.id === "active") {
+            value = list.filter((item) => !item.done).length;
+          } else if (metric.id === "overdue") {
+            value = list.filter((item) => item.status === "Просрочено").length;
+          } else {
+            value = list.length;
+          }
+          return [kamName, value];
+        })
+        .filter(([kamName]) => {
           return (
-            (!selection(filters.owner).length ||
-              selection(filters.owner).some(
-                (value) =>
-                  name === names[OWNERS.indexOf(value)]
-              )) &&
-            includesSelection(owner, name) &&
-            (manager || name === names[0])
+            (!selection(filters.owner).length || includesSelection(filters.owner, kamName)) &&
+            includesSelection(owner, kamName) &&
+            (manager || kamName === kamOptions[0])
           );
         });
+    }
+  }
 
   const maximum = Math.max(
     1,
-    ...metric.rows.map(([, value]) => value)
+    ...rows.map(([, value]) => value)
   );
 
   const total = rows.reduce(
@@ -467,7 +331,7 @@ export function WorkspaceChart({
                 [
                   "КАМ графика",
                   listText(owner) ||
-                    (manager ? "Все" : names[0]),
+                    (manager ? "Все" : kamOptions[0] || "—"),
                 ],
               ]
             : []),
@@ -514,7 +378,7 @@ export function WorkspaceChart({
             allLabel="Все ответственные"
             searchPlaceholder="Поиск сотрудников"
             value={selection(owner)}
-            options={names}
+            options={kamOptions}
             onChange={setOwner}
           />
         )}
@@ -567,16 +431,16 @@ export function WorkspaceChart({
       {!rows.length ? (
         <Empty
           title={
-            empty
+            empty || (kind === "kam" && !kamOptions.length)
               ? kind === "kam"
                 ? "Нет данных по эффективности КАМов"
                 : "Данных пока нет"
               : "Нет статистических данных для выбранных фильтров"
           }
         >
-          {empty
+          {empty || (kind === "kam" && !kamOptions.length)
             ? "Статистика появится после загрузки или синхронизации данных."
-            : "В демонстрационном наборе нет детализации для этого сочетания."}
+            : "В наборе нет данных для выбранных параметров фильтрации."}
         </Empty>
       ) : (
         <div className="aw-bars">

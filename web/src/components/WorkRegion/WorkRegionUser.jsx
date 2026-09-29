@@ -26,11 +26,6 @@ import {
 
 import "./WorkRegionUser.css";
 
-const INSTITUTIONS = [
-  "МГТУ им. Н. Э. Баумана", "Университет ИТМО", "НИЯУ МИФИ", "Университет Иннополис",
-  "СПбПУ Петра Великого", "НИУ ВШЭ", "Томский политехнический университет", "Казанский федеральный университет"
-];
-
 const DEADLINES = [
   ["mephi", "18 сентября · 16:00", "НИЯУ МИФИ", "Подписание документов", "Просрочено"],
   ["bmstu", "Сегодня · 17:00", "МГТУ им. Н. Э. Баумана", "Передача материалов", "Горящий срок"],
@@ -147,6 +142,10 @@ export default function WorkRegionUser({
   const filtered = hasFilters(filters);
   const currentItem = modal?.id ? data.interactions.find((item) => item.id === modal.id) : null;
 
+  // Динамические каталоги без макетных констант
+  const dynamicInstitutions = [...new Set(data.interactions.map((item) => item.name).filter(Boolean))];
+  const dynamicDirections = [...new Set(data.interactions.map((item) => item.direction).filter(Boolean))];
+
   function patch(id, update) {
     setData((current) => ({
       ...current,
@@ -208,7 +207,7 @@ export default function WorkRegionUser({
   function submit(form) {
     const currentModal = modal;
     const time = now();
-    const author = OWNERS[0];
+    const author = OWNERS[0] || "Оператор";
 
     if (currentModal.kind === "accept" || currentModal.kind === "reject") {
       const accepted = currentModal.kind === "accept";
@@ -388,7 +387,13 @@ export default function WorkRegionUser({
         </div>
 
         <div className="aw-dashboard">
-          <WorkspaceChart filters={filters} manager={manager} empty={!data.interactions.length} notify={notify} />
+          <WorkspaceChart
+            interactions={data.interactions}
+            filters={filters}
+            manager={manager}
+            empty={!data.interactions.length}
+            notify={notify}
+          />
           <section className="aw-panel aw-deadlines">
             <div className="aw-box-head">
               <h3>Ближайшие сроки</h3><a className="aw-link aw-accent" href="#/calendar">Все →</a>
@@ -406,7 +411,14 @@ export default function WorkRegionUser({
           </section>
         </div>
 
-        <WorkspaceChart kind="kam" filters={filters} manager={manager} empty={!data.interactions.length} notify={notify} />
+        <WorkspaceChart
+          kind="kam"
+          interactions={data.interactions}
+          filters={filters}
+          manager={manager}
+          empty={!data.interactions.length}
+          notify={notify}
+        />
 
         {manager && <IncomingRequests requests={data.incoming} onAccept={(request) => open("accept", { request })} onReject={(request) => open("reject", { request })} />}
 
@@ -465,7 +477,16 @@ export default function WorkRegionUser({
       )}
 
       {modal && modal.kind !== "detail" && (
-        <WorkspaceModal key={modal.key} modal={modal} item={currentItem} manager={manager} institutions={INSTITUTIONS} onClose={() => setModal(null)} onSubmit={submit} />
+        <WorkspaceModal
+          key={modal.key}
+          modal={modal}
+          item={currentItem}
+          manager={manager}
+          institutions={dynamicInstitutions}
+          directions={dynamicDirections}
+          onClose={() => setModal(null)}
+          onSubmit={submit}
+        />
       )}
       <Toast notice={notice} onClose={closeNotice} />
     </div>

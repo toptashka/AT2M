@@ -2,7 +2,6 @@ import { useRef, useState } from "react";
 import { Dialog, Field, Select } from "./WorkspaceUI";
 import {
   OWNERS,
-  PROGRAMS,
   STEPS,
   maskContact,
   SOFTWARE_CATALOG,
@@ -27,14 +26,18 @@ export default function WorkspaceModal({
   modal,
   item,
   manager,
-  institutions,
+  institutions = [],
+  directions = [],
+  programs = [],
   onClose,
   onSubmit,
 }) {
+  const directionOptions = directions.length > 0 ? directions : programs;
+
   const [form, setForm] = useState(() => ({
-    owner: item ? item.owner : OWNERS[0],
-    institution: institutions[0] || "",
-    direction: PROGRAMS[0],
+    owner: item ? item.owner : (OWNERS[0] || ""),
+    institution: item ? item.name : (institutions[0] || ""),
+    direction: item ? item.direction : (directionOptions[0] || ""),
     comment: "",
     ...(item?.contract || {}),
     software: softwareValues(item?.contract?.software).join(", "),
@@ -400,7 +403,7 @@ export default function WorkspaceModal({
           {kind === "create" && (
             <>
               {select("Учреждение", "institution", institutions)}
-              {select("ИТ-направление", "direction", PROGRAMS)}
+              {select("ИТ-направление", "direction", directionOptions)}
 
               <p className="at-muted">
                 {manager
