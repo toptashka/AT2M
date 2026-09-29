@@ -11,7 +11,7 @@
 | Презентация | https://disk.yandex.ru/i/Qpeq7L5ZEN8V1A |
 | Локальный интерфейс | http://localhost:5173 |
 | API / Swagger UI | http://localhost:8000/docs |
-| Макеты | https://www.figma.com/design/E0NZWraWmqBbGY1RC1GxAH/AT2M?node-id=2162-2&t=mW7q8oZAqRvebeAh-1 |
+| Макеты | https://www.figma.com/design/E0NZWraWmqBbGY1RC1GxAH/AT2M_%D0%9B%D0%A6%D0%A22026?node-id=2546-17798&t=mW7q8oZAqRvebeAh-1 |
 | Примеры импорта | Папка `demo_data/` исходного проекта |
 
 Адреса localhost доступны только на компьютере, где запущены сервисы. Для удалённой демонстрации укажите адрес развёрнутого стенда. Ссылки на репозиторий, презентацию и запись необходимо заполнить перед сдачей.
