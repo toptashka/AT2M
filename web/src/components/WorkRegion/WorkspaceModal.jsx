@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Dialog, Field, Select } from "./WorkspaceUI";
 import {
   OWNERS,
+  PROGRAMS,
   STEPS,
   maskContact,
   SOFTWARE_CATALOG,
@@ -26,18 +27,15 @@ export default function WorkspaceModal({
   modal,
   item,
   manager,
-  institutions = [],
-  directions = [],
-  programs = [],
+  institutions,
+  managers = [],
   onClose,
   onSubmit,
 }) {
-  const directionOptions = directions.length > 0 ? directions : programs;
-
   const [form, setForm] = useState(() => ({
-    owner: item ? item.owner : (OWNERS[0] || ""),
-    institution: item ? item.name : (institutions[0] || ""),
-    direction: item ? item.direction : (directionOptions[0] || ""),
+    owner: item ? item.owner : (managers[0] || OWNERS[0] || ""),
+    institution: institutions[0] || "",
+    direction: PROGRAMS[0],
     comment: "",
     ...(item?.contract || {}),
     software: softwareValues(item?.contract?.software).join(", "),
@@ -207,7 +205,7 @@ export default function WorkspaceModal({
               {select(
                 "Ответственный КАМ",
                 "owner",
-                [...OWNERS, { value: "", label: "Не назначен" }],
+                [...managers.map(m => typeof m === "string" ? { value: m, label: m } : m), { value: "", label: "Не назначен" }],
                 !manager
               )}
 
@@ -380,7 +378,7 @@ export default function WorkspaceModal({
                 {modal.request.name} · {modal.request.program}
               </p>
 
-              {select("Ответственный КАМ", "owner", OWNERS)}
+              {select("Ответственный КАМ", "owner", managers.length > 0 ? managers : OWNERS)}
 
               <p className="at-muted">
                 После принятия взаимодействие появится в реестре
@@ -403,7 +401,7 @@ export default function WorkspaceModal({
           {kind === "create" && (
             <>
               {select("Учреждение", "institution", institutions)}
-              {select("ИТ-направление", "direction", directionOptions)}
+              {select("ИТ-направление", "direction", PROGRAMS)}
 
               <p className="at-muted">
                 {manager

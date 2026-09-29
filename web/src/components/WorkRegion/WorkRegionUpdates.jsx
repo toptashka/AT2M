@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Empty,
   Select,
@@ -8,7 +8,6 @@ import {
 import { ProductFilter } from "./WorkspaceFilters";
 import {
   filterLabels,
-  OWNERS,
   selection,
   includesSelection,
   listText,
@@ -18,43 +17,10 @@ import downloadIcon from "../../assets/download.svg";
 
 export const INCOMING_DEMO = [];
 
-const DEMAND = [
-  {
-    id: "requests",
-    tab: "По заявкам",
-    unit: "Количество заявок",
-    rows: [
-      ["Информационная безопасность", 124],
-      ["DevOps", 96],
-      ["Облачные технологии", 82],
-      ["Data Science", 61],
-      ["QA", 49],
-    ],
-  },
-  {
-    id: "students",
-    tab: "По студентам",
-    unit: "Количество студентов",
-    rows: [
-      ["Облачные технологии", 420],
-      ["Информационная безопасность", 312],
-      ["DevOps", 256],
-      ["QA", 180],
-      ["Data Science", 116],
-    ],
-  },
-  {
-    id: "streams",
-    tab: "По потокам",
-    unit: "Количество потоков",
-    rows: [
-      ["DevOps", 5],
-      ["Облачные технологии", 4],
-      ["QA", 4],
-      ["Информационная безопасность", 3],
-      ["Data Science", 2],
-    ],
-  },
+const DEMAND_TABS = [
+  { id: "requests", tab: "По заявкам", unit: "Количество заявок" },
+  { id: "students", tab: "По студентам", unit: "Количество студентов" },
+  { id: "streams", tab: "По потокам", unit: "Количество потоков" },
 ];
 
 const KAM_TABS = [
@@ -209,9 +175,10 @@ export function WorkspaceChart({
   manager = true,
   empty = false,
   notify,
+  managers = [],
   interactions = [],
 }) {
-  const metrics = kind === "kam" ? KAM_TABS : DEMAND;
+  const metrics = kind === "kam" ? KAM_TABS : DEMAND_TABS;
 
   const [metricId, setMetricId] = usePreference(
     "workspace:metric:" + kind,
@@ -250,24 +217,35 @@ export function WorkspaceChart({
     filters.changed ||
     selection(filters.products).length ||
     selection(products).length ||
-    (filters.start &&
-      (filters.start > "2026-09-01" ||
-        filters.end < "2026-09-30")) ||
     (kind === "kam" && selection(filters.direction).length) ||
     (kind === "demand" && selection(filters.owner).length);
 
-  // Динамический список ответственных КАМов только из реальных данных
-  const kamOptions = [
-    ...new Set((interactions || []).map((item) => item.owner).filter(Boolean)),
-  ];
+  // Список КАМов подтягивается напрямую из Keycloak (managers), с фоллбэком на сделки в БД
+  const kamOptions = useMemo(() => {
+    const list = managers.length > 0
+      ? managers
+      : (interactions || []).map((item) => item.owner).filter(Boolean);
+    return [...new Set(list)];
+  }, [managers, interactions]);
 
   let rows = [];
 
   if (kind === "demand") {
-    rows = (empty || unsupported)
-      ? []
-      : metric.rows.filter(([name]) => includesSelection(filters.direction, name));
+    // Востребованность программ рассчитывается исключительно по реальным партнерствам из БД
+    if (empty || unsupported || !interactions.length) {
+      rows = [];
+    } else {
+      const progMap = {};
+      interactions.forEach((item) => {
+        const prog = item.direction || "Не указана";
+        if (includesSelection(filters.direction, prog)) {
+          progMap[prog] = (progMap[prog] || 0) + 1;
+        }
+      });
+      rows = Object.entries(progMap);
+    }
   } else {
+    // Эффективность КАМов: отображаются все КАМы из Keycloak с их реальной нагрузкой
     if (empty || unsupported || !kamOptions.length) {
       rows = [];
     } else {
@@ -289,7 +267,7 @@ export function WorkspaceChart({
         .filter(([kamName]) => {
           return (
             (!selection(filters.owner).length || includesSelection(filters.owner, kamName)) &&
-            includesSelection(owner, kamName) &&
+            (!selection(owner).length || includesSelection(owner, kamName)) &&
             (manager || kamName === kamOptions[0])
           );
         });

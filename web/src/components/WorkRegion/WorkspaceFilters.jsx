@@ -43,7 +43,7 @@ export function PeriodFilter({ value, onChange }) {
   );
 }
 
-export default function WorkspaceFilters({ value, onChange, interactions = [] }) {
+export default function WorkspaceFilters({ value, onChange, interactions = [], managers = [] }) {
   const change = (key, next) => onChange({ ...value, [key]: next });
 
   const list = Array.isArray(interactions) ? interactions : [];
@@ -52,7 +52,8 @@ export default function WorkspaceFilters({ value, onChange, interactions = [] })
   const cities = [...new Set(list.map((item) => item.city).filter(Boolean))];
   const dynamicPrograms = [...new Set(list.map((item) => item.direction).filter(Boolean))];
   const dynamicProducts = [...new Set(list.map((item) => item.product).filter(Boolean))];
-  const dynamicOwners = [...new Set(list.map((item) => item.owner).filter(Boolean))];
+  
+  const dynamicOwners = managers.length > 0 ? managers : [...new Set(list.map((item) => item.owner).filter(Boolean))];
 
   return (
     <div className="aw-toolbar">

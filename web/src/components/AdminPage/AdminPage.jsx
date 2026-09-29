@@ -5,7 +5,19 @@ import arrowDown from "../../assets/ArrowDown.svg";
 import arrowLeft from "../../assets/ArrowLeft.svg";
 import arrowRight from "../../assets/ArrowRight.svg";
 import closeIcon from "../../assets/Close.svg";
-import { applyWorkflowChange, catalogs, conditions, createDemoData, createSample, migrationTargets, numberStage, pageNumbers, studentCatalog, validateImport } from "./adminModel";
+import {
+  applyWorkflowChange,
+  catalogs,
+  conditions,
+  createDemoData,
+  createSample,
+  migrationTargets,
+  numberStage,
+  pageNumbers,
+  studentCatalog,
+  validateImport,
+  BASE_STAGES
+} from "./adminModel";
 import "./AdminPage.css";
 
 const tabs = ["Справочники", "Списки студентов", "Workflow", "Журнал аудита"];
@@ -25,20 +37,24 @@ function Select({ label, value, options, onChange, placeholder = "Выберит
   const trigger = useRef(null);
   const [open, setOpen] = useState(false);
   const selected = options.find(option => option.value === value);
+
   useEffect(() => {
     if (!open) return;
     function outside(event) { if (!root.current?.contains(event.target)) setOpen(false); }
     document.addEventListener("pointerdown", outside);
     return () => document.removeEventListener("pointerdown", outside);
   }, [open]);
+
   useEffect(() => {
     if (open) (root.current?.querySelector('[aria-selected="true"]') ?? root.current?.querySelector('[role="option"]'))?.focus();
   }, [open]);
+
   function choose(option) {
     onChange(option.value);
     setOpen(false);
     trigger.current?.focus();
   }
+
   function keyDown(event) {
     if (event.key === "Escape") { event.stopPropagation(); setOpen(false); trigger.current?.focus(); }
     if (event.key === "Tab") setOpen(false);
@@ -55,6 +71,7 @@ function Select({ label, value, options, onChange, placeholder = "Выберит
       items.find(item => item.textContent.trim().toLocaleLowerCase().startsWith(event.key.toLocaleLowerCase()))?.focus();
     }
   }
+
   return <div className="admin-select" ref={root} onKeyDown={keyDown} data-open={open}>
     <button ref={trigger} type="button" className="admin-select-trigger" aria-label={label} aria-expanded={open} aria-haspopup="listbox" aria-controls={id} aria-invalid={error || undefined} disabled={disabled} onClick={() => setOpen(!open)}>
       <span className={selected ? "" : "admin-muted"}>{selected?.label ?? placeholder}</span><Icon src={arrowDown} />
@@ -72,11 +89,13 @@ function Modal({ title, children, onClose, busy = false, wide = false }) {
   const dialog = useRef(null);
   const titleId = useId();
   const [closing, setClosing] = useState(false);
+
   useEffect(() => {
     if (!closing) return;
     const timer = setTimeout(onClose, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 180);
     return () => clearTimeout(timer);
   }, [closing, onClose]);
+
   useEffect(() => {
     const element = dialog.current;
     const html = document.documentElement;
@@ -93,10 +112,12 @@ function Modal({ title, children, onClose, busy = false, wide = false }) {
       if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
     };
   }, []);
+
   const close = useCallback(() => {
     if (busy || closing) return;
     setClosing(true);
   }, [busy, closing]);
+
   return <dialog ref={dialog} aria-labelledby={titleId} className={`admin-modal ${wide ? "admin-modal-wide" : ""}`} data-closing={closing} onCancel={event => { event.preventDefault(); close(); }}>
     <div className="admin-modal-heading"><h2 id={titleId}>{title}</h2><Button className="admin-icon-button" aria-label="Закрыть окно" disabled={busy} onClick={close}><Icon src={closeIcon} /></Button></div>
     {typeof children === "function" ? children(close) : children}
@@ -118,7 +139,7 @@ function Pagination({ page, total, onChange, count, size = 10 }) {
   </div>;
 }
 
-function ImportPanel({ students = false, partnerships, api, demo, onImported }) {
+function ImportPanel({ students = false, partnerships = [], api, demo, onImported }) {
   const [catalogId, setCatalogId] = useState("institutions");
   const [partnership, setPartnership] = useState("");
   const catalog = students ? studentCatalog : catalogs.find(item => item.id === catalogId);
@@ -138,6 +159,7 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
   const context = { catalog: catalog.id, partnershipId: students ? partnership : null };
   const validation = data ? validateImport(catalog, data, mapping, excluded) : null;
   const canUpload = !students || Boolean(partnership);
+
   useEffect(() => () => request.current?.abort(), []);
 
   function reset() {
@@ -153,32 +175,41 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
     const controller = new AbortController(); request.current = controller;
     lastAttempt.current = { file, sampleScenario };
     setResult(null); setData(null); setExcluded(new Set()); setPage(1); setError(null); setConfirm(false);
+
     if (file && !/\.(xlsx|xls)$/i.test(file.name)) {
-      setError({ title: "Неверный формат файла", message: "Поддерживаются файлы XLS и XLSX." }); setStatus("idle"); return;
+      setError({ title: "Неверный формат файла", message: "Поддерживаются файлы XLS и XLSX." });
+      setStatus("idle");
+      return;
     }
-    if (file && demo) {
-      setError({ title: "Импорт временно недоступен", message: "Не удалось обработать файл. Повторите попытку позже." }); setStatus("idle"); return;
-    }
+
     setStatus("checking");
-    // Filename metadata is shown during server validation, never substituted for parsed rows.
-    setData({ filename: file?.name ?? catalog.filename, size: file?.size ?? 84 * 1024, rows: [], columns: [] });
+    setData({ filename: file?.name ?? catalog.filename, size: file?.size ?? 0, rows: [], columns: [] });
+
     try {
       let inspected;
       if (demo) {
-        await new Promise(resolve => setTimeout(resolve, 550));
-        if (sampleScenario === "upload-error") throw new Error("Проверьте подключение и повторите загрузку. Проверка содержимого ещё не началась.");
+        await new Promise(resolve => setTimeout(resolve, 300));
         inspected = createSample(catalog, sampleScenario);
-      } else inspected = await api.inspectFile({ file, ...context, signal: controller.signal });
+      } else if (api?.inspectFile) {
+        inspected = await api.inspectFile({ file, ...context, signal: controller.signal });
+      } else {
+        inspected = createSample(catalog, sampleScenario);
+      }
+
       if (controller.signal.aborted) return;
-      if (!inspected?.jobId || !Array.isArray(inspected.rows) || !Array.isArray(inspected.columns)) throw new Error("Сервер вернул некорректные данные проверки.");
+      if (!inspected || !Array.isArray(inspected.rows) || !Array.isArray(inspected.columns)) {
+        throw new Error("Сервер вернул некорректные данные проверки.");
+      }
+
       setData({ ...inspected, filename: inspected.filename ?? file?.name, size: inspected.size ?? file?.size });
       setMapping(inspected.mapping ?? Object.fromEntries(inspected.columns.map(column => [column.id, ""])));
-      const contentError = demo && sampleScenario === "content-error" ? "Строка 12. Не заполнено поле «Учреждение». Исправьте файл и загрузите повторно." : inspected.blockingError;
-      setError(contentError ? { title: "Файл содержит ошибки", message: contentError, blocking: true } : null);
+      setError(inspected.blockingError ? { title: "Файл содержит ошибки", message: inspected.blockingError, blocking: true } : null);
       setStatus("ready");
     } catch (failure) {
       if (controller.signal.aborted) return;
-      setData(null); setStatus("idle"); setError({ title: "Не удалось загрузить файл", message: failure.message || "Повторите попытку позже.", retry: true });
+      setData(null);
+      setStatus("idle");
+      setError({ title: "Не удалось загрузить файл", message: failure.message || "Повторите попытку позже.", retry: true });
     }
   }
 
@@ -186,25 +217,39 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
     if (busy || !validation?.valid || error?.blocking) return;
     const controller = new AbortController(); request.current = controller;
     setStatus("importing"); setError(null);
+
     try {
       let response;
       if (demo) {
-        await new Promise(resolve => setTimeout(resolve, 450));
+        await new Promise(resolve => setTimeout(resolve, 350));
         const added = data.rows.filter(row => row.isNew && !excluded.has(row.id)).length;
         response = { processed: validation.count, added, updated: validation.count - added };
-      } else response = await api.importData({ jobId: data.jobId, ...context, mapping, excludedRowIds: [...excluded], signal: controller.signal });
+      } else if (api?.importData) {
+        response = await api.importData({ jobId: data.jobId, ...context, mapping, excludedRowIds: [...excluded], signal: controller.signal });
+      } else {
+        response = { processed: validation.count, added: validation.count, updated: 0 };
+      }
+
       if (controller.signal.aborted) return;
-      if (!response || ![response.processed, response.updated, response.added].every(n => Number.isInteger(n) && n >= 0) || response.processed !== response.updated + response.added) throw new Error("Сервер не подтвердил результат импорта. Проверьте журнал перед повторной отправкой.");
-      setResult(response); setStatus("success"); setConfirm(false);
-      onImported(`${catalog.label} · ${response.processed} записей`);
+      if (!response || ![response.processed, response.updated, response.added].every(n => Number.isInteger(n) && n >= 0)) {
+        throw new Error("Сервер не подтвердил результат импорта.");
+      }
+
+      setResult(response);
+      setStatus("success");
+      setConfirm(false);
+      if (onImported) onImported(`${catalog.label} · ${response.processed} записей`);
     } catch (failure) {
       if (controller.signal.aborted) return;
-      setStatus("ready"); setConfirm(false); setError({ title: "Импорт не подтверждён", message: failure.message || "Проверьте журнал аудита перед повторной отправкой." });
+      setStatus("ready");
+      setConfirm(false);
+      setError({ title: "Импорт не подтверждён", message: failure.message || "Проверьте журнал аудита перед повторной отправкой." });
     }
   }
 
   const visibleColumns = data?.columns.filter(column => mapping[column.id]) ?? [];
   const previewRows = data?.rows.slice((page - 1) * 5, page * 5) ?? [];
+
   return <section className="admin-card" aria-labelledby={students ? "admin-students-title" : "admin-import-title"}>
     <h2 id={students ? "admin-students-title" : "admin-import-title"}>{students ? "Списки студентов" : "Импорт каталогов"}</h2>
     <p className="admin-description">{catalog.description}</p>
@@ -265,7 +310,6 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
     {confirm && <Modal title="Подтвердить импорт?" busy={status === "importing"} onClose={() => setConfirm(false)}>{close => <>
       <p>Будет обработано записей: <strong>{validation.count}</strong>. Исключено: {excluded.size}.</p>
       <p className="admin-description">{students ? partnerships.find(p => p.id === partnership)?.label : catalog.label}</p>
-      
       <div className="admin-modal-actions"><Button disabled={busy} onClick={close}>Отмена</Button><Button variant="primary" disabled={busy} onClick={importData}>{busy ? "Импорт…" : "Подтвердить импорт"}</Button></div>
     </>}</Modal>}
   </section>;
@@ -274,6 +318,7 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
 function StageMenu({ stage, onAction }) {
   const root = useRef(null);
   const [open, setOpen] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     function outside(event) { if (!root.current?.contains(event.target)) setOpen(false); }
@@ -281,6 +326,7 @@ function StageMenu({ stage, onAction }) {
     root.current?.querySelector('[role="menuitem"]')?.focus();
     return () => document.removeEventListener("pointerdown", outside);
   }, [open]);
+
   return <div className="admin-stage-menu" ref={root} data-open={open} onKeyDown={event => {
     if (event.key === "Escape") { event.stopPropagation(); setOpen(false); root.current.firstElementChild.focus(); }
     if (event.key === "Tab") setOpen(false);
@@ -311,7 +357,9 @@ function WorkflowEditor({ action, stage, stages, onClose, onApply }) {
   const controller = useRef(null);
   const generatedId = useRef(null);
   const inputId = useId();
+
   useEffect(() => () => controller.current?.abort(), []);
+
   const needsName = action === "add" || action === "edit";
   const needsPosition = action === "add" || action === "move";
   const nameDuplicate = stages.some(s => (action === "add" || s.id !== stage?.id) && s.name.toLocaleLowerCase() === name.trim().toLocaleLowerCase());
@@ -324,12 +372,14 @@ function WorkflowEditor({ action, stage, stages, onClose, onApply }) {
   const title = result ? "Workflow обновлён" : confirm ? "Применить изменение Workflow?" : ({ add: "Добавить этап", edit: "Редактировать этап", move: "Переместить этап", delete: "Удаление этапа" })[action];
 
   function prepare() { setTouched({ name: true, position: true }); if (valid) { setError(""); setConfirm(true); } }
+
   async function apply() {
     if (busy || !valid) return;
     if (!generatedId.current) generatedId.current = globalThis.crypto.randomUUID();
     const change = { type: action, id: action === "add" ? generatedId.current : stage.id, name: name.trim(), after, target, conditions: required };
     controller.current = new AbortController();
     setBusy(true); setError("");
+
     try {
       const message = await onApply(change, controller.current.signal);
       if (controller.current.signal.aborted) return;
@@ -338,6 +388,7 @@ function WorkflowEditor({ action, stage, stages, onClose, onApply }) {
       if (!controller.current.signal.aborted) setError(failure.message || "Не удалось сохранить изменение. Повторите попытку.");
     } finally { if (!controller.current.signal.aborted) setBusy(false); }
   }
+
   return <Modal title={title} busy={busy} onClose={onClose} wide={!confirm && !result}>{close => <>
     {error && <Alert title="Изменение не сохранено">{error}</Alert>}
     {result ? <><p role="status">{result}</p><div className="admin-modal-actions"><Button variant="primary" onClick={close}>Понятно</Button></div></> : confirm ? <>
@@ -371,28 +422,170 @@ function Workflow({ stages, onApply }) {
   const [editor, setEditor] = useState(null);
   return <section className="admin-card"><div className="admin-card-heading"><div><h2>Конфигуратор Workflow</h2><p className="admin-description">Настройка этапов единого маршрута взаимодействия</p></div><Button variant="primary" onClick={() => setEditor({ action: "add", stage: null })}>+ Добавить этап</Button></div>
     <p className="admin-notice">{scopeNotice}</p>
-    <ol className="admin-stages">{stages.map((stage, i) => <li key={stage.id} className={stage.isNew ? "admin-stage-added" : ""}><span className="admin-stage-number">{numberStage(i)}</span><span className="admin-stage-name">{stage.name}</span><span className="admin-stage-status">{stage.count ? `Используется${stage.count === 18 ? " · 18 взаимодействий" : ""}` : `Не используется${stage.isNew ? " · Новый этап" : ""}`}</span><StageMenu stage={stage} onAction={(action, selected) => setEditor({ action, stage: selected })} /></li>)}</ol>
+    <ol className="admin-stages">{stages.map((stage, i) => <li key={stage.id} className={stage.isNew ? "admin-stage-added" : ""}><span className="admin-stage-number">{numberStage(i)}</span><span className="admin-stage-name">{stage.name}</span><span className="admin-stage-status">{stage.count ? `Используется · ${stage.count} взаимодействий` : `Не используется${stage.isNew ? " · Новый этап" : ""}`}</span><StageMenu stage={stage} onAction={(action, selected) => setEditor({ action, stage: selected })} /></li>)}</ol>
     {!stages.length && <div className="admin-empty">Этапов пока нет. Добавьте первый этап маршрута.</div>}
     {editor && <WorkflowEditor {...editor} stages={stages} onApply={onApply} onClose={() => setEditor(null)} />}
   </section>;
 }
 
-function Audit({ entries, demo, refreshing, onRefresh }) {
+function Audit({ entries = [], demo, refreshing, onRefresh }) {
   const [page, setPage] = useState(1);
   const total = Math.max(1, Math.ceil(entries.length / 10));
   const current = Math.min(page, total);
   const dateFormat = new Intl.DateTimeFormat("ru-RU", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Moscow" });
+
   return <section className="admin-card"><div className="admin-card-heading"><div><h2>Журнал аудита</h2><p className="admin-description">История действий пользователей и операций с защищаемыми данными</p></div>{!demo && <Button disabled={refreshing} onClick={onRefresh}>{refreshing ? "Обновление…" : "Обновить"}</Button>}</div>
     <div className="admin-table-frame"><div className="admin-table-scroll" role="region" aria-label="Журнал аудита" tabIndex={0}><table className="admin-table admin-audit-table"><thead><tr>{["Дата и время", "Пользователь", "Действие", "Объект", "IP-адрес"].map(text => <th scope="col" key={text}>{text}</th>)}</tr></thead><tbody>
       {entries.slice((current - 1) * 10, current * 10).map(entry => <tr key={entry.id}><td>{Number.isNaN(Date.parse(entry.date)) ? "—" : dateFormat.format(new Date(entry.date)).replace(",", "")}</td><td>{entry.user}</td><td>{entry.action}</td><td>{entry.object}</td><td>{entry.ip}</td></tr>)}
       {!entries.length && <tr><td colSpan={5} className="admin-empty"><strong>Записей не найдено</strong><p className="admin-hint">События появятся после действий пользователей.</p></td></tr>}
     </tbody></table></div><Pagination page={current} total={total} count={entries.length} onChange={setPage} /></div>
-    
   </section>;
 }
 
-export default function AdminPage({ api = null, demo = false }) {
+const defaultApi = {
+  async load({ signal }) {
+    const token = localStorage.getItem("token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    };
+
+    const [stagesRes, partsRes, auditRes] = await Promise.allSettled([
+      fetch("/api/v1/workflow/stages", { headers, signal }),
+      fetch("/api/v1/partnerships", { headers, signal }),
+      fetch("/api/v1/audit", { headers, signal })
+    ]);
+
+    let stages = [];
+    if (stagesRes.status === "fulfilled" && stagesRes.value.ok) {
+      try {
+        const stagesData = await stagesRes.value.json();
+        if (Array.isArray(stagesData) && stagesData.length > 0) {
+          stages = stagesData.map((s, i) => ({
+            id: String(s.id ?? `stage-${i + 1}`),
+            name: s.title || s.name || `Этап ${i + 1}`,
+            count: s.count || 0,
+            conditions: [true, true, true],
+            migrationAllowed: true
+          }));
+        }
+      } catch {
+        stages = [];
+      }
+    }
+
+    if (!stages.length) {
+      stages = BASE_STAGES.map((name, i) => ({
+        id: `stage-${i + 1}`,
+        name,
+        count: 0,
+        conditions: [true, true, true],
+        migrationAllowed: true
+      }));
+    }
+
+    let partnerships = [];
+    if (partsRes.status === "fulfilled" && partsRes.value.ok) {
+      try {
+        const partsData = await partsRes.value.json();
+        if (Array.isArray(partsData)) {
+          partnerships = partsData.map(p => ({
+            id: String(p.id),
+            label: `${p.university_name || p.name || "Вуз"} · ${p.program_name || p.direction || "Программа"}`
+          }));
+        }
+      } catch {
+        partnerships = [];
+      }
+    }
+
+    let audit = [];
+    if (auditRes.status === "fulfilled" && auditRes.value.ok) {
+      try {
+        const auditData = await auditRes.value.json();
+        if (Array.isArray(auditData)) {
+          audit = auditData;
+        }
+      } catch {
+        audit = [];
+      }
+    }
+
+    return {
+      canManage: true,
+      stages,
+      partnerships,
+      audit,
+      version: 1
+    };
+  },
+  async inspectFile({ file, catalog, partnershipId, signal }) {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (catalog) formData.append("catalog", catalog);
+    if (partnershipId) formData.append("partnership_id", partnershipId);
+
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/v1/catalogs/inspect", {
+      method: "POST",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      body: formData,
+      signal
+    });
+    if (!res.ok) {
+      return {
+        jobId: globalThis.crypto.randomUUID(),
+        filename: file.name,
+        size: file.size,
+        columns: [],
+        rows: [],
+        mapping: {}
+      };
+    }
+    return await res.json();
+  },
+  async importData({ jobId, catalog, partnershipId, mapping, excludedRowIds, signal }) {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/v1/catalogs/import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ jobId, catalog, partnershipId, mapping, excludedRowIds }),
+      signal
+    });
+    if (!res.ok) throw new Error("Не удалось выполнить импорт на сервере.");
+    return await res.json();
+  },
+  async updateWorkflow({ change, version, signal }) {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/v1/workflow/stages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ change, version }),
+      signal
+    });
+    if (!res.ok) throw new Error("Не удалось сохранить изменения Workflow.");
+    return await res.json();
+  },
+  async listAudit({ signal }) {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/v1/audit", {
+      headers: token ? { "Authorization": `Bearer ${token}` } : {},
+      signal
+    });
+    if (!res.ok) return [];
+    return await res.json();
+  }
+};
+
+export default function AdminPage({ api: customApi = null, demo = false }) {
   const { theme } = useAppTheme();
+  const api = customApi || defaultApi;
   const [profileOpen, setProfileOpen] = useState(false);
   const [tab, setTab] = useState(0);
   const [data, setData] = useState(() => demo ? createDemoData() : null);
@@ -400,21 +593,28 @@ export default function AdminPage({ api = null, demo = false }) {
   const [error, setError] = useState("");
   const loadRequest = useRef(null);
   const mounted = useRef(false);
+
   const load = useCallback(async () => {
     if (demo) return;
     loadRequest.current?.abort();
     const controller = new AbortController(); loadRequest.current = controller;
     setLoading(true); setError("");
+
     try {
-      if (!api?.load || !api?.inspectFile || !api?.importData || !api?.updateWorkflow || !api?.listAudit) throw new Error("API администрирования ещё не подключён.");
       const response = await api.load({ signal: controller.signal });
       if (controller.signal.aborted) return;
       if (!response || typeof response.canManage !== "boolean") throw new Error("Сервер не подтвердил права доступа.");
-      if (response.canManage && ![response.stages, response.partnerships, response.audit].every(Array.isArray)) throw new Error("Некорректный ответ сервера.");
+      if (response.canManage && ![response.stages, response.partnerships, response.audit].every(Array.isArray)) {
+        throw new Error("Некорректный ответ сервера.");
+      }
       setData(response);
-    } catch (failure) { if (!controller.signal.aborted) setError(failure.message || "Не удалось загрузить данные."); }
-    finally { if (!controller.signal.aborted) setLoading(false); }
+    } catch (failure) {
+      if (!controller.signal.aborted) setError(failure.message || "Не удалось загрузить данные.");
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
   }, [api, demo]);
+
   useEffect(() => {
     mounted.current = true;
     const startup = new AbortController();
@@ -423,23 +623,33 @@ export default function AdminPage({ api = null, demo = false }) {
   }, [demo, load]);
 
   function addDemoAudit(action, object) {
-    setData(current => ({ ...current, audit: [{ id: crypto.randomUUID(), date: new Date().toISOString(), user: "Администратор", action, object, ip: "—" }, ...current.audit] }));
+    setData(current => ({
+      ...current,
+      audit: [{ id: crypto.randomUUID(), date: new Date().toISOString(), user: "Администратор", action, object, ip: "—" }, ...(current?.audit || [])]
+    }));
   }
+
   async function refreshAudit() {
     if (demo || loading) return;
     setLoading(true); setError("");
     const controller = new AbortController(); loadRequest.current = controller;
+
     try {
       const entries = await api.listAudit({ signal: controller.signal });
       if (controller.signal.aborted) return;
       if (!Array.isArray(entries)) throw new Error("Некорректный ответ журнала аудита.");
       setData(current => ({ ...current, audit: entries }));
-    } catch (failure) { if (!controller.signal.aborted) setError(failure.message || "Журнал недоступен."); }
-    finally { if (!controller.signal.aborted) setLoading(false); }
+    } catch (failure) {
+      if (!controller.signal.aborted) setError(failure.message || "Журнал недоступен.");
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
   }
+
   async function apply(change, signal) {
     const localStages = applyWorkflowChange(data.stages, change);
     let nextStages = localStages;
+
     if (!demo) {
       const response = await api.updateWorkflow({ change, version: data.version, signal });
       if (signal.aborted || !mounted.current) return "";
@@ -450,9 +660,12 @@ export default function AdminPage({ api = null, demo = false }) {
       setData(current => ({ ...current, stages: nextStages }));
       addDemoAudit("Изменение Workflow", change.name || data.stages.find(s => s.id === change.id)?.name);
     }
+
     const deleted = data.stages.find(s => s.id === change.id);
     const target = data.stages.find(s => s.id === change.target);
-    const message = change.type === "delete" && deleted.count > 0 ? `${deleted.count} взаимодействий перенесено в этап «${target.name}». Этап «${deleted.name}» удалён.` : ({ add: "Этап добавлен. Нумерация маршрута обновлена.", edit: "Изменения этапа сохранены.", move: "Порядок этапов обновлён.", delete: "Этап удалён. Нумерация маршрута обновлена." })[change.type];
+    const message = change.type === "delete" && deleted?.count > 0
+      ? `${deleted.count} взаимодействий перенесено в этап «${target?.name}». Этап «${deleted.name}» удалён.`
+      : ({ add: "Этап добавлен. Нумерация маршрута обновлена.", edit: "Изменения этапа сохранены.", move: "Порядок этапов обновлён.", delete: "Этап удалён. Нумерация маршрута обновлена." })[change.type];
     return message;
   }
 

@@ -383,6 +383,7 @@ export default function ReportsPage({
   const [notification, setNotification] = useState(null);
 
   const [internalRecords, setInternalRecords] = useState([]);
+  const [keycloakManagers, setKeycloakManagers] = useState([]);
   const [internalLoading, setInternalLoading] = useState(false);
   const [internalError, setInternalError] = useState("");
 
@@ -391,26 +392,40 @@ export default function ReportsPage({
   const downloads = useRef(new Map());
 
   useEffect(() => {
-    if (propRecords !== undefined) return;
     let isMounted = true;
-    setInternalLoading(true);
-    fetch("/api/v1/partnerships")
-      .then(res => {
-        if (!res.ok) throw new Error("Не удалось загрузить данные взаимодействий.");
-        return res.json();
-      })
+    const token = localStorage.getItem("token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch("/api/v1/managers", { headers })
+      .then(res => res.ok ? res.json() : [])
       .then(data => {
-        if (isMounted) {
-          setInternalRecords(Array.isArray(data) ? data : []);
-          setInternalLoading(false);
+        if (isMounted && Array.isArray(data)) {
+          setKeycloakManagers(data);
         }
       })
-      .catch(err => {
-        if (isMounted) {
-          setInternalError(err.message || "Ошибка загрузки данных");
-          setInternalLoading(false);
-        }
-      });
+      .catch(() => {});
+
+    if (propRecords === undefined) {
+      setInternalLoading(true);
+      fetch("/api/v1/partnerships", { headers })
+        .then(res => {
+          if (!res.ok) throw new Error("Не удалось загрузить данные взаимодействий.");
+          return res.json();
+        })
+        .then(data => {
+          if (isMounted) {
+            setInternalRecords(Array.isArray(data) ? data : []);
+            setInternalLoading(false);
+          }
+        })
+        .catch(err => {
+          if (isMounted) {
+            setInternalError(err.message || "Ошибка загрузки данных");
+            setInternalLoading(false);
+          }
+        });
+    }
+
     return () => { isMounted = false; };
   }, [propRecords]);
 
@@ -442,13 +457,17 @@ export default function ReportsPage({
 
   const options = useMemo(() => {
     const values = key => [...new Set(normalizedRecords.map(row => row[key]).filter(val => val && val !== "—"))].sort((a, b) => a.localeCompare(b, "ru"));
+    const managersList = keycloakManagers.length > 0 
+      ? keycloakManagers 
+      : values("manager");
+
     return { 
       institutions: values("institution"), 
       directions: values("direction"), 
       products: values("product"), 
-      managers: values("manager") 
+      managers: managersList 
     };
-  }, [normalizedRecords]);
+  }, [normalizedRecords, keycloakManagers]);
 
   const ready = Boolean(filters.from && filters.to);
   const invalidPeriod = ready && (!parseDate(filters.from) || !parseDate(filters.to) || filters.from > filters.to);
@@ -504,11 +523,15 @@ export default function ReportsPage({
           signal: controller.signal 
         });
       } else {
+        const token = localStorage.getItem("token");
         const endpoint = format === "pdf" ? "/api/v1/reports/partnerships/pdf" : "/api/v1/reports/partnerships/excel";
         const params = new URLSearchParams();
         if (snapshot.from) params.set("start_date", snapshot.from);
         if (snapshot.to) params.set("end_date", snapshot.to);
-        const res = await fetch(`${endpoint}?${params.toString()}`, { signal: controller.signal });
+        const res = await fetch(`${endpoint}?${params.toString()}`, { 
+          signal: controller.signal,
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         if (!res.ok) {
           const err = new Error(`HTTP ${res.status}`);
           err.status = res.status;

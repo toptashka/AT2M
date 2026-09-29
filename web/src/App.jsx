@@ -87,7 +87,7 @@ function App() {
   return (
     <div className="app">
       {route === "/admin" ? (
-        <AdminPage demo />
+        <AdminPage />
       ) : route === "/faq" ? (
         <FaqPage />
       ) : route === "/calendar" ? (

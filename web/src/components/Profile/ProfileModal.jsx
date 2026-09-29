@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import closeIcon from "../../assets/Close.svg";
 import arrowDown from "../../assets/ArrowDown.svg";
@@ -16,12 +16,14 @@ function point(index, value) {
 function MetricsChart({ profile }) {
   const id = useId();
   const values = metricNames.map((_, index) => {
-    const value = profile.metrics?.[index];
+    const value = profile?.metrics?.[index];
     return typeof value === "number" && Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : null;
   });
+
   if (values.some((value) => value === null)) {
     return <div className="profile-empty" role="status">Показатели пока недоступны</div>;
   }
+
   return (
     <svg className="profile-chart" viewBox="0 0 760 360" role="img" aria-labelledby={`${id}-title ${id}-description`}>
       <title id={`${id}-title`}>Показатели: {profile.name}</title>
@@ -45,7 +47,6 @@ function MetricsChart({ profile }) {
   );
 }
 
-
 function ProfileDialog({ children, dark, variant, titleId, onClose, returnFocusRef }) {
   const dialogRef = useRef(null);
   const timerRef = useRef(null);
@@ -67,6 +68,7 @@ function ProfileDialog({ children, dark, variant, titleId, onClose, returnFocusR
     document.body.style.overflow = "hidden";
     dialog.showModal();
     dialog.querySelector(".profile-window-close")?.focus({ preventScroll: true });
+
     return () => {
       window.clearTimeout(timerRef.current);
       dialog.close();
@@ -122,33 +124,203 @@ function ProfileDialog({ children, dark, variant, titleId, onClose, returnFocusR
   );
 }
 
+function getCurrentUserFromToken() {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return {
+      id: "Пользователь",
+      name: "Пользователь",
+      initials: "П",
+      isKam: false,
+      active: true,
+      metrics: [0, 0, 0, 0, 0],
+    };
+  }
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    const parsed = JSON.parse(jsonPayload);
+    const roles = parsed.realm_access?.roles || [];
+    const name = parsed.name || parsed.preferred_username || "Пользователь";
+    const initials = name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase() || "П";
+
+    // Линейным КАМом считается только сотрудник с ролью Пользователь, без прав Руководителя/Администратора
+    const isKam = roles.includes("Пользователь") && !roles.includes("Руководитель") && !roles.includes("Администратор");
+
+    return {
+      id: name,
+      name,
+      initials,
+      isKam,
+      active: true,
+      metrics: [0, 0, 0, 0, 0],
+    };
+  } catch {
+    return {
+      id: "Пользователь",
+      name: "Пользователь",
+      initials: "П",
+      isKam: false,
+      active: true,
+      metrics: [0, 0, 0, 0, 0],
+    };
+  }
+}
+
 export default function ProfileModal({ dark, onClose, returnFocusRef, profiles = profileDemo }) {
   const id = useId();
-  const [selectedId, setSelectedId] = useState(() => profiles[0]?.id ?? "");
-  const profile = profiles.find((item) => item.id === selectedId) ?? profiles[0];
+  const [loadedProfiles, setLoadedProfiles] = useState([]);
+  const currentUser = useMemo(() => getCurrentUserFromToken(), []);
+
+  useEffect(() => {
+    if (profiles && profiles.length > 0) return;
+    let isMounted = true;
+    const token = localStorage.getItem("token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {})
+    };
+
+    Promise.allSettled([
+      fetch("/api/v1/managers", { headers }),
+      fetch("/api/v1/partnerships", { headers })
+    ]).then(async ([mgrRes, partRes]) => {
+      if (!isMounted) return;
+
+      let managers = [];
+      if (mgrRes.status === "fulfilled" && mgrRes.value.ok) {
+        try {
+          const data = await mgrRes.value.json();
+          if (Array.isArray(data) && data.length > 0) managers = data;
+        } catch {}
+      }
+
+      let partnerships = [];
+      if (partRes.status === "fulfilled" && partRes.value.ok) {
+        try {
+          const data = await partRes.value.json();
+          if (Array.isArray(data)) partnerships = data;
+        } catch {}
+      }
+
+      // Добавляем текущего пользователя только если он реальный КАМ
+      if (!managers.length && currentUser?.isKam && currentUser?.name) {
+        managers = [currentUser.name];
+      }
+
+      const list = managers.map((mgrName) => {
+        const mgrItems = partnerships.filter(
+          (item) => (item.manager_name || item.owner) === mgrName
+        );
+        const launches = mgrItems.filter((item) => (item.stage_id || item.stage) >= 11 || item.done).length;
+        const active = mgrItems.filter((item) => !item.done).length;
+        const completed = mgrItems.filter((item) => item.done).length;
+        const overdue = mgrItems.filter((item) => item.status === "Просрочено").length;
+        const total = mgrItems.length;
+
+        const metrics = total > 0 ? [
+          Math.min(100, Math.round((launches / total) * 100)),
+          Math.min(100, active * 20),
+          Math.round(((total - overdue) / total) * 100),
+          75,
+          Math.round((completed / total) * 100)
+        ] : [0, 0, 0, 0, 0];
+
+        const initials = mgrName
+          .split(" ")
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((p) => p[0])
+          .join("")
+          .toUpperCase() || "К";
+
+        return {
+          id: mgrName,
+          name: mgrName,
+          initials,
+          active: true,
+          metrics,
+        };
+      });
+
+      setLoadedProfiles(list);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser, profiles]);
+
+  const activeProfiles = useMemo(() => {
+    if (profiles && profiles.length > 0) return profiles;
+    if (loadedProfiles.length > 0) return loadedProfiles;
+    // Если профили ещё не загрузились, не показываем Администратора в списке КАМов
+    return currentUser?.isKam ? [currentUser] : [];
+  }, [profiles, loadedProfiles, currentUser]);
+
+  const [selectedId, setSelectedId] = useState("");
+
+  // Выбираем профиль: если залогинен КАМ — выбираем его профиль; иначе — первого доступного КАМа
+  useEffect(() => {
+    if (!activeProfiles.length) return;
+
+    const myProfile = activeProfiles.find((p) => p.name === currentUser.name);
+    if (!selectedId || !activeProfiles.some((p) => p.id === selectedId)) {
+      setSelectedId(myProfile ? myProfile.id : activeProfiles[0].id);
+    }
+  }, [activeProfiles, selectedId, currentUser.name]);
+
+  const profile = activeProfiles.find((item) => item.id === selectedId) ?? activeProfiles[0];
+
   return (
     <ProfileDialog dark={dark} variant="modal" titleId={`${id}-title`} onClose={onClose} returnFocusRef={returnFocusRef}>
-      {profile ? <>
-        <div className="profile-heading">
-          <div className="profile-avatar" aria-hidden="true">{profile.initials ?? profile.name.split(" ").slice(0, 2).map((part) => part[0]).join("")}</div>
-          <div>
-            <div className="profile-identity"><h2 id={`${id}-title`}>{profile.name}</h2><span>{profile.active === false ? "Неактивен" : "Активен"}</span></div>
-            <p>Персональная характеристика · только просмотр</p>
+      {profile ? (
+        <>
+          <div className="profile-heading">
+            <div className="profile-avatar" aria-hidden="true">
+              {profile.initials ?? profile.name.split(" ").slice(0, 2).map((part) => part[0]).join("")}
+            </div>
+            <div>
+              <div className="profile-identity">
+                <h2 id={`${id}-title`}>{profile.name}</h2>
+                <span>{profile.active === false ? "Неактивен" : "Активен"}</span>
+              </div>
+              <p>Персональная характеристика · только просмотр</p>
+            </div>
           </div>
-        </div>
-        <label className="profile-label" htmlFor={`${id}-select`}>Профиль КАМа</label>
-        <div className="profile-select-wrap">
-          <select id={`${id}-select`} value={profile.id} onChange={(event) => setSelectedId(event.target.value)}>
-            {profiles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-          </select>
-          <span className="profile-window-icon" style={{ "--profile-window-icon": `url("${arrowDown}")` }} aria-hidden="true" />
-        </div>
-        <div className="profile-chart-wrap"><MetricsChart profile={profile} /></div>
-        <div className="profile-explanation">
-          <h3>О показателях</h3>
-          <p>Все показатели нормализованы по шкале от 0 до 100. Чем выше значение, тем выше результат по соответствующей метрике. Нагрузка — оценка сбалансированности взаимодействий.</p>
-        </div>
-      </> : <><h2 id={`${id}-title`}>Профиль</h2><div className="profile-empty">Нет доступных профилей</div></>}
+          <label className="profile-label" htmlFor={`${id}-select`}>Профиль КАМа</label>
+          <div className="profile-select-wrap">
+            <select id={`${id}-select`} value={profile.id} onChange={(event) => setSelectedId(event.target.value)}>
+              {activeProfiles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+            <span className="profile-window-icon" style={{ "--profile-window-icon": `url("${arrowDown}")` }} aria-hidden="true" />
+          </div>
+          <div className="profile-chart-wrap">
+            <MetricsChart profile={profile} />
+          </div>
+          <div className="profile-explanation">
+            <h3>О показателях</h3>
+            <p>Все показатели нормализованы по шкале от 0 до 100. Чем выше значение, тем выше результат по соответствующей метрике. Нагрузка — оценка сбалансированности взаимодействий.</p>
+          </div>
+        </>
+      ) : (
+        <>
+          <h2 id={`${id}-title`}>Профиль</h2>
+          <div className="profile-empty">Нет доступных профилей КАМов</div>
+        </>
+      )}
     </ProfileDialog>
   );
 }

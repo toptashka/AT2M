@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Header from "../Header/Header";
 import { setAppTheme, useAppTheme } from "../../theme";
+import { partnershipsToCalendarEvents } from "./calendarDemo";
 import "./CalendarPage.css";
 
 import arrowDown from "../../assets/ArrowDown.svg";
@@ -19,8 +20,6 @@ function PageIcon({ name, className = "" }) {
     />
   );
 }
-
-
 
 function useAnimatedState(initialValue = null) {
   const [value, setValue] = useState(initialValue);
@@ -52,7 +51,6 @@ function useAnimatedState(initialValue = null) {
   return [value, update, closing];
 }
 
-
 function FilterChoices({ label, items, value, onApply }) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(() => value.length ? [...value] : items.map(item => item.value));
@@ -77,7 +75,7 @@ function FilterChoices({ label, items, value, onApply }) {
   </>;
 }
 
-function SelectFilter({ label, value, options, onChange }) {
+function SelectFilter({ label, value, options = [], onChange }) {
   const id = useId();
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -127,12 +125,11 @@ function SelectFilter({ label, value, options, onChange }) {
   </div>;
 }
 
-
-const emptyEvents = [];
 const emptyFilters = { program: [], product: [], manager: [], type: [], institution: [], city: [], urgency: [] };
 const types = { deadline: "Дедлайн этапа", license: "Передача лицензии", training: "Старт обучения" };
 const statuses = { overdue: "Просрочено", urgent: "Горящий срок", planned: "Плановое" };
 const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
 function eventCount(count) {
   const last = count % 10;
   const lastTwo = count % 100;
@@ -140,6 +137,7 @@ function eventCount(count) {
     : last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14) ? "события" : "событий";
   return `${count} ${word}`;
 }
+
 const pad = (value) => String(value).padStart(2, "0");
 const toDate = (value) => new Date(`${value}T12:00:00Z`);
 const dateKey = (date) => date.toISOString().slice(0, 10);
@@ -309,7 +307,6 @@ function MonthView({ date, today, days, events, onOpen, onMore, onDay }) {
           <div className="calendar-cell" key={day} data-outside={day.slice(0, 7) !== date.slice(0, 7)}>
             <div className="calendar-cell-heading">
               <button type="button" className="calendar-date" data-today={day === today} aria-label={`Открыть день: ${fullDate(day)}`} aria-current={day === today ? "date" : undefined} onClick={() => onDay(day)}>{Number(day.slice(-2))}</button>
-              
             </div>
             {items.slice(0, 2).map((event) => <EventButton key={event.id} event={event} onOpen={onOpen} />)}
             {items.length > 2 && <button className="calendar-more" type="button" aria-haspopup="dialog" onClick={(event) => onMore(day, event.currentTarget)}>+{eventCount(items.length - 2)}</button>}
@@ -334,7 +331,6 @@ function TimeView({ days, today, events, view, onOpen, onDay }) {
         {days.map((day) => <div className="calendar-time-date" key={day}>
           <button type="button" className="calendar-date" data-today={day === today} aria-label={`Открыть день: ${fullDate(day)}`} onClick={() => onDay(day)}>{Number(day.slice(-2))}</button>
           <span>{formatDate(day, view === "day" ? { weekday: "long", day: "numeric", month: "long" } : { weekday: "short" })}</span>
-          
         </div>)}
       </div>
       <div className="calendar-all-day">
@@ -367,14 +363,14 @@ function TimeView({ days, today, events, view, onOpen, onDay }) {
   );
 }
 
-/**
- * events: id, date (YYYY-MM-DD, МСК), type (deadline/license/training), title,
- * institution, shortInstitution, program, product, manager, city,
- * startTime/endTime (HH:mm, МСК; без startTime — весь день), interactionId.
- * События через полночь передаются отдельными записями для каждого дня.
- * onOpenInteraction(event) подключается к существующей главной странице.
- */
-export default function CalendarPage({ events = emptyEvents, initialDate, filterOptions = {}, onOpenInteraction, loading = false, error = "" }) {
+export default function CalendarPage({
+  events: propEvents,
+  initialDate,
+  filterOptions = {},
+  onOpenInteraction,
+  loading: propLoading = false,
+  error: propError = ""
+}) {
   const { theme } = useAppTheme();
   const today = useToday();
   const [date, setDate] = useState(() => initialDate || moscowToday());
@@ -384,6 +380,52 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
   const [draft, setDraft] = useState(emptyFilters);
   const [popup, setPopup, closing] = useAnimatedState();
 
+  const [internalEvents, setInternalEvents] = useState([]);
+  const [keycloakManagers, setKeycloakManagers] = useState([]);
+  const [internalLoading, setInternalLoading] = useState(false);
+  const [internalError, setInternalError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    const token = localStorage.getItem("token");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    fetch("/api/v1/managers", { headers })
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => {
+        if (isMounted && Array.isArray(data)) {
+          setKeycloakManagers(data);
+        }
+      })
+      .catch(() => {});
+
+    if (!propEvents || propEvents.length === 0) {
+      setInternalLoading(true);
+      fetch("/api/v1/partnerships", { headers })
+        .then((res) => {
+          if (!res.ok) throw new Error("Не удалось загрузить данные взаимодействий");
+          return res.json();
+        })
+        .then((data) => {
+          if (!isMounted) return;
+          const list = Array.isArray(data) ? data : [];
+          setInternalEvents(partnershipsToCalendarEvents(list));
+          setInternalLoading(false);
+        })
+        .catch((err) => {
+          if (!isMounted) return;
+          setInternalEvents([]);
+          setInternalLoading(false);
+        });
+    }
+
+    return () => { isMounted = false; };
+  }, [propEvents]);
+
+  const events = (propEvents && propEvents.length > 0) ? propEvents : internalEvents;
+  const loading = propLoading || internalLoading;
+  const error = propError || internalError;
+
   const closePopup = useCallback((restoreFocus = true) => {
     if (restoreFocus) popup?.anchor?.focus();
     setPopup(null);
@@ -391,11 +433,15 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
 
   const options = useMemo(() => {
     const result = {};
-    for (const key of ["program", "product", "manager", "institution", "city"]) {
+    for (const key of ["program", "product", "institution", "city"]) {
       result[key] = [...new Set(events.map((event) => event[key]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
     }
+    result.manager = keycloakManagers.length > 0
+      ? keycloakManagers
+      : [...new Set(events.map((event) => event.manager).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
+
     return result;
-  }, [events]);
+  }, [events, keycloakManagers]);
 
   const firstOfMonth = `${date.slice(0, 7)}-01`;
   const nextMonth = new Date(Date.UTC(toDate(date).getUTCFullYear(), toDate(date).getUTCMonth() + 1, 1, 12));
@@ -456,7 +502,12 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
         <div aria-busy={loading}>
           {loading ? <div className="calendar-empty" role="status">Загружаем события…</div>
             : error ? <div className="calendar-empty" role="alert"><h2>Не удалось загрузить календарь</h2><p>{error}</p></div>
-              : !hasEvents ? <div className="calendar-empty"><h2>На выбранный период событий нет</h2><p>Измените период или параметры фильтрации</p><button className="calendar-button" type="button" onClick={resetFilters}>Сбросить фильтры</button></div>
+              : !hasEvents ? (
+                <div className="calendar-scroll" role="region" aria-label="События календаря" tabIndex={0}>
+                  {view === "month" ? <MonthView date={date} today={today} days={days} events={[]} onOpen={openEvent} onDay={openDay} onMore={(day, anchor) => setPopup({ kind: "list", day, anchor })} />
+                    : <TimeView days={days} today={today} events={[]} view={view} onOpen={openEvent} onDay={openDay} />}
+                </div>
+              )
                 : <div className="calendar-scroll" role="region" aria-label="События календаря" tabIndex={0}>
                   {view === "month" ? <MonthView date={date} today={today} days={days} events={visible} onOpen={openEvent} onDay={openDay} onMore={(day, anchor) => setPopup({ kind: "list", day, anchor })} />
                     : <TimeView days={days} today={today} events={visible} view={view} onOpen={openEvent} onDay={openDay} />}

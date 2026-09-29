@@ -120,15 +120,14 @@ export function Popover({
 
       setPosition({
         position: "fixed",
-        inset: "auto",
         left: Math.max(
           left + 12,
           Math.min(rect.left, left + vw - panelWidth - 12)
         ),
-        top: up ? undefined : rect.bottom + 6,
+        top: up ? "auto" : rect.bottom + 6,
         bottom: up
           ? window.innerHeight - rect.top + 6
-          : undefined,
+          : "auto",
         width: panelWidth,
         minWidth: 0,
         maxWidth: panelWidth,

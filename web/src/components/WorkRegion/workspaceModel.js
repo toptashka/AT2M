@@ -1,53 +1,9 @@
-export const STEPS = [
-  "Поиск контактов",
-  "Коммуникация с вузом",
-  "Встреча с представителями",
-  "Обмен документами",
-  "Корректировка документов",
-  "Подписание документов",
-  "Материалы, лицензия и документы",
-  "Сопровождение внедрения",
-  "Обучение преподавателей",
-  "Актуализация учебной программы",
-  "Ведение занятий",
-  "Актуализация документации",
-  "Повышение квалификации",
-  "Контроль исполнения этапов",
-];
-
-export const OWNERS = [
-  "Максим Топталов",
-  "Яхья Амин",
-  "Павел Милючихин",
-  "Андрей Махт",
-  "Иван Иванов",
-];
-
-export const PROGRAMS = [
-  "Информационная безопасность",
-  "DevOps",
-  "Облачные технологии",
-  "Data Science",
-  "QA",
-];
-
-export const PRODUCTS = [
-  "Solar Dozor",
-  "РТК-Платформа",
-  "Облако",
-];
-
-export const VENDORS = [
-  "Ростелеком",
-  "Ростелеком-Солар",
-];
-
-export const SOFTWARE_CATALOG = [
-  { value: "Solar Dozor", label: "Solar Dozor", vendor: "Ростелеком-Солар" },
-  { value: "РТК-Платформа", label: "РТК-Платформа", vendor: "Ростелеком" },
-  { value: "РТК-Инфраструктура", label: "РТК-Инфраструктура", vendor: "Ростелеком" },
-  { value: "Облако", label: "Облако", vendor: "Ростелеком" },
-];
+export const STEPS = [];
+export const OWNERS = [];
+export const PROGRAMS = [];
+export const PRODUCTS = [];
+export const VENDORS = [];
+export const SOFTWARE_CATALOG = [];
 
 export const INITIAL_FILTERS = {
   search: "",
@@ -92,10 +48,10 @@ export function softwareValues(value) {
   );
 }
 
-export function softwareVendors(values) {
+export function softwareVendors(values, catalog = []) {
   const selected = softwareValues(values);
   return selection(
-    SOFTWARE_CATALOG
+    catalog
       .filter((entry) => selected.includes(entry.value))
       .map((entry) => entry.vendor)
   );
@@ -117,20 +73,53 @@ export function stageData() {
 export async function fetchStages() {
   const token = localStorage.getItem("token");
   if (!token) return [];
-
   try {
     const response = await fetch("/api/v1/workflow/stages", {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
+      headers: { Authorization: `Bearer ${token}` }
     });
-
     if (!response.ok) throw new Error("API error");
     const data = await response.json();
     return data.map((stage) => stage.title);
   } catch (error) {
     return [];
+  }
+}
+
+export async function fetchManagers() {
+  const token = localStorage.getItem("token");
+  if (!token) return [];
+  try {
+    const response = await fetch("/api/v1/managers", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error("API error");
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      OWNERS.splice(0, OWNERS.length, ...data);
+      return data;
+    }
+    return [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function fetchCatalogs() {
+  const token = localStorage.getItem("token");
+  if (!token) return { programs: [], universities: [] };
+  try {
+    const headers = { Authorization: `Bearer ${token}` };
+    const [progRes, uniRes] = await Promise.all([
+      fetch("/api/v1/programs", { headers }).catch(() => null),
+      fetch("/api/v1/universities", { headers }).catch(() => null)
+    ]);
+
+    const programs = progRes && progRes.ok ? await progRes.json() : [];
+    const universities = uniRes && uniRes.ok ? await uniRes.json() : [];
+
+    return { programs, universities };
+  } catch (error) {
+    return { programs: [], universities: [] };
   }
 }
 
@@ -140,22 +129,18 @@ export async function fetchInteractions() {
 
   try {
     const response = await fetch("/api/v1/partnerships", {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
+      headers: { Authorization: `Bearer ${token}` }
     });
-
     if (!response.ok) throw new Error("API error");
     const data = await response.json();
 
     return data.map((item) => ({
       id: item.id,
       name: item.university_name,
-      badge: item.university_name.split(" ")[0].substring(0, 4).toUpperCase(),
+      badge: item.university_name ? item.university_name.split(" ")[0].substring(0, 4).toUpperCase() : "ВУЗ",
       direction: item.program_name,
-      product: "", 
-      city: "РФ", 
+      product: "",
+      city: "РФ",
       owner: item.manager_name || "Не назначен",
       stage: item.stage_id,
       done: item.stage_id === 14,
@@ -165,9 +150,7 @@ export async function fetchInteractions() {
       due: "",
       contract: { signed: "Нет", transfer: "Не передавалось" },
       contact: { name: "", phone: "", email: "" },
-      stages: {
-        [item.stage_id]: stageData()
-      },
+      stages: { [item.stage_id]: stageData() },
       history: []
     }));
   } catch (error) {
@@ -180,7 +163,7 @@ export async function moveStageAPI(partnership_id, target_stage) {
   const response = await fetch(`/api/v1/partnerships/${partnership_id}/stage`, {
     method: "PATCH",
     headers: {
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ stage_id: target_stage })
@@ -234,15 +217,16 @@ export function maskContact(contact) {
     name: contact.name ? contact.name.split(" ").map((part) => part[0] + "***").join(" ") : "",
     position: contact.position || "",
     phone: contact.phone ? "+7 *** ***-**-" + contact.phone.replace(/\D/g, "").slice(-2) : "",
-    email: contact.email ? contact.email[0] + "***@" + contact.email.split("@")[1] : "",
+    email: contact.email && contact.email.includes("@")
+      ? contact.email[0] + "***@" + contact.email.split("@")[1]
+      : (contact.email || ""),
   };
 }
 
 export function recordLabel(count) {
   const number = Math.abs(count) % 100;
   const last = number % 10;
-  const word = number > 10 && number < 20 ? "записей" : last === 1 ? "запись" : last >= 2 && last <= 4 ? "записи" : "записей";
-  return count + " " + word;
+  return count + " " + (number > 10 && number < 20 ? "записей" : last === 1 ? "запись" : last >= 2 && last <= 4 ? "записи" : "записей");
 }
 
 let memory = null;

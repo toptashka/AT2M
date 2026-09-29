@@ -3,127 +3,601 @@ import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import { setAppTheme, useAppTheme } from "../../theme";
 import arrowRight from "../../assets/ArrowRight.svg";
-import playIcon from "../../assets/Play.svg";
-import pauseIcon from "../../assets/Pause.svg";
 import "./FaqPage.css";
-
-const mediaIcons = { play: playIcon, pause: pauseIcon };
 
 const sections = [
   {
-    id: "getting-started", title: "Начало работы", description: "Навигация, фильтры и внешний вид CRM",
+    id: "getting-started",
+    title: "Начало работы",
+    description: "Авторизация, роли, рабочая область и переключение темы",
     questions: [
-      { id: "navigation", title: "Как устроена навигация в системе?", paragraphs: [
-        "Используйте верхнее меню: «Главная», «Отчёты», «Календарь» и FAQ. Раздел «Администрирование» доступен администратору.",
-        "Профиль и настройки открываются из меню аватара — текущая рабочая страница сохраняется.",
-      ] },
-      { id: "filters", title: "Как пользоваться фильтрами на Главной?", paragraphs: [
-        "Выберите учреждение, ИТ-программу, ИТ-продукт или ответственного КАМа в верхней панели Главной. Дополнительные параметры находятся в «Ещё фильтры».",
-        "Данные на странице обновляются с учётом выбранных значений.",
-      ], video: { title: "Работа с фильтрами на Главной", duration: "01:18" } },
-      { id: "theme", title: "Как переключить тему интерфейса?" },
+      {
+        id: "how-to-login",
+        title: "Как войти в систему?",
+        paragraphs: [
+          "Для входа используйте рабочую учётную запись.",
+          "На экране авторизации укажите логин и пароль и нажмите «Войти».",
+          "После успешной авторизации система автоматически определит вашу роль и откроет доступные разделы и действия.",
+          "Если введены неверные данные, на форме появится сообщение об ошибке. При технической недоступности сервиса будет показано соответствующее системное уведомление.",
+        ],
+      },
+      {
+        id: "user-roles",
+        title: "Какие роли существуют в системе?",
+        paragraphs: [
+          "В системе предусмотрены три основные роли:",
+        ],
+        list: [
+          "Пользователь / КАМ — работает со своими взаимодействиями, учреждениями и закреплёнными задачами.",
+          "Руководитель — дополнительно получает доступ к сводной информации по работе КАМов, входящим запросам и расширенной аналитике.",
+          "Администратор — имеет возможности Руководителя, а также доступ к разделу «Администрирование».",
+        ],
+        extraParagraphs: [
+          "Права назначаются через внешнюю систему управления учётными записями Keycloak.",
+        ],
+      },
+      {
+        id: "main-workspace",
+        title: "Что находится на Главной?",
+        paragraphs: [
+          "Главная страница «Рабочая область» содержит основные данные для ежедневной работы:",
+        ],
+        list: [
+          "KPI по процессам и обучению;",
+          "востребованность ИТ-программ;",
+          "ближайшие сроки;",
+          "взаимодействия с учреждениями;",
+          "входящие запросы для Руководителя и Администратора;",
+          "аналитику по работе КАМов для Руководителя и Администратора.",
+        ],
+        extraParagraphs: [
+          "Большинство блоков реагируют на выбранные глобальные фильтры.",
+        ],
+      },
+      {
+        id: "main-filters",
+        title: "Как пользоваться фильтрами на Главной?",
+        paragraphs: [
+          "В верхней части Рабочей области доступны фильтры по ИТ-направлению, ИТ-продукту, статусу, ответственному КАМу, периоду и другим параметрам.",
+          "Можно использовать несколько фильтров одновременно. Выбранные параметры применяются к KPI, аналитике и спискам на странице.",
+          "При переходе в Отчёты и возвращении на Главную выбранные фильтры сохраняются.",
+        ],
+      },
+      {
+        id: "no-data-state",
+        title: "Что делать, если на Главной пока нет данных?",
+        paragraphs: [
+          "Если взаимодействия ещё не созданы или данные не были загружены, система отображает пустые состояния вместо фиктивной статистики.",
+          "Можно начать работу с помощью действий: «Создать партнёрство», «Получить заявку с сайта», «Синхронизировать с LMS».",
+          "После появления данных KPI, аналитика, сроки и взаимодействия начнут заполняться автоматически.",
+        ],
+      },
+      {
+        id: "theme-toggle",
+        title: "Как переключить светлую и тёмную тему?",
+        paragraphs: [
+          "Откройте меню профиля через аватар в Header и используйте переключатель темы.",
+          "Интерфейс поддерживает Светлую и Тёмную тему. Выбранная тема применяется ко всем разделам системы.",
+        ],
+      },
     ],
   },
   {
-    id: "interactions", title: "Взаимодействия", description: "Карточка партнёрства и работа в текущем окне",
+    id: "interactions",
+    title: "Взаимодействия",
+    description: "Создание партнёрств, реквизиты договора, карточка и файлы",
     questions: [
-      { id: "interaction-definition", title: "Что такое взаимодействие?" },
-      { id: "interaction-open", title: "Как открыть взаимодействие?" },
-      { id: "interaction-manager", title: "Где посмотреть ответственного КАМа?" },
-      { id: "interaction-files", title: "Где находятся комментарии и файлы?" },
+      {
+        id: "interaction-definition",
+        title: "Что такое взаимодействие?",
+        paragraphs: [
+          "Взаимодействие — это процесс работы с конкретным учреждением в рамках выбранного ИТ-направления, ИТ-продукта и Workflow.",
+          "Одно учреждение может участвовать в нескольких взаимодействиях одновременно, если работа ведётся по разным программам или продуктам.",
+        ],
+      },
+      {
+        id: "create-partnership",
+        title: "Как создать новое партнёрство?",
+        paragraphs: [
+          "В разделе «Взаимодействия» нажмите «+ Создать партнёрство».",
+          "В открывшемся окне выберите Учреждение и ИТ-программу / ИТ-направление.",
+          "Если партнёрство создаёт Руководитель, взаимодействие создаётся сразу. Если запрос создаёт КАМ, он поступает Руководителю во «Входящие запросы» для подтверждения.",
+        ],
+      },
+      {
+        id: "interaction-card",
+        title: "Что отображается в карточке взаимодействия?",
+        paragraphs: [
+          "В свернутом состоянии карточка показывает основную информацию:",
+        ],
+        list: [
+          "учреждение;",
+          "ИТ-направление;",
+          "город;",
+          "текущий этап;",
+          "ответственного КАМа;",
+          "дату последнего обновления;",
+          "компактное состояние Workflow.",
+        ],
+        extraParagraphs: [
+          "Дополнительная информация появляется после раскрытия карточки.",
+        ],
+      },
+      {
+        id: "interaction-open",
+        title: "Как открыть подробную информацию по взаимодействию?",
+        paragraphs: [
+          "Нажмите на карточку или элемент раскрытия. Карточка развернётся вниз в текущем экране. Отдельная страница для взаимодействия не открывается.",
+          "Внутри становятся доступны: Workflow, информация по текущему этапу, договор и лицензия, контакты, checklist, комментарии, файлы и доступные действия.",
+        ],
+      },
+      {
+        id: "contract-and-licenses",
+        title: "Что находится в блоке «Договор и лицензии»?",
+        paragraphs: [
+          "В блоке отображаются: Вендор, ПО, Номер договора, Подписание лицензии, Срок действия лицензии и Статус передачи ПО.",
+          "Дата окончания лицензии отображается в формате ДД.ММ.ГГГГ (например: 30.09.2027). Если информация отсутствует, отображается «—».",
+        ],
+      },
+      {
+        id: "edit-interaction",
+        title: "Как изменить данные взаимодействия?",
+        paragraphs: [
+          "В раскрытом взаимодействии нажмите «Редактировать». Откроется окно «Редактирование параметров взаимодействия».",
+          "В нём можно изменить доступные параметры взаимодействия, контактные данные, сведения о договоре и лицензии.",
+          "Возможность изменения ответственного КАМа зависит от роли пользователя.",
+        ],
+      },
+      {
+        id: "attach-file",
+        title: "Как прикрепить документ к этапу?",
+        paragraphs: [
+          "Нажмите «+ Файл». В открывшемся окне выберите файл и тип документа.",
+          "Для договоров и лицензионных документов дополнительно можно указать номер договора, срок действия лицензии, статус подписания, статус передачи и комментарий.",
+          "После сохранения документ прикрепляется к текущему этапу.",
+        ],
+      },
     ],
   },
   {
-    id: "workflow", title: "Workflow", description: "Этапы взаимодействия и условия их завершения",
+    id: "workflow",
+    title: "Workflow",
+    description: "14 этапов жизненного цикла взаимодействия, завершение и возврат",
     questions: [
-      { id: "workflow-definition", title: "Как устроен Workflow?" },
-      { id: "workflow-select", title: "Как выбрать этап?" },
-      { id: "workflow-complete", title: "Как завершить этап?", steps: [
-        "Откройте взаимодействие и выберите текущий этап.",
-        "Выполните все обязательные условия и приложите необходимые файлы.",
-        "Нажмите «Завершить этап» и подтвердите действие.",
-      ], video: { title: "Как завершить этап Workflow", duration: "01:42" } },
-      { id: "workflow-blocked", title: "Что делать, если этап нельзя завершить?" },
-      { id: "workflow-requirements", title: "Как работают обязательные условия этапа?" },
+      {
+        id: "workflow-definition",
+        title: "Что такое Workflow?",
+        paragraphs: [
+          "Workflow — это последовательность этапов взаимодействия с учреждением.",
+          "Он позволяет видеть: текущий этап, завершённые этапы, следующие шаги, задачи текущего этапа и историю продвижения взаимодействия.",
+          "Основной Workflow един для взаимодействий системы.",
+        ],
+      },
+      {
+        id: "workflow-complete",
+        title: "Как перейти на следующий этап?",
+        steps: [
+          "В текущем этапе выполните обязательные пункты Checklist.",
+          "Нажмите «Завершить этап».",
+          "Перед завершением система попросит добавить обязательный комментарий.",
+          "После подтверждения текущий этап становится завершённым, а взаимодействие переходит на следующий этап.",
+        ],
+      },
+      {
+        id: "workflow-blocked",
+        title: "Почему кнопка завершения этапа недоступна?",
+        paragraphs: [
+          "Кнопка может быть недоступна, если не выполнены обязательные пункты Checklist.",
+          "Проверьте текущий этап и завершите все обязательные действия.",
+        ],
+      },
+      {
+        id: "workflow-rollback",
+        title: "Можно ли вернуть взаимодействие на предыдущий этап?",
+        paragraphs: [
+          "Да. Используйте действие «Вернуть на доработку».",
+          "В открывшемся окне будут показаны: текущий этап, предыдущий этап и поле причины возврата. Причина обязательна.",
+          "После подтверждения возврат фиксируется в истории и журнале аудита.",
+        ],
+      },
+      {
+        id: "workflow-edit-completed",
+        title: "Можно ли редактировать уже завершённый этап?",
+        paragraphs: [
+          "Завершённые этапы отображаются в режиме просмотра.",
+          "Основная работа выполняется в текущем активном этапе. Это помогает сохранять последовательность процесса и историю изменений.",
+        ],
+      },
+      {
+        id: "workflow-stages-list",
+        title: "Какие этапы включает Workflow?",
+        paragraphs: [
+          "Workflow охватывает полный цикл взаимодействия с учреждением: от поиска контактов и первичной коммуникации до внедрения, обучения, сопровождения и контроля исполнения.",
+          "В системе используется единая последовательность из 14 этапов.",
+        ],
+      },
     ],
   },
   {
-    id: "requests", title: "Входящие запросы", description: "Обработка заявок с сайта и от КАМов",
+    id: "requests",
+    title: "Входящие запросы",
+    description: "Обработка и распределение заявок с сайта (CMS) и от КАМов",
     questions: [
-      { id: "request-types", title: "Чем отличаются заявки CMS и КАМ?" },
-      { id: "request-accept", title: "Как принять заявку в работу?" },
-      { id: "request-reject", title: "Как отклонить заявку?" },
-      { id: "request-partnership", title: "Как создать партнёрство?" },
+      {
+        id: "requests-about",
+        title: "Что такое «Входящие запросы»?",
+        paragraphs: [
+          "Раздел содержит новые запросы, которые требуют решения Руководителя или Администратора. Он отображается только пользователям с соответствующими правами.",
+          "Источником запроса может быть CMS (заявка с сайта) или КАМ (запрос сотрудника на создание партнёрства).",
+        ],
+      },
+      {
+        id: "requests-info",
+        title: "Какая информация отображается в запросе?",
+        paragraphs: [
+          "Карточка запроса может содержать: источник, дату и время, учреждение, ИТ-направление / программу, инициатора, контактное лицо учреждения, телефон, email, количество студентов (если оно было указано).",
+          "Если необязательные данные отсутствуют, они не показываются.",
+        ],
+      },
+      {
+        id: "request-accept",
+        title: "Как принять заявку в работу?",
+        paragraphs: [
+          "Нажмите «Принять в работу».",
+          "Откроется окно назначения ответственного КАМа.",
+          "После подтверждения создаётся или активируется соответствующее взаимодействие.",
+        ],
+      },
+      {
+        id: "request-reject",
+        title: "Как отклонить запрос?",
+        paragraphs: [
+          "Нажмите «Отклонить».",
+          "Система запросит подтверждение действия.",
+          "После подтверждения запрос перестанет отображаться среди новых.",
+        ],
+      },
+      {
+        id: "request-sort",
+        title: "Как сортировать входящие запросы?",
+        paragraphs: [
+          "Доступны варианты сортировки: «Сначала новые», «Сначала старые», «Сначала КАМ», «Сначала CMS».",
+          "По умолчанию используются самые новые запросы.",
+        ],
+      },
+      {
+        id: "request-show-more",
+        title: "Почему видны только несколько заявок?",
+        paragraphs: [
+          "Первоначально отображается ограниченное количество карточек.",
+          "Если запросов больше, используйте кнопку «Показать ещё N». Дополнительные карточки появятся ниже на текущей странице.",
+        ],
+      },
     ],
   },
   {
-    id: "reports", title: "Отчёты", description: "Параметры, колонки и экспорт данных",
+    id: "reports",
+    title: "Отчёты",
+    description: "Формирование отчётов, фильтрация по периодам и выгрузка в XLSX/PDF",
     questions: [
-      { id: "report-create", title: "Как сформировать отчёт?" },
-      { id: "report-fields", title: "Как выбрать поля отчёта?" },
-      { id: "report-export", title: "Как выгрузить XLSX или PDF?" },
+      {
+        id: "report-create",
+        title: "Как сформировать отчёт?",
+        paragraphs: [
+          "Перейдите в раздел «Отчёты». Выберите параметры: период, учреждения, ИТ-направления, ИТ-продукты, ответственных КАМов.",
+          "После изменения параметров обновится предварительный просмотр отчёта.",
+        ],
+      },
+      {
+        id: "report-period",
+        title: "Как выбрать период отчёта?",
+        paragraphs: [
+          "Используйте поле «Период». Можно указать произвольный диапазон дат или выбрать быстрый вариант: Текущий месяц, Прошлый месяц, Квартал, Учебный год.",
+        ],
+      },
+      {
+        id: "report-multiselect",
+        title: "Можно ли выбрать несколько учреждений или продуктов?",
+        paragraphs: [
+          "Да. Фильтры учреждений, ИТ-направлений, ИТ-продуктов и ответственных поддерживают множественный выбор там, где это предусмотрено.",
+        ],
+      },
+      {
+        id: "report-kam-restriction",
+        title: "Почему КАМ не может изменить поле «Ответственный КАМ»?",
+        paragraphs: [
+          "Для обычного КАМа поле фиксируется на текущем пользователе. В отчёт попадают только данные по доступным ему взаимодействиям.",
+          "Руководитель и Администратор могут выбирать других КАМов или всех ответственных.",
+        ],
+      },
+      {
+        id: "report-columns",
+        title: "Как изменить колонки отчёта?",
+        paragraphs: [
+          "Нажмите «Настроить колонки». В открывшемся окне можно включать и отключать дополнительные поля отчёта (учреждение, ИТ-направление, ИТ-продукт, статус, ответственный КАМ, количество студентов, номер договора, срок действия лицензии, статус подписания, город / регион).",
+        ],
+      },
+      {
+        id: "report-formats",
+        title: "В каких форматах можно скачать отчёт?",
+        paragraphs: [
+          "Доступны форматы: XLSX, XLS и PDF.",
+          "Во время формирования выбранного файла кнопка показывает состояние «Генерация...», а остальные форматы временно становятся недоступны.",
+          "После завершения система показывает уведомление об успешном формировании файла.",
+        ],
+      },
+      {
+        id: "report-empty",
+        title: "Что делать, если в отчёте нет данных?",
+        paragraphs: [
+          "Если выбранные параметры не дают результатов, отображается «По выбранным параметрам данные не найдены».",
+          "Используйте действие «Сбросить фильтры» или измените период и параметры выборки.",
+        ],
+      },
     ],
   },
   {
-    id: "calendar", title: "Календарь", description: "События и сроки взаимодействий",
+    id: "calendar",
+    title: "Календарь",
+    description: "Контроль сроков, переключение масштабов и фильтрация событий",
     questions: [
-      { id: "calendar-view", title: "Как переключаться между месяцем, неделей и днём?" },
-      { id: "calendar-events", title: "Какие события отображаются в календаре?" },
-      { id: "calendar-interaction", title: "Как перейти из события к взаимодействию?" },
+      {
+        id: "calendar-purpose",
+        title: "Для чего нужен Календарь?",
+        paragraphs: [
+          "Календарь помогает контролировать события и сроки, связанные с взаимодействиями.",
+          "В нём могут отображаться: Дедлайн этапа, Передача лицензии, Старт обучения.",
+        ],
+      },
+      {
+        id: "calendar-modes",
+        title: "Какие режимы календаря доступны?",
+        paragraphs: [
+          "Доступны три режима: Месяц, Неделя, День. Переключение происходит внутри текущей страницы.",
+        ],
+      },
+      {
+        id: "calendar-navigation",
+        title: "Как перейти к другой дате?",
+        paragraphs: [
+          "Используйте стрелки перехода к предыдущему или следующему периоду. Кнопка «Сегодня» возвращает календарь к текущей дате.",
+        ],
+      },
+      {
+        id: "calendar-event-details",
+        title: "Как открыть информацию о событии?",
+        paragraphs: [
+          "Нажмите на событие. Откроется компактное окно с подробностями: учреждение, программа, ИТ-продукт, КАМ, дата и время, тип события, статус.",
+          "Из него можно выбрать «Открыть взаимодействие» и перейти к соответствующей карточке на Рабочей области.",
+        ],
+      },
+      {
+        id: "calendar-filters",
+        title: "Как фильтровать календарь?",
+        paragraphs: [
+          "События можно отфильтровать по: ИТ-направлению, ИТ-продукту, КАМу, типу события, учреждению, городу, срочности. Фильтрация не открывает отдельную страницу.",
+        ],
+      },
+      {
+        id: "calendar-colors",
+        title: "Что означает цвет события?",
+        paragraphs: [
+          "Тип события и его срочность являются разными характеристиками. Поэтому не следует воспринимать цвет только как тип события.",
+          "Дополнительный статус показывает, является событие плановым, срочным или просроченным.",
+        ],
+      },
     ],
   },
   {
-    id: "profile-settings", title: "Профиль и настройки", description: "Личные сведения, безопасность и уведомления",
+    id: "profile-settings",
+    title: "Профиль и настройки",
+    description: "Личные показатели эффективности КАМа, безопасность и уведомления",
     questions: [
-      { id: "profile-open", title: "Где открыть профиль?" },
-      { id: "profile-metrics", title: "Как посмотреть показатели КАМа?" },
-      { id: "settings-password", title: "Как изменить пароль?" },
-      { id: "settings-notifications", title: "Как настроить уведомления?" },
+      {
+        id: "profile-open",
+        title: "Как открыть профиль?",
+        paragraphs: [
+          "Нажмите на аватар в Header и выберите «Профиль».",
+          "Профиль открывается поверх текущей страницы и не переводит пользователя в отдельный раздел.",
+        ],
+      },
+      {
+        id: "profile-contents",
+        title: "Что отображается в профиле?",
+        paragraphs: [
+          "В профиле доступны: аватар, ФИО, статус пользователя, показатели эффективности, Radar Chart.",
+          "Radar Chart показывает показатели в нормализованной шкале от 0 до 100.",
+        ],
+      },
+      {
+        id: "profile-metrics",
+        title: "Какие показатели используются в профиле КАМа?",
+        paragraphs: [
+          "В профиле отображаются: Запуски, Нагрузка, Соблюдение SLA, Скорость прохождения, Доля завершённых процессов.",
+          "Эти показатели помогают оценивать работу КАМа в разных аспектах, а не по одной метрике.",
+        ],
+      },
+      {
+        id: "profile-other-kam",
+        title: "Можно ли посмотреть показатели другого КАМа?",
+        paragraphs: [
+          "Для пользователей с соответствующими правами доступен выбор КАМа. После выбора профиль показывает статистику выбранного сотрудника в режиме просмотра.",
+        ],
+      },
+      {
+        id: "settings-password",
+        title: "Где изменить пароль?",
+        paragraphs: [
+          "Откройте меню профиля: Настройки → Безопасность. Укажите текущий пароль, новый пароль и подтверждение нового пароля. Управление учётной записью связано с Keycloak.",
+        ],
+      },
+      {
+        id: "settings-notifications",
+        title: "Какие уведомления можно настроить?",
+        paragraphs: [
+          "В разделе Настройки → Уведомления можно управлять уведомлениями о SLA, новых файлах, новых комментариях. Каждый тип уведомлений имеет отдельный переключатель.",
+        ],
+      },
+      {
+        id: "theme-location",
+        title: "Где изменить тему интерфейса?",
+        paragraphs: [
+          "Переключатель темы находится в меню профиля. Внутри раздела «Настройки» он не дублируется.",
+        ],
+      },
     ],
   },
   {
-    id: "administration", title: "Администрирование", description: "Инструкции для администратора",
+    id: "administration",
+    title: "Администрирование",
+    description: "Импорт каталогов и студентов, редактирование Workflow и аудит",
     questions: [
-      { id: "admin-directory", title: "Как импортировать справочник?" },
-      { id: "admin-students", title: "Как импортировать список студентов?" },
-      { id: "admin-workflow", title: "Как изменить Workflow?" },
-      { id: "admin-stage", title: "Как добавить этап Workflow?" },
-      { id: "admin-audit", title: "Как работает журнал аудита?" },
+      {
+        id: "admin-access",
+        title: "Кто имеет доступ к Администрированию?",
+        paragraphs: [
+          "Раздел доступен только пользователю с ролью Администратор. Для КАМа и Руководителя пункт не отображается в навигации.",
+        ],
+      },
+      {
+        id: "admin-sections",
+        title: "Какие разделы есть в Администрировании?",
+        paragraphs: [
+          "Администрирование включает: Справочники, Списки студентов, Workflow, Журнал аудита.",
+          "Управление пользователями и ролями в этот раздел не входит — оно выполняется через Keycloak.",
+        ],
+      },
+      {
+        id: "admin-directories",
+        title: "Какие справочники доступны?",
+        paragraphs: [
+          "В разделе «Справочники» используются категории: Сквозной импорт, ИТ-продукты, ИТ-направления, Список учреждений, Список ответственных.",
+          "Каждая категория имеет собственный набор обязательных и дополнительных полей.",
+        ],
+      },
+      {
+        id: "admin-import-workflow",
+        title: "Как работает импорт справочников?",
+        steps: [
+          "Загрузка файла (XLS или XLSX).",
+          "Сопоставление колонок файла с полями системы.",
+          "Предпросмотр данных (Preview).",
+          "Импорт (кнопка становится активна после устранения критических ошибок).",
+        ],
+      },
+      {
+        id: "admin-import-errors",
+        title: "Что делать, если в импортируемых данных есть ошибка?",
+        paragraphs: [
+          "Строка с ошибкой выделяется отдельно. Система показывает, какое обязательное поле отсутствует.",
+          "Проблемную строку можно исправить до импорта, исключить из импорта или вернуть обратно, если она была исключена. Пока остаются неисключённые строки с ошибками, импорт недоступен.",
+        ],
+      },
+      {
+        id: "admin-students",
+        title: "Как импортировать список студентов?",
+        paragraphs: [
+          "Откройте «Списки студентов». Последовательность: Партнёрство → Загрузка файла → Сопоставление колонок → Предпросмотр → Импорт.",
+          "В Preview отображаются данные студентов, включая ФИО и Email. Если обязательное значение отсутствует, соответствующая строка получает статус ошибки.",
+        ],
+      },
+      {
+        id: "admin-add-stage",
+        title: "Как добавить новый этап Workflow?",
+        paragraphs: [
+          "Перейдите Администрирование → Workflow и нажмите «+ Добавить этап». Укажите название этапа и его расположение в Workflow.",
+          "Номер этапа назначается системой автоматически. После добавления остальные этапы автоматически перенумеровываются.",
+        ],
+      },
+      {
+        id: "admin-order-stage",
+        title: "Можно ли изменить порядок этапов?",
+        paragraphs: [
+          "Да. Администратор может использовать действия перемещения этапов.",
+          "Изменения Workflow применяются к текущим и будущим взаимодействиям в соответствии с предусмотренной логикой системы.",
+        ],
+      },
+      {
+        id: "admin-delete-stage",
+        title: "Что происходит при удалении используемого этапа?",
+        paragraphs: [
+          "Если этап уже используется активными взаимодействиями, система не удаляет его без дополнительного решения.",
+          "Открывается сценарий миграции, позволяющий определить, куда должны быть перенесены активные взаимодействия.",
+        ],
+      },
+      {
+        id: "admin-audit",
+        title: "Что находится в Журнале аудита?",
+        paragraphs: [
+          "Журнал аудита фиксирует значимые действия пользователей: изменение этапа, просмотр защищённых данных, изменение ответственного, импорт, изменение Workflow.",
+          "Для каждой записи отображаются: Дата и время, Пользователь, Действие, Объект, IP-адрес. Журнал предназначен для контроля действий и расследования изменений в системе.",
+        ],
+      },
     ],
   },
 ];
-
-function VideoPlaceholder({ title, duration }) {
-  return (
-    <figure className="faq-video">
-      <div className="faq-video-preview">
-        <button type="button" className="faq-video-play" disabled aria-label="Видео пока недоступно">
-          <span className="faq-icon" style={{ "--faq-icon": `url("${mediaIcons.play}")` }} aria-hidden="true" />
-        </button>
-        <span className="faq-video-notice">Видео скоро появится</span>
-      </div>
-      <figcaption><span>{title}</span><span className="faq-video-duration">{duration}</span></figcaption>
-    </figure>
-  );
-}
 
 function Question({ question, open, onToggle }) {
   const id = useId();
   return (
     <div className="faq-question" data-open={open}>
       <h3>
-        <button className="faq-question-trigger" type="button" id={`${id}-trigger`} aria-expanded={open} aria-controls={`${id}-answer`} onClick={onToggle}>
+        <button
+          className="faq-question-trigger"
+          type="button"
+          id={`${id}-trigger`}
+          aria-expanded={open}
+          aria-controls={`${id}-answer`}
+          onClick={onToggle}
+        >
           <span>{question.title}</span>
-          <span className="faq-icon faq-question-arrow" style={{ "--faq-icon": `url("${arrowRight}")` }} aria-hidden="true" />
+          <span
+            className="faq-icon faq-question-arrow"
+            style={{ "--faq-icon": `url("${arrowRight}")` }}
+            aria-hidden="true"
+          />
         </button>
       </h3>
-      <div className="faq-answer" id={`${id}-answer`} aria-labelledby={`${id}-trigger`} aria-hidden={!open}
-        ref={(element) => { if (element) element.inert = !open; }}>
+      <div
+        className="faq-answer"
+        id={`${id}-answer`}
+        aria-labelledby={`${id}-trigger`}
+        aria-hidden={!open}
+        ref={(element) => {
+          if (element) element.inert = !open;
+        }}
+      >
         <div className="faq-answer-clip">
           <div className="faq-answer-content">
-            {question.steps ? <ol>{question.steps.map((step) => <li key={step}>{step}</li>)}</ol>
-              : (question.paragraphs ?? ["текст"]).map((paragraph, index) => <p key={index}>{paragraph}</p>)}
-            {question.video && <VideoPlaceholder {...question.video} />}
+            {question.steps && (
+              <ol>
+                {question.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            )}
+            {question.paragraphs &&
+              question.paragraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            {question.list && (
+              <ul>
+                {question.list.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            )}
+            {question.extraParagraphs &&
+              question.extraParagraphs.map((paragraph, index) => (
+                <p key={`extra-${index}`}>{paragraph}</p>
+              ))}
+            {question.video?.src && (
+              <video
+                src={question.video.src}
+                controls
+                className="faq-video"
+              />
+            )}
           </div>
         </div>
       </div>
@@ -134,7 +608,7 @@ function Question({ question, open, onToggle }) {
 export default function FaqPage() {
   const { theme } = useAppTheme();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [expanded, setExpanded] = useState(() => new Set(["navigation"]));
+  const [expanded, setExpanded] = useState(() => new Set(["how-to-login"]));
   const [activeSection, setActiveSection] = useState(sections[0].id);
   const sectionRefs = useRef({});
   const headerRef = useRef(null);
@@ -148,7 +622,8 @@ export default function FaqPage() {
   function toggleQuestion(id) {
     setExpanded((previous) => {
       const next = new Set(previous);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -164,7 +639,9 @@ export default function FaqPage() {
   useEffect(() => {
     function followHash() {
       const [route, query = ""] = window.location.hash.slice(1).split("?");
-      if (route === "/faq") scrollToSection(new URLSearchParams(query).get("section"));
+      if (route === "/faq") {
+        scrollToSection(new URLSearchParams(query).get("section"));
+      }
     }
     followHash();
     window.addEventListener("hashchange", followHash);
@@ -178,9 +655,14 @@ export default function FaqPage() {
       const threshold = (headerRef.current?.getBoundingClientRect().bottom ?? 72) + 40;
       let current = sections[0].id;
       for (const section of sections) {
-        if (sectionRefs.current[section.id]?.getBoundingClientRect().top <= threshold) current = section.id;
+        if (sectionRefs.current[section.id]?.getBoundingClientRect().top <= threshold) {
+          current = section.id;
+        }
       }
-      if (window.scrollY > 0 && window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+      if (
+        window.scrollY > 0 &&
+        window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2
+      ) {
         current = sections.at(-1).id;
       }
       setActiveSection(current);
@@ -204,29 +686,70 @@ export default function FaqPage() {
   return (
     <div className="faq-page" data-theme={theme}>
       <div className="faq-header" ref={headerRef}>
-        <Header profileOpen={profileOpen} setProfileOpen={setProfileOpen} dark={theme === "dark"} setDark={setDark} activePage="FAQ" />
+        <Header
+          profileOpen={profileOpen}
+          setProfileOpen={setProfileOpen}
+          dark={theme === "dark"}
+          setDark={setDark}
+          activePage="FAQ"
+        />
       </div>
       <main className="faq-main">
-        <div className="faq-heading"><h1>FAQ</h1><p>Инструкции по работе с ИТ Школой РТК</p></div>
+        <div className="faq-heading">
+          <h1>FAQ</h1>
+          <p>Инструкции по работе с ИТ Школой РТК</p>
+        </div>
         <div className="faq-layout">
-          <article className="faq-article" aria-label="Инструкции по работе с системой" ref={articleRef}>
+          <article
+            className="faq-article"
+            aria-label="Инструкции по работе с системой"
+            ref={articleRef}
+          >
             {sections.map((section) => (
-              <section className="faq-section" key={section.id} id={`faq-${section.id}`} aria-labelledby={`faq-heading-${section.id}`}
-                ref={(element) => { sectionRefs.current[section.id] = element; }}>
-                <h2 id={`faq-heading-${section.id}`} tabIndex={-1}>{section.title}</h2>
+              <section
+                className="faq-section"
+                key={section.id}
+                id={`faq-${section.id}`}
+                aria-labelledby={`faq-heading-${section.id}`}
+                ref={(element) => {
+                  sectionRefs.current[section.id] = element;
+                }}
+              >
+                <h2 id={`faq-heading-${section.id}`} tabIndex={-1}>
+                  {section.title}
+                </h2>
                 <p className="faq-section-description">{section.description}</p>
-                {section.questions.map((question) => <Question key={question.id} question={question} open={expanded.has(question.id)} onToggle={() => toggleQuestion(question.id)} />)}
+                {section.questions.map((question) => (
+                  <Question
+                    key={question.id}
+                    question={question}
+                    open={expanded.has(question.id)}
+                    onToggle={() => toggleQuestion(question.id)}
+                  />
+                ))}
               </section>
             ))}
           </article>
           <aside className="faq-toc">
-            <nav aria-label="Содержание FAQ"><h2>Содержание</h2>
-              <ul>{sections.map((section) => (
-                <li key={section.id}>
-                  <a href={`#/faq?section=${section.id}`} aria-current={activeSection === section.id ? "location" : undefined}
-                    onClick={() => { if (window.location.hash === `#/faq?section=${section.id}`) scrollToSection(section.id); }}>{section.title}</a>
-                </li>
-              ))}</ul>
+            <nav aria-label="Содержание FAQ">
+              <h2>Содержание</h2>
+              <ul>
+                {sections.map((section) => (
+                  <li key={section.id}>
+                    <a
+                      href={`#/faq?section=${section.id}`}
+                      aria-current={activeSection === section.id ? "location" : undefined}
+                      onClick={() => {
+                        if (window.location.hash === `#/faq?section=${section.id}`) {
+                          scrollToSection(section.id);
+                        }
+                      }}
+                    >
+                      {section.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </nav>
           </aside>
         </div>
