@@ -1,3 +1,4 @@
+import { apiJson, apiRequest } from "../../api.js";
 export const STEPS = [];
 export const OWNERS = [];
 export const PROGRAMS = [];
@@ -71,105 +72,101 @@ export function stageData() {
 }
 
 export async function fetchStages() {
-  const token = localStorage.getItem("token");
-  if (!token) return [];
-  try {
-    const response = await fetch("/api/v1/workflow/stages", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!response.ok) throw new Error("API error");
-    const data = await response.json();
-    return data.map((stage) => stage.title);
-  } catch (error) {
-    return [];
-  }
+  const stages = await apiJson("/api/v1/workflow/stages");
+  const names = stages.map(stage => stage.title);
+  STEPS.splice(0, STEPS.length, ...names);
+  return names;
 }
 
 export async function fetchManagers() {
-  const token = localStorage.getItem("token");
-  if (!token) return [];
-  try {
-    const response = await fetch("/api/v1/managers", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!response.ok) throw new Error("API error");
-    const data = await response.json();
-    if (Array.isArray(data)) {
-      OWNERS.splice(0, OWNERS.length, ...data);
-      return data;
-    }
-    return [];
-  } catch (error) {
-    return [];
-  }
+  const managers = await apiJson("/api/v1/staff");
+  const options = managers.map(person => ({ value: person.username, label: person.name }));
+  OWNERS.splice(0, OWNERS.length, ...options);
+  return options;
 }
 
 export async function fetchCatalogs() {
-  const token = localStorage.getItem("token");
-  if (!token) return { programs: [], universities: [] };
-  try {
-    const headers = { Authorization: `Bearer ${token}` };
-    const [progRes, uniRes] = await Promise.all([
-      fetch("/api/v1/programs", { headers }).catch(() => null),
-      fetch("/api/v1/universities", { headers }).catch(() => null)
-    ]);
+  return apiJson("/api/v1/catalogs/options", { cache: "no-store" });
+}
 
-    const programs = progRes && progRes.ok ? await progRes.json() : [];
-    const universities = uniRes && uniRes.ok ? await uniRes.json() : [];
-
-    return { programs, universities };
-  } catch (error) {
-    return { programs: [], universities: [] };
-  }
+export function mapInteraction(item) {
+  return {
+    id: item.id, name: item.university_name,
+    badge: (item.university_name || "ВУЗ").split(" ")[0].slice(0, 4).toUpperCase(),
+    direction: item.program_name, product: item.software || "", city: item.region || "",
+    owner: item.manager_name || "", ownerName: item.manager_display_name || item.manager_name || "", stage: item.stage_id, workflowStageId: item.workflow_stage_id,
+    workflowVersion: item.workflow_version, stepNames: item.step_names || [],
+    done: Boolean(item.completed), status: item.completed ? "Завершено" : item.due && new Date(item.due + "T23:59:59") < new Date() ? "Просрочено" : "В работе",
+    changed: item.updated_at || "", start: item.created_at?.slice(0, 10) || "", due: item.due || "",
+    contract: item.contract || {}, contact: item.contact || {}, stages: item.stages || {}, history: item.history || []
+  };
 }
 
 export async function fetchInteractions() {
-  const token = localStorage.getItem("token");
-  if (!token) return [];
-
-  try {
-    const response = await fetch("/api/v1/partnerships", {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!response.ok) throw new Error("API error");
-    const data = await response.json();
-
-    return data.map((item) => ({
-      id: item.id,
-      name: item.university_name,
-      badge: item.university_name ? item.university_name.split(" ")[0].substring(0, 4).toUpperCase() : "ВУЗ",
-      direction: item.program_name,
-      product: "",
-      city: "РФ",
-      owner: item.manager_name || "Не назначен",
-      stage: item.stage_id,
-      done: item.stage_id === 14,
-      status: "В работе",
-      changed: now(),
-      start: now().slice(0, 10),
-      due: "",
-      contract: { signed: "Нет", transfer: "Не передавалось" },
-      contact: { name: "", phone: "", email: "" },
-      stages: { [item.stage_id]: stageData() },
-      history: []
-    }));
-  } catch (error) {
-    return [];
-  }
+  return (await apiJson("/api/v1/partnerships")).map(mapInteraction);
 }
 
-export async function moveStageAPI(partnership_id, target_stage) {
-  const token = localStorage.getItem("token");
-  const response = await fetch(`/api/v1/partnerships/${partnership_id}/stage`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ stage_id: target_stage })
-  });
-  if (!response.ok) throw new Error("Stage update failed");
-  return response.json();
+export async function fetchInteraction(id) {
+  return mapInteraction(await apiJson(`/api/v1/partnerships/${id}`));
+}
+
+export async function createPartnershipAPI(payload) {
+  const result = await apiJson("/api/v1/partnerships", { method: "POST", body: JSON.stringify(payload) });
+  return result.kind === "request" ? result : mapInteraction(result);
+}
+
+export function expected(item) {
+  return { expected_stage_id: item.workflowStageId, workflow_version: item.workflowVersion };
+}
+
+export async function updatePartnershipAPI(id, payload) {
+  return mapInteraction(await apiJson(`/api/v1/partnerships/${id}`, { method: "PATCH", body: JSON.stringify(payload) }));
+}
+
+export async function moveStageAPI(item, target, comment, complete = false) {
+  return mapInteraction(await apiJson(`/api/v1/partnerships/${item.id}/stage`, {
+    method: "PATCH", body: JSON.stringify({ ...expected(item), stage_id: target, comment, complete })
+  }));
+}
+
+export async function saveCondition(item, index, value) {
+  return mapInteraction(await apiJson(`/api/v1/partnerships/${item.id}/conditions`, {
+    method: "PATCH", body: JSON.stringify({ ...expected(item), index, value })
+  }));
+}
+
+export async function saveComment(item, text) {
+  return mapInteraction(await apiJson(`/api/v1/partnerships/${item.id}/comments`, {
+    method: "POST", body: JSON.stringify({ ...expected(item), text })
+  }));
+}
+
+export async function uploadFile(item, form) {
+  const body = new FormData();
+  body.append("file", form.file);
+  body.append("document_type", form.documentType);
+  body.append("expected_stage_id", item.workflowStageId);
+  body.append("workflow_version", item.workflowVersion);
+  body.append("metadata", JSON.stringify({ number: form.number || "", licenseEnd: form.licenseEnd || "", signed: form.signed || "Нет", transfer: form.transfer || "Не передавалось" }));
+  body.append("comment", form.comment || "");
+  return mapInteraction(await apiJson(`/api/v1/partnerships/${item.id}/files`, { method: "POST", body }));
+}
+
+export async function deleteFile(item, file) {
+  const query = new URLSearchParams(expected(item));
+  return mapInteraction(await apiJson(`/api/v1/files/${file.id}?${query}`, { method: "DELETE" }));
+}
+
+export async function downloadFile(file) {
+  const response = await apiRequest(`/api/v1/files/${file.id}`);
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function matches(item, filters) {
@@ -232,3 +229,12 @@ export function recordLabel(count) {
 let memory = null;
 export function readMemory() { return memory; }
 export function writeMemory(value) { memory = value; }
+export async function fetchRequests() {
+  return apiJson("/api/v1/requests");
+}
+
+export async function decideRequest(id, decision, owner, comment) {
+  return apiJson(`/api/v1/requests/${id}/decision`, {
+    method: "POST", body: JSON.stringify({ decision, manager_name: owner, comment })
+  });
+}

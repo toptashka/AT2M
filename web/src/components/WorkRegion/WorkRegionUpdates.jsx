@@ -5,9 +5,9 @@ import {
   Tabs,
   usePreference,
 } from "./WorkspaceUI";
-import { ProductFilter } from "./WorkspaceFilters";
 import {
   filterLabels,
+  matches,
   selection,
   includesSelection,
   listText,
@@ -15,7 +15,6 @@ import {
 import { downloadChart } from "./chartExport";
 import downloadIcon from "../../assets/download.svg";
 
-export const INCOMING_DEMO = [];
 
 const DEMAND_TABS = [
   { id: "requests", tab: "По заявкам", unit: "Количество заявок" },
@@ -24,7 +23,7 @@ const DEMAND_TABS = [
 ];
 
 const KAM_TABS = [
-  { id: "launches", tab: "Запуски", unit: "Запуски программ · количество" },
+  { id: "launches", tab: "Завершено", unit: "Завершённые взаимодействия · количество" },
   { id: "active", tab: "В активной работе", unit: "Взаимодействия в активной работе" },
   { id: "overdue", tab: "SLA / просрочки", unit: "Просрочки · меньше — лучше" },
   { id: "speed", tab: "Скорость прохождения", unit: "Медиана прохождения этапа, дни · меньше — лучше" },
@@ -37,7 +36,7 @@ const SORTS = [
   { value: "cms", label: "Сначала CMS" },
 ];
 
-export function sortRequests(requests, mode) {
+function sortRequests(requests, mode) {
   return (requests || [])
     .map((item, index) => ({ item, index }))
     .sort((a, b) => {
@@ -190,11 +189,6 @@ export function WorkspaceChart({
     ""
   );
 
-  const [products, setProducts] = usePreference(
-    "workspace:local-products:" + kind,
-    []
-  );
-
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const menu = useRef(null);
@@ -205,25 +199,13 @@ export function WorkspaceChart({
   const title =
     kind === "demand"
       ? "Востребованность ИТ-программ"
-      : manager
-        ? "Эффективность и нагрузка КАМов"
-        : "Моя эффективность";
+      : "Эффективность и нагрузка КАМов";
 
-  const unsupported =
-    filters.search ||
-    selection(filters.status).length ||
-    selection(filters.institution).length ||
-    selection(filters.city).length ||
-    filters.changed ||
-    selection(filters.products).length ||
-    selection(products).length ||
-    (kind === "kam" && selection(filters.direction).length) ||
-    (kind === "demand" && selection(filters.owner).length);
+  const filteredInteractions = interactions.filter(item => matches(item, filters));
 
-  // Список КАМов подтягивается напрямую из Keycloak (managers), с фоллбэком на сделки в БД
   const kamOptions = useMemo(() => {
     const list = managers.length > 0
-      ? managers
+      ? managers.map(person => person.value)
       : (interactions || []).map((item) => item.owner).filter(Boolean);
     return [...new Set(list)];
   }, [managers, interactions]);
@@ -231,12 +213,11 @@ export function WorkspaceChart({
   let rows = [];
 
   if (kind === "demand") {
-    // Востребованность программ рассчитывается исключительно по реальным партнерствам из БД
-    if (empty || unsupported || !interactions.length) {
+    if (metric.id !== "requests" || empty || !filteredInteractions.length) {
       rows = [];
     } else {
       const progMap = {};
-      interactions.forEach((item) => {
+      filteredInteractions.forEach((item) => {
         const prog = item.direction || "Не указана";
         if (includesSelection(filters.direction, prog)) {
           progMap[prog] = (progMap[prog] || 0) + 1;
@@ -245,30 +226,32 @@ export function WorkspaceChart({
       rows = Object.entries(progMap);
     }
   } else {
-    // Эффективность КАМов: отображаются все КАМы из Keycloak с их реальной нагрузкой
-    if (empty || unsupported || !kamOptions.length) {
+    if (empty || !kamOptions.length) {
       rows = [];
     } else {
       rows = kamOptions
         .map((kamName) => {
-          const list = (interactions || []).filter((item) => item.owner === kamName);
-          let value = 0;
+          const list = filteredInteractions.filter((item) => item.owner === kamName);
+          let value;
           if (metric.id === "launches") {
-            value = list.filter((item) => item.stage >= 11 || item.done).length;
+            value = list.filter((item) => item.done).length;
           } else if (metric.id === "active") {
             value = list.filter((item) => !item.done).length;
           } else if (metric.id === "overdue") {
             value = list.filter((item) => item.status === "Просрочено").length;
           } else {
-            value = list.length;
+            const durations = list.flatMap(item => item.history || []).filter(entry => entry.outcome === "completed" && entry.enteredAt)
+              .map(entry => (Date.parse(entry.at) - Date.parse(entry.enteredAt)) / 86400000)
+              .filter(days => Number.isFinite(days) && days >= 0).sort((a, b) => a - b);
+            const middle = Math.floor(durations.length / 2);
+            value = durations.length ? Math.round((durations.length % 2 ? durations[middle] : (durations[middle - 1] + durations[middle]) / 2) * 10) / 10 : 0;
           }
           return [kamName, value];
         })
         .filter(([kamName]) => {
           return (
             (!selection(filters.owner).length || includesSelection(filters.owner, kamName)) &&
-            (!selection(owner).length || includesSelection(owner, kamName)) &&
-            (manager || kamName === kamOptions[0])
+            (!selection(owner).length || includesSelection(owner, kamName))
           );
         });
     }
@@ -295,15 +278,11 @@ export function WorkspaceChart({
       await downloadChart({
         title,
         metric: metric.unit,
-        rows: rows.map((row) => [...row]),
+        rows: rows.map(([name, value]) => [kind === "kam" ? managers.find(person => person.value === name)?.label || name : name, value]),
         format,
         filters: [
           ...filterLabels(filters),
           ["Метрика", metric.unit],
-          [
-            "Локальные продукты",
-            listText(products) || "Все продукты",
-          ],
           ...(kind === "kam"
             ? [
                 [
@@ -356,7 +335,7 @@ export function WorkspaceChart({
             allLabel="Все ответственные"
             searchPlaceholder="Поиск сотрудников"
             value={selection(owner)}
-            options={kamOptions}
+            options={managers}
             onChange={setOwner}
           />
         )}
@@ -424,7 +403,7 @@ export function WorkspaceChart({
         <div className="aw-bars">
           {rows.map(([name, value]) => (
             <div className="aw-bar" key={name} tabIndex={0}>
-              <span>{name}</span>
+              <span>{kind === "kam" ? managers.find(person => person.value === name)?.label || name : name}</span>
 
               <span className="aw-track">
                 <i
@@ -437,7 +416,7 @@ export function WorkspaceChart({
               <strong>{value.toLocaleString("ru-RU")}</strong>
 
               <span className="aw-tooltip">
-                {name}
+                {kind === "kam" ? managers.find(person => person.value === name)?.label || name : name}
                 <br />
                 {metric.unit}: {value.toLocaleString("ru-RU")}
 
@@ -454,12 +433,6 @@ export function WorkspaceChart({
         </div>
       )}
 
-      <div className="aw-chart-products">
-        <ProductFilter
-          value={products}
-          onChange={setProducts}
-        />
-      </div>
     </section>
   );
 }

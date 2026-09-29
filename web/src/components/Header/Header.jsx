@@ -1,3 +1,4 @@
+import { useAuth } from "../../auth.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppTheme, setAppTheme } from "../../theme";
 import logo from "../../assets/Logo.svg";
@@ -96,6 +97,7 @@ export default function Header({
   notificationStorageKey,
   onLogout,
 }) {
+  const user = useAuth();
   const { theme } = useAppTheme();
   const isDark = dark ?? theme === "dark";
 
@@ -109,9 +111,9 @@ export default function Header({
   const button = useRef(null);
 
   const tokenUser = getUserFromToken();
-  const currentName = tokenUser?.name || "Пользователь";
+  const currentName = user?.name || tokenUser?.name || "Пользователь";
   const currentEmail = tokenUser?.email || "";
-  const currentInitials = tokenUser?.initials || "РТ";
+  const currentInitials = currentName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join("").toUpperCase();
 
   const closeView = useCallback(() => setView(null), []);
 
@@ -173,7 +175,7 @@ export default function Header({
           </a>
 
           <nav className="at-nav" aria-label="Основная навигация">
-            {navigation.map(([label, href]) => (
+            {navigation.filter(([, href]) => href !== "#/admin" || user?.canAdmin).map(([label, href]) => (
               <a
                 key={href}
                 href={href}

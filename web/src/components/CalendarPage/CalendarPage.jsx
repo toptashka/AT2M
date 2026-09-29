@@ -390,17 +390,17 @@ export default function CalendarPage({
     const token = localStorage.getItem("token");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    fetch("/api/v1/managers", { headers })
+    fetch("/api/v1/staff", { headers })
       .then((res) => res.ok ? res.json() : [])
       .then((data) => {
         if (isMounted && Array.isArray(data)) {
-          setKeycloakManagers(data);
+          setKeycloakManagers(data.map(person => person.name));
         }
       })
       .catch(() => {});
 
     if (!propEvents || propEvents.length === 0) {
-      setInternalLoading(true);
+      Promise.resolve().then(() => { if (isMounted) setInternalLoading(true); });
       fetch("/api/v1/partnerships", { headers })
         .then((res) => {
           if (!res.ok) throw new Error("Не удалось загрузить данные взаимодействий");
@@ -414,6 +414,7 @@ export default function CalendarPage({
         })
         .catch((err) => {
           if (!isMounted) return;
+          setInternalError(err.message || "Не удалось загрузить календарь");
           setInternalEvents([]);
           setInternalLoading(false);
         });

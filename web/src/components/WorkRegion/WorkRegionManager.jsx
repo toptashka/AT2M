@@ -4,7 +4,7 @@ export default function WorkRegionManager(props) {
   return (
     <WorkRegionUser
       {...props}
-      manager={props.manager ?? true}
+      manager={props.manager ?? false}
     />
   );
 }

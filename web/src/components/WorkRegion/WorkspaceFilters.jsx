@@ -43,15 +43,15 @@ export function PeriodFilter({ value, onChange }) {
   );
 }
 
-export default function WorkspaceFilters({ value, onChange, interactions = [], managers = [] }) {
+export default function WorkspaceFilters({ value, onChange, interactions = [], managers = [], catalogs = { programs: [], universities: [], regions: [] } }) {
   const change = (key, next) => onChange({ ...value, [key]: next });
 
   const list = Array.isArray(interactions) ? interactions : [];
 
-  const institutions = [...new Set(list.map((item) => item.name).filter(Boolean))];
-  const cities = [...new Set(list.map((item) => item.city).filter(Boolean))];
-  const dynamicPrograms = [...new Set(list.map((item) => item.direction).filter(Boolean))];
-  const dynamicProducts = [...new Set(list.map((item) => item.product).filter(Boolean))];
+  const institutions = [...new Set([...(catalogs.universities || []), ...list.map((item) => item.name)].filter(Boolean))];
+  const cities = [...new Set([...(catalogs.regions || []), ...list.map((item) => item.city)].filter(Boolean))];
+  const dynamicPrograms = [...new Set([...(catalogs.programs || []).map((p) => p.direction), ...list.map((item) => item.direction)].filter((name) => name && name !== "ИТ-направление"))];
+  const dynamicProducts = [...new Set([...(catalogs.programs || []).map((p) => p.software), ...list.map((item) => item.product)].filter(Boolean))];
   
   const dynamicOwners = managers.length > 0 ? managers : [...new Set(list.map((item) => item.owner).filter(Boolean))];
 

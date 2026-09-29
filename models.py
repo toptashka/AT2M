@@ -8,7 +8,7 @@ from database import Base
 
 _ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
 if not _ENCRYPTION_KEY:
-        _ENCRYPTION_KEY = Fernet.generate_key().decode('utf-8')
+        raise RuntimeError("ENCRYPTION_KEY must be configured and preserved across restarts")
 _fernet = Fernet(_ENCRYPTION_KEY.encode('utf-8'))
 
 class EncryptedString(TypeDecorator):
@@ -56,6 +56,8 @@ class WorkflowStage(Base):
         step_number = Column(Integer, unique=True, nullable=False)
         title = Column(String(255), nullable=False)
         description = Column(Text, nullable=True)
+        conditions = Column(Text, nullable=True)
+        deadline_days = Column(Integer, nullable=True)
         partnerships = relationship("Partnership", back_populates="stage")
 
 class Partnership(Base):
@@ -68,6 +70,7 @@ class Partnership(Base):
         contract_number = Column(String(100), nullable=True)
         is_license_signed = Column(Boolean, default=False)
         license_term_years = Column(Integer, nullable=True)
+        transfer_status = Column(String(100), nullable=True)
         comment = Column(Text, nullable=True)
         created_at = Column(DateTime, default=datetime.utcnow)
         updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -82,6 +85,7 @@ class PartnershipComment(Base):
         __tablename__ = "partnership_comments"
         id = Column(Integer, primary_key=True, index=True)
         partnership_id = Column(Integer, ForeignKey("partnerships.id"), nullable=False)
+        stage_id = Column(Integer, nullable=True)
         author_id = Column(String(100), nullable=False)
         text = Column(Text, nullable=False)
         created_at = Column(DateTime, default=datetime.utcnow)
@@ -100,6 +104,9 @@ class Attachment(Base):
         __tablename__ = "attachments"
         id = Column(Integer, primary_key=True, index=True)
         partnership_id = Column(Integer, ForeignKey("partnerships.id"), nullable=False)
+        stage_id = Column(Integer, nullable=True)
+        file_size = Column(Integer, nullable=True)
+        document_type = Column(String(50), nullable=True)
         file_name = Column(String(255), nullable=False)
         file_url = Column(String(500), nullable=False)
         file_type = Column(String(50), nullable=True)
@@ -115,3 +122,45 @@ class AuditLog(Base):
         entity_id = Column(Integer, nullable=True)
         ip_address = Column(String(45), nullable=True)
         timestamp = Column(DateTime, default=datetime.utcnow)
+
+class CatalogImportJob(Base):
+        __tablename__ = "catalog_import_jobs"
+        id = Column(String(36), primary_key=True)
+        owner_id = Column(String(255), nullable=False)
+        catalog = Column(String(32), nullable=False)
+        payload = Column(EncryptedString(), nullable=False)
+        result = Column(Text, nullable=True)
+        created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class CatalogManager(Base):
+        __tablename__ = "catalog_managers"
+        id = Column(Integer, primary_key=True)
+        name = Column(String(255), nullable=False, unique=True)
+
+
+class WorkflowState(Base):
+        __tablename__ = "workflow_state"
+        id = Column(Integer, primary_key=True)
+        version = Column(Integer, nullable=False, default=1)
+
+
+class PartnershipState(Base):
+        __tablename__ = "partnership_state"
+        partnership_id = Column(Integer, ForeignKey("partnerships.id"), primary_key=True)
+        data = Column(EncryptedString(), nullable=False, default="{}")
+
+
+class PartnershipRequest(Base):
+        __tablename__ = "partnership_requests"
+        id = Column(Integer, primary_key=True)
+        requester = Column(String(255), nullable=False, index=True)
+        requester_name = Column(String(255), nullable=False)
+        university_id = Column(Integer, ForeignKey("universities.id"), nullable=False)
+        program_id = Column(Integer, ForeignKey("programs.id"), nullable=False)
+        status = Column(String(20), nullable=False, default="pending")
+        partnership_id = Column(Integer, ForeignKey("partnerships.id"), nullable=True)
+        decided_by = Column(String(255), nullable=True)
+        reason = Column(Text, nullable=True)
+        created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+        decided_at = Column(DateTime, nullable=True)

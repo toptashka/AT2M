@@ -6,8 +6,8 @@ export function partnershipsToCalendarEvents(partnerships = []) {
     const shortInstitution = institution.split(" ")[0]?.substring(0, 10) || institution;
     const program = item.direction || item.program || item.program_name || "";
     const product = item.product || item.contract?.software || "";
-    const manager = item.manager || item.owner || item.manager_name || "";
-    const city = item.city || "Москва";
+    const manager = item.manager_display_name || item.manager || item.owner || item.manager_name || "";
+    const city = item.city || item.region || "";
     const stageNum = typeof item.stage === "number" ? item.stage : (item.stage_id || 1);
 
     const dueDate = item.due || item.deadline;

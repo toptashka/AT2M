@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { AuthContext } from "./auth.jsx";
+import { apiJson } from "./api.js";
 import AdminPage from "./components/AdminPage/AdminPage";
 import FaqPage from "./components/FaqPage/FaqPage";
 import WorkRegion from "./components/WorkRegion/WorkRegionManager";
@@ -15,6 +17,32 @@ function getCurrentRoute() {
 function App() {
   const [route, setRoute] = useState(getCurrentRoute);
   const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [identity, setIdentity] = useState({ token: null, user: null, error: "" });
+  const user = identity.token === token ? identity.user : null;
+  const authError = identity.token === token ? identity.error : "";
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    apiJson("/api/v1/me")
+      .then(value => {
+        if (active) setIdentity({ token, user: value, error: "" });
+      })
+      .catch(error => {
+        if (active) setIdentity({ token, user: null, error: error.message });
+      });
+    return () => { active = false; };
+  }, [token]);
+
+  useEffect(() => {
+    const expire = () => {
+      localStorage.removeItem("token");
+      setToken(null);
+      setIdentity({ token: null, user: null, error: "" });
+    };
+    window.addEventListener("auth:expired", expire);
+    return () => window.removeEventListener("auth:expired", expire);
+  }, []);
 
   useEffect(() => {
     function handleRouteChange() {
@@ -31,6 +59,7 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setToken(null);
+    setIdentity({ token: null, user: null, error: "" });
   };
 
   const handleLogin = async ({ username, password }) => {
@@ -84,10 +113,18 @@ function App() {
     );
   }
 
+  if (!user) {
+    return <div className="app"><main style={{ padding: 24 }}>
+      <p role={authError ? "alert" : "status"}>{authError || "Проверяем права доступа…"}</p>
+      {authError && <button onClick={handleLogout}>Выйти и повторить вход</button>}
+    </main></div>;
+  }
+
   return (
+    <AuthContext.Provider value={user}>
     <div className="app">
       {route === "/admin" ? (
-        <AdminPage />
+        user.canAdmin ? <AdminPage /> : <main style={{ padding: 24 }}><h1>Доступ запрещён</h1><p>Раздел доступен администратору.</p><a href="#/">На главную</a></main>
       ) : route === "/faq" ? (
         <FaqPage />
       ) : route === "/calendar" ? (
@@ -95,9 +132,10 @@ function App() {
       ) : route === "/reports" ? (
         <ReportsPage />
       ) : (
-        <WorkRegion />
+        <WorkRegion key={user.username} manager={user.canManage} onLogout={handleLogout} />
       )}
     </div>
+    </AuthContext.Provider>
   );
 }
 

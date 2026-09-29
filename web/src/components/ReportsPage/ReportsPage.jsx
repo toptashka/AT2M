@@ -87,7 +87,7 @@ function normalizeRow(row) {
     city: row.city || "—",
     direction: row.direction || row.program || row.program_name || "",
     product: row.product || row.contract?.software || "—",
-    manager: row.manager || row.owner || row.manager_name || "Не назначен",
+    manager: row.manager_display_name || row.manager || row.owner || row.manager_name || "Не назначен",
     stage: stageDisplay || "—",
     status: row.status || (row.done ? "Завершено" : "В работе"),
     startDate: row.startDate || row.start || (row.created_at ? String(row.created_at).slice(0, 10) : isoDate(new Date())),
@@ -396,17 +396,17 @@ export default function ReportsPage({
     const token = localStorage.getItem("token");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    fetch("/api/v1/managers", { headers })
+    fetch("/api/v1/staff", { headers })
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (isMounted && Array.isArray(data)) {
-          setKeycloakManagers(data);
+          setKeycloakManagers(data.map(person => person.name));
         }
       })
       .catch(() => {});
 
     if (propRecords === undefined) {
-      setInternalLoading(true);
+      Promise.resolve().then(() => { if (isMounted) setInternalLoading(true); });
       fetch("/api/v1/partnerships", { headers })
         .then(res => {
           if (!res.ok) throw new Error("Не удалось загрузить данные взаимодействий.");

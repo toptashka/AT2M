@@ -1,3 +1,4 @@
+import { apiJson } from "../../api.js";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Header from "../Header/Header";
 import { setAppTheme, useAppTheme } from "../../theme";
@@ -16,7 +17,6 @@ import {
   pageNumbers,
   studentCatalog,
   validateImport,
-  BASE_STAGES
 } from "./adminModel";
 import "./AdminPage.css";
 
@@ -236,6 +236,7 @@ function ImportPanel({ students = false, partnerships = [], api, demo, onImporte
       }
 
       setResult(response);
+      window.dispatchEvent(new Event("catalogs:updated"));
       setStatus("success");
       setConfirm(false);
       if (onImported) onImported(`${catalog.label} · ${response.processed} записей`);
@@ -444,79 +445,19 @@ function Audit({ entries = [], demo, refreshing, onRefresh }) {
 
 const defaultApi = {
   async load({ signal }) {
-    const token = localStorage.getItem("token");
-    const headers = {
-      "Content-Type": "application/json",
-      ...(token ? { "Authorization": `Bearer ${token}` } : {})
-    };
-
-    const [stagesRes, partsRes, auditRes] = await Promise.allSettled([
-      fetch("/api/v1/workflow/stages", { headers, signal }),
-      fetch("/api/v1/partnerships", { headers, signal }),
-      fetch("/api/v1/audit", { headers, signal })
+    const user = await apiJson("/api/v1/me", { signal });
+    if (!user.canAdmin) return { canManage: false };
+    const [workflow, rows, audit] = await Promise.all([
+      apiJson("/api/v1/workflow", { signal }),
+      apiJson("/api/v1/partnerships", { signal }),
+      apiJson("/api/v1/audit", { signal })
     ]);
-
-    let stages = [];
-    if (stagesRes.status === "fulfilled" && stagesRes.value.ok) {
-      try {
-        const stagesData = await stagesRes.value.json();
-        if (Array.isArray(stagesData) && stagesData.length > 0) {
-          stages = stagesData.map((s, i) => ({
-            id: String(s.id ?? `stage-${i + 1}`),
-            name: s.title || s.name || `Этап ${i + 1}`,
-            count: s.count || 0,
-            conditions: [true, true, true],
-            migrationAllowed: true
-          }));
-        }
-      } catch {
-        stages = [];
-      }
-    }
-
-    if (!stages.length) {
-      stages = BASE_STAGES.map((name, i) => ({
-        id: `stage-${i + 1}`,
-        name,
-        count: 0,
-        conditions: [true, true, true],
-        migrationAllowed: true
-      }));
-    }
-
-    let partnerships = [];
-    if (partsRes.status === "fulfilled" && partsRes.value.ok) {
-      try {
-        const partsData = await partsRes.value.json();
-        if (Array.isArray(partsData)) {
-          partnerships = partsData.map(p => ({
-            id: String(p.id),
-            label: `${p.university_name || p.name || "Вуз"} · ${p.program_name || p.direction || "Программа"}`
-          }));
-        }
-      } catch {
-        partnerships = [];
-      }
-    }
-
-    let audit = [];
-    if (auditRes.status === "fulfilled" && auditRes.value.ok) {
-      try {
-        const auditData = await auditRes.value.json();
-        if (Array.isArray(auditData)) {
-          audit = auditData;
-        }
-      } catch {
-        audit = [];
-      }
-    }
-
     return {
-      canManage: true,
-      stages,
-      partnerships,
-      audit,
-      version: 1
+      canManage: user.canAdmin,
+      stages: workflow.stages,
+      version: workflow.version,
+      partnerships: rows.map(row => ({ id: String(row.id), label: `${row.university_name} · ${row.program_name}` })),
+      audit
     };
   },
   async inspectFile({ file, catalog, partnershipId, signal }) {
@@ -533,14 +474,8 @@ const defaultApi = {
       signal
     });
     if (!res.ok) {
-      return {
-        jobId: globalThis.crypto.randomUUID(),
-        filename: file.name,
-        size: file.size,
-        columns: [],
-        rows: [],
-        mapping: {}
-      };
+      const failure = await res.json().catch(() => ({}));
+      throw new Error(typeof failure.detail === "string" ? failure.detail : `Ошибка проверки файла: HTTP ${res.status}.`);
     }
     return await res.json();
   },
@@ -555,7 +490,10 @@ const defaultApi = {
       body: JSON.stringify({ jobId, catalog, partnershipId, mapping, excludedRowIds }),
       signal
     });
-    if (!res.ok) throw new Error("Не удалось выполнить импорт на сервере.");
+    if (!res.ok) {
+      const failure = await res.json().catch(() => ({}));
+      throw new Error(typeof failure.detail === "string" ? failure.detail : `Ошибка импорта: HTTP ${res.status}.`);
+    }
     return await res.json();
   },
   async updateWorkflow({ change, version, signal }) {
@@ -569,7 +507,10 @@ const defaultApi = {
       body: JSON.stringify({ change, version }),
       signal
     });
-    if (!res.ok) throw new Error("Не удалось сохранить изменения Workflow.");
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(typeof error.detail === "string" ? error.detail : `Ошибка Workflow: HTTP ${res.status}`);
+    }
     return await res.json();
   },
   async listAudit({ signal }) {
@@ -656,6 +597,7 @@ export default function AdminPage({ api: customApi = null, demo = false }) {
       if (!Array.isArray(response?.stages)) throw new Error("Сервер не подтвердил обновление Workflow.");
       nextStages = response.stages;
       setData(current => ({ ...current, stages: nextStages, version: response.version }));
+      window.dispatchEvent(new Event("workflow:updated"));
     } else {
       setData(current => ({ ...current, stages: nextStages }));
       addDemoAudit("Изменение Workflow", change.name || data.stages.find(s => s.id === change.id)?.name);

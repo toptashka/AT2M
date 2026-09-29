@@ -2,10 +2,7 @@ import { useRef, useState } from "react";
 import { Dialog, Field, Select } from "./WorkspaceUI";
 import {
   OWNERS,
-  PROGRAMS,
   STEPS,
-  maskContact,
-  SOFTWARE_CATALOG,
   softwareValues,
   softwareVendors,
   listText,
@@ -20,22 +17,24 @@ const TITLES = {
   complete: "Завершить этап",
   accept: "Принять заявку в работу",
   reject: "Отклонить заявку?",
-  create: "Создать партнёрство",
+  create: "Новая заявка / партнёрство",
 };
 
 export default function WorkspaceModal({
   modal,
   item,
   manager,
-  institutions,
+  institutions = [],
+  programs = [],
+  softwareCatalog = [],
   managers = [],
   onClose,
   onSubmit,
 }) {
   const [form, setForm] = useState(() => ({
-    owner: item ? item.owner : (managers[0] || OWNERS[0] || ""),
+    owner: item ? item.owner : (managers[0]?.value || OWNERS[0]?.value || ""),
     institution: institutions[0] || "",
-    direction: PROGRAMS[0],
+    direction: programs[0] || "",
     comment: "",
     ...(item?.contract || {}),
     software: softwareValues(item?.contract?.software).join(", "),
@@ -50,6 +49,8 @@ export default function WorkspaceModal({
   }));
 
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const submitLock = useRef(false);
   const input = useRef(null);
   const kind = modal.kind;
 
@@ -73,8 +74,7 @@ export default function WorkspaceModal({
 
   const softwareOptions = [
     ...new Set([
-      ...SOFTWARE_CATALOG
-        .filter((entry) => entry.value !== "Облако")
+      ...softwareCatalog
         .map((entry) => entry.value),
       ...selectedSoftware,
     ]),
@@ -131,24 +131,26 @@ export default function WorkspaceModal({
   return (
     <Dialog
       title={TITLES[kind]}
+      busy={submitting}
       onClose={onClose}
       showClose={kind !== "edit"}
     >
       {(close, closing) => (
         <form
           inert={closing || undefined}
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
-
-            if (!valid) return;
-
-            close(() => {
-              try {
-                onSubmit(form);
-              } catch (cause) {
-                setError(cause.message);
-              }
-            });
+            if (!valid || submitLock.current) return;
+            submitLock.current = true;
+            setSubmitting(true);
+            setError("");
+            try {
+              await onSubmit(form);
+            } catch (cause) {
+              setError(cause.message || "Не удалось сохранить изменения.");
+              setSubmitting(false);
+              submitLock.current = false;
+            }
           }}
         >
           {kind === "edit" && (
@@ -184,7 +186,7 @@ export default function WorkspaceModal({
                       setForm((current) => ({
                         ...current,
                         software: values.join(", "),
-                        vendor: softwareVendors(values).join(", "),
+                        vendor: softwareVendors(values, softwareCatalog).join(", "),
                       }))
                     }
                   />
@@ -228,12 +230,7 @@ export default function WorkspaceModal({
                     <input
                       className="at-input"
                       type={key === "email" ? "email" : "text"}
-                      disabled={!manager}
-                      value={
-                        manager
-                          ? form.contact[key] || ""
-                          : maskContact(form.contact)[key] || "—"
-                      }
+                      value={form.contact[key] || ""}
                       onChange={(event) =>
                         contact(key, event.target.value)
                       }
@@ -380,14 +377,7 @@ export default function WorkspaceModal({
 
               {select("Ответственный КАМ", "owner", managers.length > 0 ? managers : OWNERS)}
 
-              <p className="at-muted">
-                После принятия взаимодействие появится в реестре
-                на этапе{" "}
-                {modal.request.source === "CMS"
-                  ? "02 — Коммуникация с вузом"
-                  : "01 — Поиск контактов"}
-                .
-              </p>
+              <p className="at-muted">После одобрения взаимодействие появится на первом этапе Workflow.</p>
             </>
           )}
 
@@ -401,12 +391,11 @@ export default function WorkspaceModal({
           {kind === "create" && (
             <>
               {select("Учреждение", "institution", institutions)}
-              {select("ИТ-направление", "direction", PROGRAMS)}
+              {select("ИТ-направление", "direction", programs)}
+              {manager && select("Ответственный КАМ", "owner", managers)}
 
               <p className="at-muted">
-                {manager
-                  ? "Партнёрство появится в реестре на этапе 01 — Поиск контактов."
-                  : "Заявка будет направлена руководителю."}
+                {manager ? "Партнёрство появится на первом этапе Workflow." : "Заявка будет ждать одобрения руководителя. До одобрения взаимодействие не создаётся."}
               </p>
             </>
           )}
@@ -433,7 +422,7 @@ export default function WorkspaceModal({
                   ? "danger"
                   : "primary")
               }
-              disabled={!valid}
+              disabled={!valid || submitting}
               type="submit"
             >
               {

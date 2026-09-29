@@ -5,7 +5,6 @@ import {
   STEPS,
   dateLabel,
   stageData,
-  maskContact,
   listText,
 } from "./workspaceModel";
 
@@ -34,7 +33,7 @@ export function Contract({ value, onEdit }) {
     ["ПО", Array.isArray(value.software) ? value.software.join(", ") : value.software],
     ["Номер договора", value.number],
     ["Подписание лицензии", value.signed],
-    ["Срок действия лицензии", dateLabel(value.licenseEnd)],
+    ["Срок действия лицензии", (value.licenseEnd ? dateLabel(value.licenseEnd) : value.licenseTermYears ? `${value.licenseTermYears} г.` : "—")],
     ["Статус передачи ПО", value.transfer === "Передано вузу" ? "Передано учреждению" : value.transfer],
   ];
 
@@ -78,8 +77,9 @@ export default function InteractionDetail({
   const current = !archived && !future;
 
   const data = item.stages[selected] || stageData();
-  const contact = manager ? item.contact : maskContact(item.contact);
-  const canComplete = data.conditions.every(Boolean) && data.files.length > 0;
+  const contact = item.contact;
+  const requiredConditions = data.requiredConditions || [true, true, true];
+  const canComplete = requiredConditions.every((needed, index) => !needed || data.conditions[index]);
 
   const snapshot = [...item.history]
     .reverse()
@@ -123,9 +123,8 @@ export default function InteractionDetail({
                     {done && (
                       <small>Завершено {dateLabel(item.stages[number]?.completedAt)}</small>
                     )}
-                    {!item.done && number === item.stage && (
-                      <small>Текущий этап<br />До {dateLabel(item.due)}</small>
-                    )}
+                    {!item.done && number === item.stage && <small>Текущий этап</small>}
+                    {item.stages[number]?.due && <small>До {dateLabel(item.stages[number].due)}</small>}
                   </span>
                 </button>
               </li>
@@ -147,7 +146,7 @@ export default function InteractionDetail({
 
         <h2>{steps[selected - 1] || ""}</h2>
 
-        {current && <p className="at-muted">до {dateLabel(item.due)}</p>}
+        {data.due && <p className="at-muted">До {dateLabel(data.due)}</p>}
 
         {current && (
           manager ? (
@@ -156,12 +155,12 @@ export default function InteractionDetail({
               <Select
                 label="Ответственный КАМ"
                 value={item.owner}
-                options={[...OWNERS.map(o => ({ value: o, label: o })), { value: "", label: "Не назначен" }]}
+                options={[...OWNERS, { value: "", label: "Не назначен" }]}
                 onChange={(value) => onOwner(item.id, value)}
               />
             </div>
           ) : (
-            <p>Ответственный — {item.owner || "Не назначен"}</p>
+            <p>Ответственный — {item.ownerName || "Не назначен"}</p>
           )
         )}
 
@@ -189,6 +188,7 @@ export default function InteractionDetail({
                   <dl className="aw-contact">
                     <div><dt>Телефон</dt><dd>{contact.phone || "—"}</dd></div>
                     <div><dt>Почта</dt><dd>{contact.email || "—"}</dd></div>
+                    {contact.position?.trim() && <div><dt>Должность</dt><dd>{contact.position}</dd></div>}
                   </dl>
                 </section>
 
@@ -207,7 +207,7 @@ export default function InteractionDetail({
                       aria-pressed={data.conditions[index]}
                       onClick={() => onCondition(item.id, index, !data.conditions[index])}
                     >
-                      {data.conditions[index] ? <CheckIcon /> : "○"} {label}
+                      {data.conditions[index] ? <CheckIcon /> : "○"} {label}{requiredConditions[index] ? "" : " (необязательно)"}
                     </button>
                   ))}
                 </section>
