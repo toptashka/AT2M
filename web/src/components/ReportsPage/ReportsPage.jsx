@@ -357,7 +357,7 @@ function ReportCheckbox({ children, ...props }) {
   </label>;
 }
 
-const mobileQuery = "(max-width: 767px)";
+const mobileQuery = "(max-width: 767.98px)";
 function subscribeMobile(callback) {
   const query = window.matchMedia(mobileQuery);
   query.addEventListener("change", callback);
@@ -603,6 +603,6 @@ export default function ReportsPage({ records = demoRecords, initialFilters = re
           <div className="reports-mobile-export"><h2>Экспорт отчёта</h2>{exportActions}{exporting && <p role="status">Формируем файл. Другие форматы временно недоступны.</p>}</div>
         </>}
       </section>
-    </main>{mobile && <div className="reports-mobile-footer" inert={mobileModal || undefined}><Footer /></div>}{notification && <div className="reports-notification" data-type={notification.type} role={notification.type === "error" ? "alert" : "status"}><button type="button" className="reports-icon-button" aria-label="Скрыть уведомление" onClick={() => setNotification(null)}><PageIcon name="close" /></button><h3>{notification.title}</h3>{notification.code && <p>Код: {notification.code}</p>}<p>{notification.message}</p></div>}
+    </main><div inert={mobileModal || undefined}><Footer /></div>{notification && <div className="reports-notification" data-type={notification.type} role={notification.type === "error" ? "alert" : "status"}><button type="button" className="reports-icon-button" aria-label="Скрыть уведомление" onClick={() => setNotification(null)}><PageIcon name="close" /></button><h3>{notification.title}</h3>{notification.code && <p>Код: {notification.code}</p>}<p>{notification.message}</p></div>}
   </div>;
 }

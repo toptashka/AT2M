@@ -369,7 +369,7 @@ function TimeView({ days, today, events, view, onOpen, onDay }) {
   );
 }
 
-const mobileQuery = "(max-width: 767px)";
+const mobileQuery = "(max-width: 767.98px)";
 function subscribeMobile(callback) {
   const media = window.matchMedia(mobileQuery);
   media.addEventListener("change", callback);
@@ -564,8 +564,8 @@ export default function CalendarPage({ events = emptyEvents, initialDate, filter
                     : <TimeView days={days} today={today} events={visible} view={view} onOpen={openEvent} onDay={openDay} />}
                 </div>}
         </div>
-        {mobile && <Footer />}
       </main>
+      <Footer />
       {popup && (mobile ? <MobileSheet closing={closing} key={popup.kind} onClose={closePopup} title={popup.kind === "filters" ? "Фильтры" : popup.kind === "list" ? fullDate(popup.day) : popup.event.title} className={popup.kind === "filters" ? "calendar-mobile-filters-sheet" : "calendar-mobile-event-sheet"}>
         {popup.kind === "filters" ? <form className="calendar-extra-filters calendar-mobile-filter-form" onSubmit={event => { event.preventDefault(); setFilters(draft); closePopup(); }}>
           {[["program", "ИТ-направление"], ["product", "ИТ-продукт"], ["manager", "Ответственный КАМ"], ["type", "Тип события"], ["institution", "Учреждение"], ["city", "Город"], ["urgency", "Срочность"]].map(([key, label]) => <div className="calendar-mobile-filter-field" key={key}>

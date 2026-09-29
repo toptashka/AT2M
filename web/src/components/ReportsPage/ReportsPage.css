@@ -234,8 +234,10 @@
 .reports-mobile-controls, .reports-sheet-backdrop { display: none; }
 .wr-reports-menu-toggle { display: none; }
 
-@media (max-width: 767px) {
+@media (max-width: 767.98px) {
   .reports-page { min-width: 0; overflow-wrap: anywhere; }
+  .reports-main, .reports-preview, .reports-table-card, .reports-table-scroll, .reports-mobile-controls, .reports-sheet-body { min-width: 0; max-width: 100%; }
+  .reports-mobile-dates .reports-date-value, .reports-mobile-period-trigger .reports-date-value { min-width: 0; }
   .reports-table-card { border-radius: 12px 0 0 12px; }
   .reports-table-scroll { scrollbar-width: auto; scrollbar-color: var(--reports-muted) var(--reports-border); }
   .reports-table-scroll::-webkit-scrollbar { height: 10px; }
@@ -342,3 +344,35 @@
 @keyframes reports-sheet-out { to { transform: translateY(100%); } }
 @keyframes reports-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes reports-overlay-out { to { opacity: 0; } }
+@media (max-width: 767.98px) {
+  .reports-page { min-width: 0; max-width: 100%; }
+  .reports-page .at-header { min-width: 0; max-width: 100%; }
+  .reports-page .at-header .at-header-inner {
+    display: flex; width: 100%; max-width: 100%; min-width: 0;
+    height: 64px; margin: 0; padding: 0 16px; gap: 8px;
+  }
+  .reports-page .at-header .at-logo {
+    flex: 1 1 auto; min-width: 0; gap: 8px; font-size: 18px;
+  }
+  .reports-page .at-logo img { flex: none; width: 32px; height: 32px; }
+  .reports-page .at-logo span { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
+  .reports-page .at-header .at-profile { flex: none; margin-left: auto; }
+  .reports-page .at-header .wr-reports-menu-toggle {
+    display: grid; place-items: center; flex: 0 0 44px;
+    width: 44px; height: 44px; padding: 10px;
+    border: 1px solid transparent; border-radius: 8px;
+    background: transparent; color: var(--a-text);
+  }
+  .reports-page .at-header .wr-reports-menu-toggle:focus-visible { outline: none; border-color: var(--a-focus); }
+  .reports-page .at-header .at-nav {
+    display: none; position: absolute; inset: 64px 16px auto;
+    width: auto; height: auto; min-width: 0; margin: 0; padding: 8px;
+    flex-direction: column; align-items: stretch; gap: 0;
+    border: 1px solid var(--a-border); border-radius: 8px;
+    background: var(--a-card); z-index: 30;
+  }
+  .reports-page .at-header .at-nav[data-mobile-open="true"] { display: flex; }
+  .reports-page .at-header .at-nav a { min-height: 44px; padding: 12px; white-space: normal; overflow-wrap: anywhere; }
+  .reports-page .at-header .at-nav a::after { display: none; }
+  .reports-page .at-header .at-profile-menu { right: -52px; width: min(280px, calc(100vw - 32px)); max-width: calc(100vw - 32px); }
+}

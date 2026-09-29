@@ -115,3 +115,35 @@
 .settings-switch[aria-checked="true"] span { transform: translateX(18px); }
 .settings-switch:disabled { opacity: .6; }
 @keyframes settings-section-in { from { opacity: 0; transform: translateY(4px); } }
+
+.settings-mobile-heading { display: none; }
+.settings-password-hint { display: none; }
+.settings-window-panel, .settings-section, .settings-field { min-width: 0; overflow-wrap: anywhere; }
+.settings-window-dialog-drawer .settings-window-panel { flex: 0 1 560px; }
+@media (max-width: 767.98px) {
+  .settings-window-dialog-drawer[open] { align-items: flex-end; }
+  .settings-window-dialog-drawer .settings-window-panel { flex-basis: 100%; width: 100%; height: calc(100dvh - 64px); padding: 0 16px max(24px, env(safe-area-inset-bottom)); border-radius: 12px 12px 0 0; scrollbar-width: none; }
+  .settings-window-panel::-webkit-scrollbar { display: none; }
+  .settings-mobile-heading { display: grid; grid-template-columns: 64px minmax(0, 1fr) 64px; align-items: center; gap: 4px; min-height: 56px; margin: 0 -16px; padding: 8px 16px; border-bottom: 1px solid var(--settings-window-border); }
+  .settings-mobile-heading > span { font-size: 16px; line-height: 24px; font-weight: 700; text-align: center; }
+  .settings-mobile-heading button { display: flex; align-items: center; gap: 4px; min-height: 40px; padding: 0; border: 0; color: var(--settings-window-text); background: transparent; font-size: 14px; }
+  .settings-mobile-heading .settings-window-icon { width: 10px; height: 16px; }
+  .settings-window-close { top: 8px; right: 16px; width: 32px; height: 32px; background: var(--settings-window-soft); }
+  .settings-window-dialog .settings-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); margin: 0; }
+  .settings-tabs { margin: 0 -16px 16px; padding: 0 16px; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .settings-tabs button { min-width: 0; min-height: 48px; padding: 12px 0; font-size: 14px; font-weight: 700; }
+  .settings-section h3 { font-size: 16px; line-height: 24px; font-weight: 700; }
+  .settings-section .settings-description { margin: 4px 0 20px; font-size: 14px; line-height: 20px; }
+  .settings-field { margin-bottom: 16px; }
+  .settings-field label { font-size: 14px; line-height: 20px; font-weight: 700; margin-bottom: 8px; }
+  .settings-input-wrap { height: 44px; }
+  .settings-eye { height: 40px; width: 40px; }
+  .settings-submit { min-height: 44px; font-weight: 700; }
+  .settings-section .settings-password-hint { display: block; padding: 12px; margin-bottom: 18px; border-radius: 8px; background: var(--settings-window-soft); color: var(--settings-window-muted); font-size: 12px; line-height: 16px; }
+  .settings-notification { gap: 16px; padding: 24px 0; align-items: center; }
+  .settings-notification:first-child { padding-top: 16px; }
+  .settings-notification p:first-child { font-size: 14px; line-height: 20px; font-weight: 700; }
+  .settings-notification p + p { font-size: 12px; line-height: 16px; margin-top: 8px; }
+  .settings-switch { margin-top: 0; }
+  .settings-section .settings-note { padding: 12px; margin-top: 16px; border-radius: 8px; background: var(--settings-window-soft); font-size: 12px; line-height: 16px; }
+}

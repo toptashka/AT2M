@@ -1,3 +1,4 @@
+import Footer from "../Footer/Footer";
 import { useId, useRef, useState } from "react";
 
 import logo from "../../assets/Logo.svg";
@@ -191,6 +192,7 @@ export default function AuthPage({ onLogin }) {
       : "Войти";
 
   return (
+    <>
     <main className="auth-page" data-theme={theme}>
       <button
         className="auth-theme-toggle"
@@ -411,5 +413,7 @@ export default function AuthPage({ onLogin }) {
         </footer>
       </section>
     </main>
+    <Footer />
+    </>
   );
 }

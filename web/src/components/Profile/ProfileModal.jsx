@@ -1,16 +1,17 @@
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import closeIcon from "../../assets/Close.svg";
 import arrowDown from "../../assets/ArrowDown.svg";
+import arrowLeft from "../../assets/ArrowLeft.svg";
 import { profileDemo } from "./profileDemo";
 import "./ProfileModal.css";
 
 const metricNames = ["Запуски", "Нагрузка", "Соблюдение SLA", "Скорость прохождения", "Доля завершённых процессов"];
 
-function point(index, value) {
+function point(index, value, mobile = false) {
   const angle = (-90 + index * 72) * Math.PI / 180;
-  const radius = value * 1.16;
-  return `${380 + Math.cos(angle) * radius},${178 + Math.sin(angle) * radius}`;
+  const radius = value * (mobile ? .94 : 1.16);
+  return `${(mobile ? 179 : 380) + Math.cos(angle) * radius},${(mobile ? 124 : 178) + Math.sin(angle) * radius}`;
 }
 
 function MetricsChart({ profile }) {
@@ -23,7 +24,7 @@ function MetricsChart({ profile }) {
     return <div className="profile-empty" role="status">Показатели пока недоступны</div>;
   }
   return (
-    <svg className="profile-chart" viewBox="0 0 760 360" role="img" aria-labelledby={`${id}-title ${id}-description`}>
+    <><svg className="profile-chart profile-chart-desktop" viewBox="0 0 760 360" role="img" aria-labelledby={`${id}-title ${id}-description`}>
       <title id={`${id}-title`}>Показатели: {profile.name}</title>
       <desc id={`${id}-description`}>{metricNames.map((name, index) => `${name}: ${values[index]} из 100`).join(". ")}</desc>
       {[20, 40, 60, 80, 100].map((level) => (
@@ -42,9 +43,57 @@ function MetricsChart({ profile }) {
         <text x="150" y="136"><tspan x="150">Доля завершённых</tspan><tspan x="150" dy="19">процессов · {values[4]}</tspan></text>
       </g>
     </svg>
+    <svg className="profile-chart profile-chart-mobile" viewBox="0 0 358 240" role="img" aria-labelledby={`${id}-mobile-title ${id}-mobile-description`}>
+      <title id={`${id}-mobile-title`}>Показатели: {profile.name}</title>
+      <desc id={`${id}-mobile-description`}>{metricNames.map((name, index) => `${name}: ${values[index]} из 100`).join(". ")}</desc>
+      {[20, 40, 60, 80, 100].map(level => <polygon key={level} className="profile-chart-grid" points={metricNames.map((_, index) => point(index, level, true)).join(" ")} />)}
+      <polygon className="profile-chart-value" points={values.map((value, index) => point(index, value, true)).join(" ")} />
+      <g className="profile-chart-labels">
+        <text x="179" y="16" textAnchor="middle" fontWeight="700">Запуски · {values[0]}</text>
+        <text x="350" y="80" textAnchor="end">Нагрузка · {values[1]}</text>
+        <text x="350" y="178" textAnchor="end"><tspan x="350">Соблюдение SLA ·</tspan><tspan x="350" dy="19">{values[2]}</tspan></text>
+        <text x="179" y="232" textAnchor="middle">Скорость прохождения · {values[3]}</text>
+        <text x="0" y="74"><tspan x="0">Доля</tspan><tspan x="0" dy="19">завершённых</tspan><tspan x="0" dy="19">процессов ·</tspan><tspan x="0" dy="19">{values[4]}</tspan></text>
+      </g>
+    </svg></>
   );
 }
 
+function ProfileSelect({ id, profiles, profile, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const optionsRef = useRef([]);
+  const selectedIndex = Math.max(0, profiles.findIndex(item => item.id === profile.id));
+  useEffect(() => {
+    if (!open) return;
+    optionsRef.current[selectedIndex]?.focus({ preventScroll: true });
+    function outside(event) { if (!rootRef.current?.contains(event.target)) setOpen(false); }
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [open, selectedIndex]);
+  function close() { setOpen(false); triggerRef.current?.focus({ preventScroll: true }); }
+  function handleKey(event) {
+    if (event.key === "Escape" && open) { event.preventDefault(); event.stopPropagation(); close(); return; }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    if (!open) { setOpen(true); return; }
+    const index = optionsRef.current.indexOf(document.activeElement);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? profiles.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + profiles.length) % profiles.length;
+    optionsRef.current[next]?.focus();
+  }
+  return <div className="profile-select-wrap" ref={rootRef} onKeyDown={handleKey}
+    onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
+    <button id={id} ref={triggerRef} className="profile-select-trigger" type="button" aria-haspopup="listbox" aria-expanded={open} aria-controls={`${id}-options`} aria-labelledby={`${id}-label ${id}-value`} onClick={() => setOpen(value => !value)}>
+      <span id={`${id}-value`}>{profile.name}</span>
+      <span className="profile-window-icon" style={{ "--profile-window-icon": `url("${arrowDown}")` }} aria-hidden="true" />
+    </button>
+    {open && <div id={`${id}-options`} className="profile-select-options" role="listbox" aria-labelledby={`${id}-label`}>
+      {profiles.map((item, index) => <button key={item.id} ref={element => { optionsRef.current[index] = element; }} type="button" role="option" aria-selected={item.id === profile.id} tabIndex={item.id === profile.id ? 0 : -1}
+        onClick={() => { onChange(item.id); close(); }}>{item.name}</button>)}
+    </div>}
+  </div>;
+}
 
 function ProfileDialog({ children, dark, variant, titleId, onClose, returnFocusRef }) {
   const dialogRef = useRef(null);
@@ -59,11 +108,12 @@ function ProfileDialog({ children, dark, variant, titleId, onClose, returnFocusR
     const root = document.documentElement;
     const previousOverflow = document.body.style.overflow;
     const previousGutter = root.style.scrollbarGutter;
-
-    if (window.innerWidth > root.clientWidth &&
-        !window.getComputedStyle(root).scrollbarGutter.includes("stable")) {
-      root.style.scrollbarGutter = "stable";
-    }
+    const previousRootOverflow = root.style.overflow;
+    const previousPadding = document.body.style.paddingRight;
+    const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+    if (scrollbarWidth) document.body.style.paddingRight = `${(parseFloat(window.getComputedStyle(document.body).paddingRight) || 0) + scrollbarWidth}px`;
+    root.style.scrollbarGutter = "auto";
+    root.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     dialog.showModal();
     dialog.querySelector(".profile-window-close")?.focus({ preventScroll: true });
@@ -72,6 +122,8 @@ function ProfileDialog({ children, dark, variant, titleId, onClose, returnFocusR
       dialog.close();
       document.body.style.overflow = previousOverflow;
       root.style.scrollbarGutter = previousGutter;
+      root.style.overflow = previousRootOverflow;
+      document.body.style.paddingRight = previousPadding;
       if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
   }, [returnFocusRef]);
@@ -112,6 +164,7 @@ function ProfileDialog({ children, dark, variant, titleId, onClose, returnFocusR
       }}
     >
       <div className="profile-window-panel">
+        <div className="profile-mobile-heading"><button type="button" onClick={requestClose}><span className="profile-window-icon" style={{ "--profile-window-icon": `url("${arrowLeft}")` }} aria-hidden="true" />Назад</button><h2>Профиль КАМа</h2></div>
         <button className="profile-window-close" type="button" aria-label="Закрыть" onClick={requestClose}>
           <span className="profile-window-icon" style={{ "--profile-window-icon": `url("${closeIcon}")` }} aria-hidden="true" />
         </button>
@@ -136,13 +189,8 @@ export default function ProfileModal({ dark, onClose, returnFocusRef, profiles =
             <p>Персональная характеристика · только просмотр</p>
           </div>
         </div>
-        <label className="profile-label" htmlFor={`${id}-select`}>Профиль КАМа</label>
-        <div className="profile-select-wrap">
-          <select id={`${id}-select`} value={profile.id} onChange={(event) => setSelectedId(event.target.value)}>
-            {profiles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-          </select>
-          <span className="profile-window-icon" style={{ "--profile-window-icon": `url("${arrowDown}")` }} aria-hidden="true" />
-        </div>
+        <label id={`${id}-select-label`} className="profile-label" htmlFor={`${id}-select`}>Профиль КАМа</label>
+        <ProfileSelect id={`${id}-select`} profiles={profiles} profile={profile} onChange={setSelectedId} />
         <div className="profile-chart-wrap"><MetricsChart profile={profile} /></div>
         <div className="profile-explanation">
           <h3>О показателях</h3>

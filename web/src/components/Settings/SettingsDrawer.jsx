@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import closeIcon from "../../assets/Close.svg";
+import arrowLeft from "../../assets/ArrowLeft.svg";
 import eyeOpen from "../../assets/PasswordShow.svg";
 import eyeClosed from "../../assets/PasswordHide.svg";
 import "./SettingsDrawer.css";
@@ -8,8 +9,8 @@ import "./SettingsDrawer.css";
 const emptyPasswords = { current: "", next: "", confirm: "" };
 const notificationOptions = [
   { key: "deadlines", title: "Горящие сроки и SLA", description: "Уведомлять о приближении и нарушении сроков этапов" },
-  { key: "comments", title: "Новые комментарии", description: "Уведомлять о новых комментариях во взаимодействиях" },
   { key: "files", title: "Новые файлы", description: "Уведомлять о новых прикреплённых документах" },
+  { key: "comments", title: "Новые комментарии", description: "Уведомлять о новых комментариях во взаимодействиях" },
 ];
 const defaultNotifications = { deadlines: true, comments: true, files: true };
 
@@ -55,11 +56,12 @@ function SettingsDialog({ children, dark, variant, titleId, onClose, returnFocus
     const root = document.documentElement;
     const previousOverflow = document.body.style.overflow;
     const previousGutter = root.style.scrollbarGutter;
-
-    if (window.innerWidth > root.clientWidth &&
-        !window.getComputedStyle(root).scrollbarGutter.includes("stable")) {
-      root.style.scrollbarGutter = "stable";
-    }
+    const previousRootOverflow = root.style.overflow;
+    const previousPadding = document.body.style.paddingRight;
+    const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+    if (scrollbarWidth) document.body.style.paddingRight = `${(parseFloat(window.getComputedStyle(document.body).paddingRight) || 0) + scrollbarWidth}px`;
+    root.style.scrollbarGutter = "auto";
+    root.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     dialog.showModal();
     dialog.querySelector(".settings-window-close")?.focus({ preventScroll: true });
@@ -68,6 +70,8 @@ function SettingsDialog({ children, dark, variant, titleId, onClose, returnFocus
       dialog.close();
       document.body.style.overflow = previousOverflow;
       root.style.scrollbarGutter = previousGutter;
+      root.style.overflow = previousRootOverflow;
+      document.body.style.paddingRight = previousPadding;
       if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
   }, [returnFocusRef]);
@@ -108,6 +112,7 @@ function SettingsDialog({ children, dark, variant, titleId, onClose, returnFocus
       }}
     >
       <div className="settings-window-panel">
+        <div className="settings-mobile-heading"><button type="button" onClick={requestClose}><span className="settings-window-icon" style={{ "--settings-window-icon": `url("${arrowLeft}")` }} aria-hidden="true" />Назад</button><span>Настройки</span></div>
         <button className="settings-window-close" type="button" aria-label="Закрыть" onClick={requestClose}>
           <span className="settings-window-icon" style={{ "--settings-window-icon": `url("${closeIcon}")` }} aria-hidden="true" />
         </button>
@@ -232,6 +237,7 @@ export default function SettingsDrawer({ dark, onClose, returnFocusRef, onChange
           <PasswordField label="Текущий пароль" name="current" value={passwords.current} error={errors.current} disabled={pending} onChange={(value) => changePasswordField("current", value)} />
           <PasswordField label="Новый пароль" name="next" value={passwords.next} error={errors.next} disabled={pending} onChange={(value) => changePasswordField("next", value)} />
           <PasswordField label="Подтвердите новый пароль" name="confirm" value={passwords.confirm} error={errors.confirm} disabled={pending} onChange={(value) => changePasswordField("confirm", value)} />
+          <p className="settings-password-hint">Не менее 8 символов, буквы и цифры</p>
           <button className="settings-submit" type="submit" disabled={pending || !Object.values(passwords).every(Boolean) || !onChangePassword}>
             {pending ? "Обновление…" : "Обновить пароль"}
           </button>

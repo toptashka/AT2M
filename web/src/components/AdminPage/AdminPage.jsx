@@ -1,3 +1,4 @@
+import Footer from "../Footer/Footer";
 import { Fragment, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import Header from "../Header/Header";
 import { setAppTheme, useAppTheme } from "../../theme";
@@ -230,7 +231,8 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
     const contextLabel = students ? "Партнёрство" : "Тип справочника";
     const contextItems = students ? partnerships : catalogs;
     const contextValue = students ? partnership : catalogId;
-    const currentPage = Math.min(page, Math.max(1, Math.ceil((data?.rows.length ?? 0) / 3)));
+    const previewSize = 5;
+    const currentPage = Math.min(page, Math.max(1, Math.ceil((data?.rows.length ?? 0) / previewSize)));
     const changeContext = value => { reset(); if (students) setPartnership(value); else setCatalogId(value); };
     const goToStep = next => {
       setStep(next); setPage(1);
@@ -279,37 +281,45 @@ function ImportPanel({ students = false, partnerships, api, demo, onImported }) 
             <span>{column.label}</span>
             <Select label={`Поле для колонки «${column.label}»`} value={mapping[column.id] ?? ""} disabled={busy}
               error={validation.duplicates.includes(mapping[column.id])}
-              options={[{ value: "", label: "Не импортировать" }, ...catalog.fields.map(field => ({ value: field.id, label: field.label }))]}
+              options={[{ value: "", label: "Не импортировать" }, ...catalog.fields.map(field => ({ value: field.id, label: field.label + (field.required ? " *" : "") }))]}
               onChange={value => setMapping(current => ({ ...current, [column.id]: value }))} />
           </div>)}</div>
           <Button variant="primary" disabled={busy || !mappingReady || error?.blocking} onClick={() => goToStep("preview")}>Предпросмотр данных</Button>
         </> : <>
+          {validation.invalid.length > 0 && <Alert title="Файл содержит ошибки">
+            <p>Строк с ошибками: {validation.invalid.length}</p>
+            <p>Импорт недоступен до исправления или исключения строк.</p>
+          </Alert>}
           <h3 ref={stepHeading} tabIndex={-1}>Предпросмотр данных</h3>
           <p>Всего {data.rows.length} записей</p>
-          <div className="admin-preview-cards">{data.rows.slice((currentPage - 1) * 3, currentPage * 3).map(row => {
+          <div className="admin-mobile-table-scroll" role="region" aria-label="Предпросмотр импортируемых данных" tabIndex={0}>
+            <table className="admin-mobile-preview-table" data-catalog={catalog.id}>
+              <thead><tr>{visibleColumns.map(column => <th scope="col" key={column.id}>{catalog.fields.find(field => field.id === mapping[column.id])?.label}</th>)}</tr></thead>
+              <tbody>{data.rows.slice((currentPage - 1) * previewSize, currentPage * previewSize).map(row => {
             const rowErrors = validation.errors.get(row.id);
             const isExcluded = excluded.has(row.id);
-            return <article key={row.id} className={`admin-preview-card ${isExcluded ? "admin-row-excluded" : rowErrors ? "admin-row-error" : ""}`} aria-label={`Строка ${row.line}`}>
-              <dl>{visibleColumns.map(column => <div key={column.id}>
-                <dt>{catalog.fields.find(field => field.id === mapping[column.id])?.label}</dt>
-                <dd className={!isExcluded && rowErrors?.[column.id] ? "admin-error-text" : undefined}>{String(row.values[column.id] ?? "") || "—"}
-                  {!isExcluded && rowErrors?.[column.id] && <small>{rowErrors[column.id]}</small>}
-                </dd>
-              </div>)}</dl>
-              {!isExcluded && rowErrors?._row && <p className="admin-error-text">{rowErrors._row}</p>}
-              {(rowErrors || isExcluded) && <Button variant="plain" disabled={busy} aria-label={`${isExcluded ? "Вернуть" : "Исключить"} строку ${row.line}`} onClick={() => toggleRow(row.id)}>{isExcluded ? "Вернуть" : "Исключить"}</Button>}
-            </article>;
-          })}</div>
+            return <tr key={row.id} className={isExcluded ? "admin-row-excluded" : rowErrors ? "admin-row-error" : ""} aria-label={`Строка ${row.line}`}>
+              {visibleColumns.map((column, index) => <td key={column.id}>
+                <span className={!isExcluded && rowErrors?.[column.id] ? "admin-error-text" : undefined}>{!isExcluded && rowErrors?.[column.id] ? rowErrors[column.id] : String(row.values[column.id] ?? "") || "—"}</span>
+                {index === 0 && <>
+                  {isExcluded && <small>Исключена из импорта</small>}
+                  {!isExcluded && rowErrors?._row && <small className="admin-error-text">{rowErrors._row}</small>}
+                  {(rowErrors || isExcluded) && <Button variant="plain" disabled={busy} aria-label={`${isExcluded ? "Вернуть" : "Исключить"} строку ${row.line}`} onClick={() => toggleRow(row.id)}>{isExcluded ? "Вернуть" : "Исключить"}</Button>}
+                </>}
+              </td>)}
+            </tr>;
+          })}</tbody></table></div>
           {!data.rows.length && <p>В файле нет записей</p>}
-          {data.rows.length > 3 && <div className="admin-mobile-pagination">
-            <span>{(currentPage - 1) * 3 + 1}–{Math.min(currentPage * 3, data.rows.length)} из {data.rows.length}</span>
+          {data.rows.length > previewSize && <div className="admin-mobile-pagination">
+            <span>{(currentPage - 1) * previewSize + 1}–{Math.min(currentPage * previewSize, data.rows.length)} из {data.rows.length}</span>
             <Button className="admin-icon-button" aria-label="Предыдущая страница" disabled={currentPage === 1 || busy} onClick={() => setPage(currentPage - 1)}><Icon src={arrowLeft} /></Button>
-            <Button className="admin-icon-button" aria-label="Следующая страница" disabled={currentPage * 3 >= data.rows.length || busy} onClick={() => setPage(currentPage + 1)}><Icon src={arrowRight} /></Button>
+            <Button className="admin-icon-button" aria-label="Следующая страница" disabled={currentPage * previewSize >= data.rows.length || busy} onClick={() => setPage(currentPage + 1)}><Icon src={arrowRight} /></Button>
           </div>}
           {validation.invalid.length > 0 && <div className="admin-mobile-validation" role="status"><p className="admin-error-text">Исправьте или исключите ошибочные строки</p>
-            <Button variant="plain" disabled={busy} onClick={() => { const first = data.rows.findIndex(row => validation.invalid.includes(row.id)); setPage(Math.floor(first / 3) + 1); }}>К первой ошибке</Button>
+            <Button variant="plain" disabled={busy} onClick={() => { const first = data.rows.findIndex(row => validation.invalid.includes(row.id)); setPage(Math.floor(first / previewSize) + 1); }}>К первой ошибке</Button>
           </div>}
           {excluded.size > 0 && <p aria-live="polite">К импорту: {validation.count} записей · Исключено: {excluded.size}</p>}
+          {students && validation.valid && excluded.size === 0 && <p className="admin-preview-ready">Обязательные колонки сопоставлены · Можно импортировать</p>}
           <Button variant="primary" disabled={busy || !validation.valid || error?.blocking} onClick={() => setConfirm(true)}>{busy ? "Импорт…" : "Импортировать данные"}</Button>
           <Button variant="plain" disabled={busy} onClick={() => goToStep("mapping")}>К сопоставлению</Button>
         </>)}
@@ -479,7 +489,7 @@ function WorkflowEditor({ action, stage, stages, onClose, onApply }) {
       {(action === "delete" || (action === "move" && !mobile)) && <p><strong>{numberStage(index)} — {stage.name}</strong></p>}
       {needsName && <div className="admin-form-field"><label htmlFor={inputId}>Название этапа *</label><input id={inputId} className="admin-input" value={name} maxLength={160} placeholder="Введите название этапа" aria-invalid={touched.name && Boolean(nameError)} aria-describedby={touched.name && nameError ? `${inputId}-error` : undefined} onBlur={() => setTouched(current => ({ ...current, name: true }))} onChange={event => setName(event.target.value)} />
         {touched.name && nameError && <span id={`${inputId}-error`} className="admin-error-text">{nameError}</span>}</div>}
-      {needsPosition && <div className="admin-form-field"><span>{action === "move" ? "Новое положение" : "Расположение *"}</span><Select label="Расположение этапа" value={after} options={positions} placeholder="Выберите расположение этапа" error={touched.position && !after} onChange={value => { setAfter(value); setTouched(current => ({ ...current, position: true })); }} />
+      {needsPosition && <div className="admin-form-field"><span>{action === "move" ? (mobile ? "Расположение" : "Новое положение") : "Расположение *"}</span><Select label="Расположение этапа" value={after} options={positions} placeholder="Выберите расположение этапа" error={touched.position && !after} onChange={value => { setAfter(value); setTouched(current => ({ ...current, position: true })); }} />
         {touched.position && !after && <span className="admin-error-text">Выберите расположение этапа</span>}</div>}
       {action === "add" && (!mobile || after) && <div className="admin-stage-preview"><h3>Предпросмотр</h3>{after ? <>
         {position >= 0 && <p><span>{numberStage(position)}</span>{stages[position].name}</p>}<p className="admin-new-stage"><span>{numberStage(position + 1)}</span>{name.trim() || "Новый этап"}</p>
@@ -604,5 +614,6 @@ export default function AdminPage({ api = null, demo = false }) {
         </div>)}
       </>}
     </main>
+    <Footer />
   </div>;
 }

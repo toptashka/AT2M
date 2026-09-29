@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import { setAppTheme, useAppTheme } from "../../theme";
 import arrowRight from "../../assets/ArrowRight.svg";
+import closeIcon from "../../assets/Close.svg";
 import playIcon from "../../assets/Play.svg";
 import pauseIcon from "../../assets/Pause.svg";
 import "./FaqPage.css";
@@ -131,11 +132,72 @@ function Question({ question, open, onToggle }) {
   );
 }
 
+function ContentsSheet({ activeSection, onClose, onNavigate }) {
+  const dialogRef = useRef(null);
+  const timerRef = useRef(null);
+  const closingRef = useRef(false);
+  const [closing, setClosing] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const titleId = useId();
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    const trigger = document.activeElement;
+    const root = document.documentElement;
+    const body = document.body;
+    const previous = { overflow: root.style.overflow, gutter: root.style.scrollbarGutter, bodyOverflow: body.style.overflow, padding: body.style.paddingRight };
+    const width = Math.max(0, window.innerWidth - root.clientWidth);
+    if (width) body.style.paddingRight = `${(parseFloat(getComputedStyle(body).paddingRight) || 0) + width}px`;
+    root.style.scrollbarGutter = "auto";
+    root.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    dialog.showModal();
+    let frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => setVisible(true));
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timerRef.current);
+      dialog.close();
+      root.style.overflow = previous.overflow;
+      root.style.scrollbarGutter = previous.gutter;
+      body.style.overflow = previous.bodyOverflow;
+      body.style.paddingRight = previous.padding;
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    };
+  }, []);
+
+  function close(sectionId) {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    timerRef.current = window.setTimeout(() => {
+      onClose();
+      if (sectionId) window.requestAnimationFrame(() => onNavigate(sectionId));
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 300);
+  }
+
+  return <dialog className="faq-contents-dialog" data-visible={visible && !closing} ref={dialogRef} aria-labelledby={titleId}
+    onCancel={event => { event.preventDefault(); close(); }} onClick={event => { if (event.target === event.currentTarget) close(); }}>
+    <div className="faq-contents-panel">
+      <div className="faq-contents-handle" aria-hidden="true" />
+      <div className="faq-contents-heading"><h2 id={titleId}>Содержание</h2>
+        <button type="button" onClick={() => close()} aria-label="Закрыть содержание"><span className="faq-icon" style={{ "--faq-icon": `url("${closeIcon}")` }} aria-hidden="true" /></button>
+      </div>
+      <nav aria-label="Содержание FAQ"><ul>{sections.map(section => <li key={section.id}>
+        <a href={`#/faq?section=${section.id}`} aria-current={activeSection === section.id ? "location" : undefined}
+          onClick={event => { event.preventDefault(); close(section.id); }}>{section.title}</a>
+      </li>)}</ul></nav>
+    </div>
+  </dialog>;
+}
+
 export default function FaqPage() {
   const { theme } = useAppTheme();
   const [profileOpen, setProfileOpen] = useState(false);
   const [expanded, setExpanded] = useState(() => new Set(["navigation"]));
   const [activeSection, setActiveSection] = useState(sections[0].id);
+  const [contentsOpen, setContentsOpen] = useState(false);
   const sectionRefs = useRef({});
   const headerRef = useRef(null);
   const articleRef = useRef(null);
@@ -204,10 +266,13 @@ export default function FaqPage() {
   return (
     <div className="faq-page" data-theme={theme}>
       <div className="faq-header" ref={headerRef}>
-        <Header profileOpen={profileOpen} setProfileOpen={setProfileOpen} dark={theme === "dark"} setDark={setDark} activePage="FAQ" />
+        <Header profileOpen={profileOpen} setProfileOpen={setProfileOpen} dark={theme === "dark"} setDark={setDark} activePage="FAQ" mobileNavigation />
       </div>
       <main className="faq-main">
         <div className="faq-heading"><h1>FAQ</h1><p>Инструкции по работе с ИТ Школой РТК</p></div>
+        <button type="button" className="faq-contents-trigger" aria-haspopup="dialog" aria-expanded={contentsOpen} onClick={() => setContentsOpen(true)}>
+          <span>Содержание</span><span className="faq-icon" style={{ "--faq-icon": `url("${arrowRight}")` }} aria-hidden="true" />
+        </button>
         <div className="faq-layout">
           <article className="faq-article" aria-label="Инструкции по работе с системой" ref={articleRef}>
             {sections.map((section) => (
@@ -232,6 +297,10 @@ export default function FaqPage() {
         </div>
       </main>
       <Footer />
+      {contentsOpen && <ContentsSheet activeSection={activeSection} onClose={() => setContentsOpen(false)} onNavigate={id => {
+        window.history.replaceState(null, "", `#/faq?section=${id}`);
+        scrollToSection(id);
+      }} />}
     </div>
   );
 }
