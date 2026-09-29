@@ -12,7 +12,7 @@ env/
 *.db
 
 # --- Frontend / Web ---
-node_modules/
+**/node_modules/
 dist/
 build/
 .npm/
