@@ -8,6 +8,7 @@ import closeIcon from "../../assets/Close.svg";
 import "./ReportsPage.css";
 
 const icons = { down: arrowDown, left: arrowLeft, right: arrowRight, close: closeIcon };
+
 const columns = [
   { key: "institution", label: "Учреждение", width: 248 },
   { key: "direction", label: "ИТ-направление", width: 220 },
@@ -20,6 +21,7 @@ const columns = [
   { key: "licenseSigned", label: "Подписание лицензии", width: 200 },
   { key: "city", label: "Город / Регион", width: 220 },
 ];
+
 const defaultColumns = columns.slice(0, 5).map(column => column.key);
 const emptyFilters = { from: "", to: "", institutions: [], directions: [], products: [], managers: [] };
 const pageSize = 5;
@@ -27,68 +29,74 @@ const monthNames = ["Январь", "Февраль", "Март", "Апрель"
 const years = Array.from({ length: 201 }, (_, i) => 1900 + i);
 const pad = number => String(number).padStart(2, "0");
 
-const demoToday = new Date();
-const demoYear = demoToday.getFullYear();
-const demoMonth = demoToday.getMonth();
-const demoInstitutions = [
-  { name: "МГТУ им. Н. Э. Баумана", city: "Москва" },
-  { name: "НИЯУ МИФИ", city: "Москва" },
-  { name: "Университет ИТМО", city: "Санкт-Петербург" },
-  { name: "СПбПУ Петра Великого", city: "Санкт-Петербург" },
-  { name: "Казанский федеральный университет", city: "Казань" },
-  { name: "Уральский федеральный университет", city: "Екатеринбург" },
-];
-const demoDirections = ["DevOps", "Информационная безопасность", "Облачные технологии"];
-const demoProducts = ["Solar Dozor", "РТК-Платформа", "Solar webProxy"];
-const demoManagers = ["Александр Иванов", "Мария Смирнова", "Дмитрий Соколов", "Елена Орлова"];
-const demoStages = [
-  { stage: "08 · Сопровождение внедрения", status: "В работе" },
-  { stage: "06 · Подписание документов", status: "Просрочено" },
-  { stage: "09 · Обучение преподавателей", status: "В работе" },
-  { stage: "10 · Завершение внедрения", status: "Завершено" },
-];
-const demoRecords = Array.from({ length: 24 }, (_, index) => {
-  const institution = demoInstitutions[index % demoInstitutions.length];
-  const signed = index % 3 !== 1;
+function isoDate(date) { 
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`; 
+}
 
-  return {
-    id: `demo-report-${index + 1}`,
-    institution: institution.name,
-    city: institution.city,
-    direction: demoDirections[index % demoDirections.length],
-    product: demoProducts[Math.floor(index / 3) % demoProducts.length],
-    manager: demoManagers[index % demoManagers.length],
-    ...demoStages[index % demoStages.length],
-    startDate: isoDate(new Date(demoYear, demoMonth, index + 1, 12)),
-    studentCount: index === 0 ? 0 : 25 + index * 5,
-    contractNumber: signed ? `ДЕМО-${demoYear}-${String(index + 1).padStart(3, "0")}` : "",
-    licenseYear: signed ? demoYear + 1 : null,
-    licenseSigned: signed,
-  };
-});
-const demoFilters = {
-  ...emptyFilters,
-  from: isoDate(new Date(demoYear, demoMonth, 1, 12)),
-  to: isoDate(new Date(demoYear, demoMonth + 1, 0, 12)),
-};
-
-function isoDate(date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`; }
 function parseDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? "")) return null;
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(year, month - 1, day, 12);
   return isoDate(date) === value ? date : null;
 }
-function formatDate(value) { const date = parseDate(value); return date ? `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}` : "дд.мм.гггг"; }
+
+function formatDate(value) { 
+  const date = parseDate(value); 
+  return date ? `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}` : "дд.мм.гггг"; 
+}
+
 function recordCount(count) {
   const mod = count % 100;
   return `${count} ${mod >= 11 && mod <= 14 ? "записей" : count % 10 === 1 ? "запись" : count % 10 >= 2 && count % 10 <= 4 ? "записи" : "записей"}`;
 }
+
 function normalizeFilters(value) {
-  return { ...emptyFilters, ...value, institutions: [...(value.institutions ?? [])], directions: [...(value.directions ?? value.programs ?? [])], products: [...(value.products ?? [])], managers: [...(value.managers ?? [])] };
+  return { 
+    ...emptyFilters, 
+    ...value, 
+    institutions: [...(value.institutions ?? [])], 
+    directions: [...(value.directions ?? value.programs ?? [])], 
+    products: [...(value.products ?? [])], 
+    managers: [...(value.managers ?? [])] 
+  };
 }
-function cellValue(value) { return value === null || value === undefined || value === "" ? "—" : String(value); }
-function PageIcon({ name }) { return <span className="reports-icon" style={{ "--reports-icon-url": `url("${icons[name]}")` }} aria-hidden="true" />; }
+
+function cellValue(value) { 
+  return value === null || value === undefined || value === "" ? "—" : String(value); 
+}
+
+function PageIcon({ name }) { 
+  return <span className="reports-icon" style={{ "--reports-icon-url": `url("${icons[name]}")` }} aria-hidden="true" />; 
+}
+
+function normalizeRow(row) {
+  if (!row) return null;
+  const signed = row.licenseSigned ?? (row.contract?.signed === "Да / Подписан" || row.contract?.signed === true || row.is_license_signed === true);
+  const licenseYear = row.licenseYear ?? (row.contract?.licenseEnd ? parseDate(row.contract.licenseEnd)?.getFullYear() : null);
+
+  let stageDisplay = row.stage || row.stage_name || "";
+  if (typeof row.stage === "number") {
+    stageDisplay = `${String(row.stage).padStart(2, "0")} · Этап ${row.stage}`;
+  } else if (row.stage_id && row.stage_name) {
+    stageDisplay = `${String(row.stage_id).padStart(2, "0")} · ${row.stage_name}`;
+  }
+
+  return {
+    id: row.id,
+    institution: row.institution || row.name || row.university_name || "",
+    city: row.city || "—",
+    direction: row.direction || row.program || row.program_name || "",
+    product: row.product || row.contract?.software || "—",
+    manager: row.manager || row.owner || row.manager_name || "Не назначен",
+    stage: stageDisplay || "—",
+    status: row.status || (row.done ? "Завершено" : "В работе"),
+    startDate: row.startDate || row.start || (row.created_at ? String(row.created_at).slice(0, 10) : isoDate(new Date())),
+    studentCount: row.studentCount ?? row.students_count ?? 0,
+    contractNumber: row.contractNumber || row.contract?.number || row.contract_number || "—",
+    licenseYear: licenseYear || "—",
+    licenseSigned: signed,
+  };
+}
 
 function useAnimatedState() {
   const [present, setPresent] = useState(false);
@@ -124,7 +132,11 @@ function Popover({ label, trigger, children, className = "", disabled = false })
     document.addEventListener("pointerdown", outside);
     document.addEventListener("focusin", outside);
     element.addEventListener("keydown", escape);
-    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("focusin", outside); element.removeEventListener("keydown", escape); };
+    return () => { 
+      document.removeEventListener("pointerdown", outside); 
+      document.removeEventListener("focusin", outside); 
+      element.removeEventListener("keydown", escape); 
+    };
   }, [open, setPresent]);
   function close() { setPresent(false); document.getElementById(`${id}-trigger`)?.focus({ preventScroll: true }); }
   return <div className={`reports-popover-root ${className}`} ref={root}>
@@ -176,11 +188,12 @@ function MonthSelect({ label, value, options, disabled, onChange }) {
       if (!root.current?.contains(event.target)) setOpen(false);
     }
     function escape(event) {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      setOpen(false);
-      trigger.current?.focus({ preventScroll: true });
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(false);
+        trigger.current?.focus({ preventScroll: true });
+      }
     }
     const element = root.current;
     element.addEventListener("keydown", escape);
@@ -229,7 +242,6 @@ function MonthSelect({ label, value, options, disabled, onChange }) {
   </div>;
 }
 
-
 function DateCalendar({ from, to, onApply, onReset, disabled }) {
   const id = useId();
   const seed = parseDate(from) ?? new Date();
@@ -239,19 +251,28 @@ function DateCalendar({ from, to, onApply, onReset, disabled }) {
   const [hovered, setHovered] = useState("");
   const [focused, setFocused] = useState("");
   const today = isoDate(new Date());
-  useEffect(() => { if (focused) document.getElementById(`${id}-${focused}`)?.focus({ preventScroll: true }); }, [focused, baseMonth, id]);
+
+  useEffect(() => { 
+    if (focused) document.getElementById(`${id}-${focused}`)?.focus({ preventScroll: true }); 
+  }, [focused, baseMonth, id]);
+
   function changeMonth(date) {
     const first = new Date(1900, 0, 1, 12);
     const last = new Date(2100, 10, 1, 12);
     setBaseMonth(date < first ? first : date > last ? last : date);
     setFocused("");
   }
-  function moveMonth(delta) { changeMonth(new Date(baseMonth.getFullYear(), baseMonth.getMonth() + delta, 1, 12)); }
+
+  function moveMonth(delta) { 
+    changeMonth(new Date(baseMonth.getFullYear(), baseMonth.getMonth() + delta, 1, 12)); 
+  }
+
   function selectDate(value) {
     if (disabled) return;
     if (!choosingEnd) { setDraft({ from: value, to: "" }); setChoosingEnd(true); setHovered(""); return; }
     onApply({ from: value < draft.from ? value : draft.from, to: value < draft.from ? draft.from : value });
   }
+
   function preset(type) {
     const now = new Date(), year = now.getFullYear(), month = now.getMonth();
     let start, end;
@@ -261,6 +282,7 @@ function DateCalendar({ from, to, onApply, onReset, disabled }) {
     if (type === "academic") { const first = month >= 8 ? year : year - 1; start = new Date(first, 8, 1, 12); end = new Date(first + 1, 8, 0, 12); }
     onApply({ from: isoDate(start), to: isoDate(end) });
   }
+
   function dayKey(event, value) {
     const date = parseDate(value);
     const weekday = (date.getDay() + 6) % 7;
@@ -268,15 +290,22 @@ function DateCalendar({ from, to, onApply, onReset, disabled }) {
     if (delta === undefined && !["PageUp", "PageDown"].includes(event.key)) return;
     event.preventDefault();
     if (delta !== undefined) date.setDate(date.getDate() + delta);
-    else { const day = date.getDate(); date.setDate(1); date.setMonth(date.getMonth() + (event.key === "PageUp" ? -1 : 1)); date.setDate(Math.min(day, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate())); }
+    else { 
+      const day = date.getDate(); 
+      date.setDate(1); 
+      date.setMonth(date.getMonth() + (event.key === "PageUp" ? -1 : 1)); 
+      date.setDate(Math.min(day, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate())); 
+    }
     if (date.getFullYear() < 1900 || date.getFullYear() > 2100) return;
     const monthOffset = (date.getFullYear() - baseMonth.getFullYear()) * 12 + date.getMonth() - baseMonth.getMonth();
     if (monthOffset < 0 || monthOffset > 1) setBaseMonth(new Date(date.getFullYear(), date.getMonth() - (monthOffset > 1 ? 1 : 0), 1, 12));
     setFocused(isoDate(date));
   }
+
   const previewEnd = choosingEnd ? hovered || draft.from : draft.to;
   const rangeStart = draft.from < previewEnd ? draft.from : previewEnd;
   const rangeEnd = draft.from < previewEnd ? previewEnd : draft.from;
+
   return <div className="reports-date-calendar"><div className="reports-date-presets">
     {[["current", "Текущий месяц"], ["previous", "Прошлый месяц"], ["quarter", "Квартал"], ["academic", "Учебный год"]].map(([key, label]) => <button type="button" disabled={disabled} key={key} onClick={() => preset(key)}>{label}</button>)}
   </div><div className="reports-calendar-months">
@@ -335,7 +364,15 @@ function TableCell({ row, column }) {
   return cellValue(row[column.key]);
 }
 
-export default function ReportsPage({ records = demoRecords, initialFilters = records === demoRecords ? demoFilters : emptyFilters, filterOptions = {}, loading = false, error = "", onExport, lockedManager = "" }) {
+export default function ReportsPage({ 
+  records: propRecords, 
+  initialFilters = emptyFilters, 
+  filterOptions = {}, 
+  loading: propLoading = false, 
+  error: propError = "", 
+  onExport, 
+  lockedManager = "" 
+}) {
   const { theme } = useAppTheme();
   const id = useId();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -344,25 +381,78 @@ export default function ReportsPage({ records = demoRecords, initialFilters = re
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState("");
   const [notification, setNotification] = useState(null);
+
+  const [internalRecords, setInternalRecords] = useState([]);
+  const [internalLoading, setInternalLoading] = useState(false);
+  const [internalError, setInternalError] = useState("");
+
   const exportLock = useRef(false);
   const exportRequest = useRef(null);
   const downloads = useRef(new Map());
+
+  useEffect(() => {
+    if (propRecords !== undefined) return;
+    let isMounted = true;
+    setInternalLoading(true);
+    fetch("/api/v1/partnerships")
+      .then(res => {
+        if (!res.ok) throw new Error("Не удалось загрузить данные взаимодействий.");
+        return res.json();
+      })
+      .then(data => {
+        if (isMounted) {
+          setInternalRecords(Array.isArray(data) ? data : []);
+          setInternalLoading(false);
+        }
+      })
+      .catch(err => {
+        if (isMounted) {
+          setInternalError(err.message || "Ошибка загрузки данных");
+          setInternalLoading(false);
+        }
+      });
+    return () => { isMounted = false; };
+  }, [propRecords]);
+
+  const rawRecords = propRecords !== undefined ? propRecords : internalRecords;
+  const loading = propLoading || internalLoading;
+  const error = propError || internalError;
+
   useEffect(() => {
     const urls = downloads.current;
-    return () => { exportRequest.current?.abort(); for (const [url, timer] of urls) { window.clearTimeout(timer); URL.revokeObjectURL(url); } urls.clear(); };
+    return () => { 
+      exportRequest.current?.abort(); 
+      for (const [url, timer] of urls) { 
+        window.clearTimeout(timer); 
+        URL.revokeObjectURL(url); 
+      } 
+      urls.clear(); 
+    };
   }, []);
+
   useEffect(() => {
     if (notification?.type !== "success") return;
     const timer = window.setTimeout(() => setNotification(null), 8000);
     return () => window.clearTimeout(timer);
   }, [notification]);
-  const normalizedRecords = useMemo(() => records.map(row => ({ ...row, direction: row.direction ?? row.program ?? "" })), [records]);
+
+  const normalizedRecords = useMemo(() => {
+    return (rawRecords || []).map(normalizeRow).filter(Boolean);
+  }, [rawRecords]);
+
   const options = useMemo(() => {
-    const values = key => [...new Set(normalizedRecords.map(row => row[key]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
-    return { institutions: values("institution"), directions: values("direction"), products: values("product"), managers: values("manager") };
+    const values = key => [...new Set(normalizedRecords.map(row => row[key]).filter(val => val && val !== "—"))].sort((a, b) => a.localeCompare(b, "ru"));
+    return { 
+      institutions: values("institution"), 
+      directions: values("direction"), 
+      products: values("product"), 
+      managers: values("manager") 
+    };
   }, [normalizedRecords]);
+
   const ready = Boolean(filters.from && filters.to);
   const invalidPeriod = ready && (!parseDate(filters.from) || !parseDate(filters.to) || filters.from > filters.to);
+
   const filtered = useMemo(() => {
     if (!ready || invalidPeriod) return [];
     return normalizedRecords.filter(row => {
@@ -374,38 +464,85 @@ export default function ReportsPage({ records = demoRecords, initialFilters = re
         (lockedManager ? row.manager === lockedManager : !filters.managers.length || filters.managers.includes(row.manager));
     });
   }, [normalizedRecords, filters, ready, invalidPeriod, lockedManager]);
+
   const visibleColumns = columns.filter(column => selectedColumns.includes(column.key));
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const activePage = Math.min(page, pageCount), first = (activePage - 1) * pageSize;
-  const canExport = Boolean(onExport) && !loading && !error && !exporting && filtered.length > 0 && visibleColumns.length > 0;
+  const activePage = Math.min(page, pageCount);
+  const first = (activePage - 1) * pageSize;
+  const canExport = !loading && !error && !exporting && filtered.length > 0 && visibleColumns.length > 0;
 
   function changeFilters(patch) { setFilters(previous => ({ ...previous, ...patch })); setPage(1); setNotification(null); }
   function resetFilters() { setFilters(normalizeFilters(emptyFilters)); setPage(1); setNotification(null); }
   function changeColumns(value) { setSelectedColumns(value); setNotification(null); }
   function changeTheme(value) { const dark = typeof value === "function" ? value(theme === "dark") : value; setAppTheme(dark ? "dark" : "light"); }
+
   async function exportReport(format) {
     if (!canExport || exportLock.current) return;
     exportLock.current = true;
-    const controller = new AbortController(); exportRequest.current = controller;
-    const snapshot = { ...filters, programs: [...filters.directions], institutions: [...filters.institutions], directions: [...filters.directions], products: [...filters.products], managers: lockedManager ? [lockedManager] : [...filters.managers] };
+    const controller = new AbortController(); 
+    exportRequest.current = controller;
+    const snapshot = { 
+      ...filters, 
+      programs: [...filters.directions], 
+      institutions: [...filters.institutions], 
+      directions: [...filters.directions], 
+      products: [...filters.products], 
+      managers: lockedManager ? [lockedManager] : [...filters.managers] 
+    };
     const filename = `report_rtk_${formatDate(snapshot.from)}-${formatDate(snapshot.to)}.${format}`;
-    setExporting(format); setNotification(null);
+    setExporting(format); 
+    setNotification(null);
+
     try {
-      const file = await onExport({ format, filters: snapshot, columns: visibleColumns.map(({ key, label, fields }) => ({ key, label, ...(fields ? { fields } : {}) })), records: filtered.map(row => ({ ...row })), signal: controller.signal });
+      let file;
+      if (typeof onExport === "function") {
+        file = await onExport({ 
+          format, 
+          filters: snapshot, 
+          columns: visibleColumns.map(({ key, label, fields }) => ({ key, label, ...(fields ? { fields } : {}) })), 
+          records: filtered.map(row => ({ ...row })), 
+          signal: controller.signal 
+        });
+      } else {
+        const endpoint = format === "pdf" ? "/api/v1/reports/partnerships/pdf" : "/api/v1/reports/partnerships/excel";
+        const params = new URLSearchParams();
+        if (snapshot.from) params.set("start_date", snapshot.from);
+        if (snapshot.to) params.set("end_date", snapshot.to);
+        const res = await fetch(`${endpoint}?${params.toString()}`, { signal: controller.signal });
+        if (!res.ok) {
+          const err = new Error(`HTTP ${res.status}`);
+          err.status = res.status;
+          throw err;
+        }
+        file = await res.blob();
+      }
+
       if (controller.signal.aborted) return;
       if (!(file instanceof Blob) || !file.size) throw new Error("Сервис вернул пустой файл.");
-      const url = URL.createObjectURL(file), link = document.createElement("a");
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
       const timer = window.setTimeout(() => { URL.revokeObjectURL(url); downloads.current.delete(url); }, 30000);
       downloads.current.set(url, timer);
-      link.href = url; link.download = filename; document.body.append(link); link.click(); link.remove();
+      link.href = url; 
+      link.download = filename; 
+      document.body.append(link); 
+      link.click(); 
+      link.remove();
       setNotification({ type: "success", title: "Отчёт успешно сформирован", message: `Файл ${filename} передан для скачивания.` });
     } catch (failure) {
       if (controller.signal.aborted) return;
       const status = Number(failure?.status ?? failure?.response?.status);
       const statusNames = { 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 500: "Internal Server Error", 502: "Bad Gateway", 503: "Service Unavailable", 504: "Gateway Timeout" };
-      setNotification({ type: "error", title: "Ошибка формирования отчёта", code: Number.isInteger(status) && status >= 400 && status <= 599 ? `${status} ${statusNames[status] ?? ""}`.trim() : "",
-        message: status === 504 ? "Не удалось сгенерировать файл за выбранный диапазон. Попробуйте сузить период или повторите попытку позже." : status === 401 || status === 403 ? "Нет доступа к выгрузке отчёта. Проверьте учётную запись и права доступа." : "Не удалось сформировать файл. Повторите попытку позже." });
-    } finally { exportLock.current = false; if (!controller.signal.aborted) setExporting(""); }
+      setNotification({ 
+        type: "error", 
+        title: "Ошибка формирования отчёта", 
+        code: Number.isInteger(status) && status >= 400 && status <= 599 ? `${status} ${statusNames[status] ?? ""}`.trim() : "",
+        message: status === 504 ? "Не удалось сгенерировать файл за выбранный диапазон. Попробуйте сузить период или повторите попытку позже." : status === 401 || status === 403 ? "Нет доступа к выгрузке отчёта. Проверьте учётную запись и права доступа." : "Не удалось сформировать файл. Повторите попытку позже." 
+      });
+    } finally { 
+      exportLock.current = false; 
+      if (!controller.signal.aborted) setExporting(""); 
+    }
   }
 
   return <div className="reports-page" data-theme={theme}>
@@ -427,7 +564,7 @@ export default function ReportsPage({ records = demoRecords, initialFilters = re
       </section>
       <section className="reports-preview" aria-labelledby={`${id}-preview`} aria-busy={loading}>
         <div className="reports-preview-bar"><div className="reports-section-heading"><h2 id={`${id}-preview`}>Предпросмотр</h2><span aria-live="polite">{loading ? "Загрузка…" : recordCount(filtered.length)}</span></div><div className="reports-export-actions" aria-label="Экспорт отчёта" aria-busy={Boolean(exporting)}>
-          {["xlsx", "xls", "pdf"].map(format => <button type="button" key={format} className={`reports-button${format === "xlsx" ? " reports-button-primary" : ""}`} data-exporting={exporting === format} disabled={!canExport} title={!onExport ? "Экспорт пока не подключён" : undefined} onClick={() => exportReport(format)}>{exporting === format ? <><span className="reports-spinner" aria-hidden="true" />Генерация…</> : `Экспортировать ${format.toUpperCase()}`}</button>)}
+          {["xlsx", "xls", "pdf"].map(format => <button type="button" key={format} className={`reports-button${format === "xlsx" ? " reports-button-primary" : ""}`} data-exporting={exporting === format} disabled={!canExport} onClick={() => exportReport(format)}>{exporting === format ? <><span className="reports-spinner" aria-hidden="true" />Генерация…</> : `Экспортировать ${format.toUpperCase()}`}</button>)}
         </div></div>
         {loading ? <div className="reports-empty" role="status"><span className="reports-spinner" /><h3>Загружаем данные отчёта…</h3></div> : error ? <div className="reports-empty" role="alert"><h3>Не удалось загрузить отчёт</h3><p>{error}</p></div> : !ready || invalidPeriod ? <div className="reports-empty"><h3>Настройте параметры отчёта, чтобы увидеть данные</h3><p>Укажите период и выберите нужные фильтры</p></div> : !filtered.length ? <div className="reports-empty"><h3>По выбранным параметрам данные не найдены</h3><p>Измените период или параметры фильтрации</p><button type="button" className="reports-button" onClick={resetFilters}>Сбросить фильтры</button></div> : !visibleColumns.length ? <div className="reports-empty"><h3>Выберите колонки отчёта</h3><p>Для предпросмотра нужна хотя бы одна колонка</p></div> : <div className="reports-table-card">
           <div className="reports-table-scroll" role="region" aria-label="Таблица отчёта" tabIndex={0}><table className="reports-table" style={{ minWidth: selectedColumns.length <= 5 ? 920 : visibleColumns.reduce((sum, column) => sum + column.width, 0) }}>
